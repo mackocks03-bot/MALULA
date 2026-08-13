@@ -171,6 +171,7 @@ function mapUserDoc(d) {
     uid: data.uid,
     username: data.username,
     fullName: data.fullName,
+    phone: data.phone,
     createdAt: data.createdAt,
     isActive: data.activationStatus === 'approved' || Boolean(data.isActive)
   };
