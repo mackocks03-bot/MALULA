@@ -458,62 +458,34 @@ export async function completeTask(uid, taskId) {
             return { success: false, error: 'Task is pending verification' };
         }
         
-        // Get user data
-        const userResult = await getUser(uid);
-        if (!userResult.success || !userResult.data) {
-            return { success: false, error: 'User not found' };
-        }
-        
-        const userData = userResult.data;
-        const currency = userData.currency || 'TZS';
-        
-        // Update user balance
-        const currentBalance = userData.balance || 0;
-        const currentProfit = userData.totalProfit || 0;
-        
-        await updateDoc(doc(db, 'users', uid), {
-            balance: currentBalance + reward,
-            totalProfit: currentProfit + reward
-        });
-        
-        // Update earnings based on category
-        const earnings = userData.earnings || {};
-        const categoryEarnings = earnings[category] || 0;
-        earnings[category] = categoryEarnings + reward;
-        
-        await updateDoc(doc(db, 'users', uid), {
-            earnings: earnings
-        });
-        
-        // Add transaction
-        await addTransaction(uid, {
-            type: 'task',
-            amount: reward,
-            currency: currency,
-            description: `Task reward: ${task.title}`,
-            taskId: taskId,
-            category: category
-        });
-        
-        // Update user task status
+        // Update user task status to trigger Cloud Function
         const docId = `${uid}_${taskId}`;
         await updateDoc(doc(db, 'userTasks', docId), {
-            status: 'completed',
-            completedAt: Date.now(),
+            status: 'pending_verification',
             updatedAt: Date.now(),
             reward: reward,
             category: category
         });
         
-        // Add notification
-        const display = toLocalDisplay(reward, currency);
-        await addNotification(uid, {
-            type: 'earning',
-            message: `🎉 Task completed! You earned ${display.formatted} from "${task.title}"`,
-            taskId: taskId
+        return new Promise((resolve) => {
+            const timeout = setTimeout(() => {
+                unsub();
+                resolve({ success: false, error: 'Task verified, but Cloud Function timed out responding (> 20s).' });
+            }, 20000);
+
+            const unsub = onSnapshot(doc(db, 'userTasks', docId), (snap) => {
+                const data = snap.data();
+                if (data?.status === 'completed') {
+                    clearTimeout(timeout);
+                    unsub();
+                    resolve({ success: true, reward, task });
+                } else if (data?.status === 'failed') {
+                    clearTimeout(timeout);
+                    unsub();
+                    resolve({ success: false, error: `Backend processing error: ${data.processingError}` });
+                }
+            });
         });
-        
-        return { success: true, reward, task };
     } catch (error) {
         console.error('Error completing task:', error);
         return { success: false, error: error.message };
@@ -546,43 +518,10 @@ export async function completeTaskWithVerification(uid, taskId, adminNote = '') 
         if (!userResult.success || !userResult.data) {
             return { success: false, error: 'User not found' };
         }
-        
-        const userData = userResult.data;
-        const currency = userData.currency || 'TZS';
-        
-        // Update user balance
-        const currentBalance = userData.balance || 0;
-        const currentProfit = userData.totalProfit || 0;
-        
-        await updateDoc(doc(db, 'users', uid), {
-            balance: currentBalance + reward,
-            totalProfit: currentProfit + reward
-        });
-        
-        // Update earnings based on category
-        const earnings = userData.earnings || {};
-        const categoryEarnings = earnings[category] || 0;
-        earnings[category] = categoryEarnings + reward;
-        
-        await updateDoc(doc(db, 'users', uid), {
-            earnings: earnings
-        });
-        
-        // Add transaction
-        await addTransaction(uid, {
-            type: 'task',
-            amount: reward,
-            currency: currency,
-            description: `Task reward: ${task.title} (verified by admin)`,
-            taskId: taskId,
-            category: category
-        });
-        
-        // Update user task status
+        // Update user task status to trigger Cloud Function
         const docId = `${uid}_${taskId}`;
         await updateDoc(doc(db, 'userTasks', docId), {
-            status: 'completed',
-            completedAt: Date.now(),
+            status: 'pending_verification',
             updatedAt: Date.now(),
             verifiedBy: 'admin',
             adminNote: adminNote,
@@ -590,15 +529,25 @@ export async function completeTaskWithVerification(uid, taskId, adminNote = '') 
             category: category
         });
         
-        // Add notification
-        const display = toLocalDisplay(reward, currency);
-        await addNotification(uid, {
-            type: 'earning',
-            message: `🎉 Task verified! You earned ${display.formatted} from "${task.title}"`,
-            taskId: taskId
+        return new Promise((resolve) => {
+            const timeout = setTimeout(() => {
+                unsub();
+                resolve({ success: false, error: 'Task verified, but Cloud Function timed out responding (> 20s).' });
+            }, 20000);
+
+            const unsub = onSnapshot(doc(db, 'userTasks', docId), (snap) => {
+                const data = snap.data();
+                if (data?.status === 'completed') {
+                    clearTimeout(timeout);
+                    unsub();
+                    resolve({ success: true, reward, task });
+                } else if (data?.status === 'failed') {
+                    clearTimeout(timeout);
+                    unsub();
+                    resolve({ success: false, error: `Backend processing error: ${data.processingError}` });
+                }
+            });
         });
-        
-        return { success: true, reward, task };
     } catch (error) {
         console.error('Error completing task with verification:', error);
         return { success: false, error: error.message };

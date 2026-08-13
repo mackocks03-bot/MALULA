@@ -240,38 +240,30 @@ export async function approveWithdrawal(uid, withdrawalId, adminNote = '') {
         }
         
         // Update withdrawal status
-        await updateDoc(doc(db, 'withdrawals', withdrawalId), {
+        const wdRef = doc(db, 'withdrawals', withdrawalId);
+        await updateDoc(wdRef, {
             status: 'approved',
             approvedAt: Date.now(),
             updatedAt: Date.now(),
             adminNote
         });
         
-        // Update transaction status
-        const transQuery = query(collection(db, 'transactions'), where('uid', '==', uid));
-        const transSnapshot = await getDocs(transQuery);
-        
-        if (!transSnapshot.empty) {
-            for (const tDoc of transSnapshot.docs) {
-                if (tDoc.data().reference === withdrawal.reference) {
-                    await updateDoc(doc(db, 'transactions', tDoc.id), {
-                        status: 'approved'
-                    });
-                    break;
+        return new Promise((resolve) => {
+            const timeout = setTimeout(() => {
+                unsub();
+                resolve({ success: false, error: 'Authorization sent, but Cloud Function timed out responding (> 20s).' });
+            }, 20000);
+
+            const unsub = onSnapshot(wdRef, (snap) => {
+                const data = snap.data();
+                if (data?.withdrawalNotified === true) {
+                    clearTimeout(timeout);
+                    unsub();
+                    resolve({ success: true, message: 'Withdrawal successfully authorized and recorded.' });
                 }
-            }
-        }
-        
-        // Add notification
-        const display = toLocalDisplay(withdrawal.amount, withdrawal.currency || 'TZS');
-        await addNotification(uid, {
-            type: 'withdraw',
-            message: `✅ Withdrawal of ${display.formatted} has been approved and processed.`,
-            reference: withdrawal.reference
+            });
         });
-        
-        return { success: true };
-        
+
     } catch (error) {
         console.error('Error approving withdrawal:', error);
         return { success: false, error: error.message };
@@ -296,52 +288,31 @@ export async function rejectWithdrawal(uid, withdrawalId, reason = '') {
             return { success: false, error: `Withdrawal already ${withdrawal.status}` };
         }
         
-        // Refund the amount to user
-        const userResult = await getUser(uid);
-        if (userResult.success && userResult.data) {
-            const userData = userResult.data;
-            const currentBalance = userData.balance || 0;
-            const refundAmount = withdrawal.totalDeduct || withdrawal.amount || 0;
-            
-            await updateUser(uid, {
-                balance: currentBalance + refundAmount
-            });
-        }
-        
         // Update withdrawal status
-        await updateDoc(doc(db, 'withdrawals', withdrawalId), {
+        const wdRef = doc(db, 'withdrawals', withdrawalId);
+        await updateDoc(wdRef, {
             status: 'rejected',
             rejectedAt: Date.now(),
             updatedAt: Date.now(),
             reason
         });
-        
-        // Update transaction status
-        const transQuery = query(collection(db, 'transactions'), where('uid', '==', uid));
-        const transSnapshot = await getDocs(transQuery);
-        
-        if (!transSnapshot.empty) {
-            for (const tDoc of transSnapshot.docs) {
-                if (tDoc.data().reference === withdrawal.reference) {
-                    await updateDoc(doc(db, 'transactions', tDoc.id), {
-                        status: 'rejected',
-                        note: reason
-                    });
-                    break;
+
+        return new Promise((resolve) => {
+            const timeout = setTimeout(() => {
+                unsub();
+                resolve({ success: false, error: 'Rejection sent, but Cloud Function timed out processing refund (> 20s).' });
+            }, 20000);
+
+            const unsub = onSnapshot(wdRef, (snap) => {
+                const data = snap.data();
+                if (data?.withdrawalNotified === true) {
+                    clearTimeout(timeout);
+                    unsub();
+                    resolve({ success: true, message: 'Withdrawal successfully rejected and refunded securely.' });
                 }
-            }
-        }
-        
-        // Add notification
-        const display = toLocalDisplay(withdrawal.amount, withdrawal.currency || 'TZS');
-        await addNotification(uid, {
-            type: 'withdraw',
-            message: `❌ Withdrawal of ${display.formatted} was rejected. ${reason ? 'Reason: ' + reason : ''}`,
-            reference: withdrawal.reference
+            });
         });
-        
-        return { success: true };
-        
+
     } catch (error) {
         console.error('Error rejecting withdrawal:', error);
         return { success: false, error: error.message };

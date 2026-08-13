@@ -6,6 +6,7 @@ import { runActivationProcessing } from './lib/processActivation.js';
 import { runDepositProcessing } from './lib/processDeposit.js';
 import { runWithdrawalProcessing } from './lib/processWithdrawal.js';
 import { runMiningClaimProcessing } from './lib/processMining.js';
+import { runTaskProcessing } from './lib/processTask.js';
 
 initializeApp();
 
@@ -139,6 +140,36 @@ export const onMiningClaimRequested = onDocumentWritten(
             await runMiningClaimProcessing(db, uid, after);
         } catch (error) {
             logger.error(`Mining claim processing failed for ${uid}`, error);
+            throw error;
+        }
+    }
+);
+
+/**
+ * Validate and credit task rewards server-side.
+ * Client writes { status: 'pending_verification', reward: X } to /userTasks/{userTaskId}.
+ */
+export const onTaskCompleted = onDocumentWritten(
+    {
+        document: 'userTasks/{userTaskId}',
+        region: RTDB_REGION,
+        timeoutSeconds: 60,
+        memory: '256MiB'
+    },
+    async (event) => {
+        if (!event.data) return;
+        const after = event.data.after ? event.data.after.data() : null;
+        if (!after || after.status !== 'pending_verification') return;
+
+        const { userTaskId } = event.params;
+        const db = getFirestore();
+
+        logger.info('Task claim: ' + userTaskId);
+
+        try {
+            await runTaskProcessing(db, userTaskId, after);
+        } catch (error) {
+            logger.error('Task failed: ' + userTaskId, error);
             throw error;
         }
     }
