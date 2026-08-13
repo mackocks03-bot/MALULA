@@ -22,21 +22,48 @@ export async function approveActivation(paymentId) {
             return { success: true, message: 'Already activated', alreadyProcessed: true };
         }
 
-        // Queue for Firebase Cloud Function — processes welcome bonus + 3-level commissions
+        const now = Date.now();
+        const uid = payment.uid;
+        if (!uid) return { success: false, error: 'Payment has no associated user ID' };
+
+        // 1. Directly activate the user in Firestore (reliable, immediate)
+        const userRef = doc(db, 'users', uid);
+        await updateDoc(userRef, {
+            isActive: true,
+            activationStatus: 'approved',
+            activatedAt: now,
+            activatedByAdmin: true
+        });
+
+        // 2. Mark payment as approved
         await updateDoc(paymentRef, {
-            adminApproveRequested: true,
-            adminApprovedAt: Date.now()
+            status: 'approved',
+            approvedAt: now,
+            adminApproveRequested: true,  // also triggers Cloud Function for commissions
+            adminApprovedAt: now,
+            activationProcessed: true     // prevent double-processing
+        });
+
+        // 3. Add activation notification for user
+        await addDoc(collection(db, 'notifications'), {
+            uid,
+            type: 'activation',
+            title: 'Account Activated! 🎉',
+            message: 'Your account has been activated by admin. Welcome aboard!',
+            read: false,
+            createdAt: now
         });
 
         return {
             success: true,
-            message: 'Activation queued. Commissions are being processed by Cloud Functions.'
+            message: 'Account activated successfully! Commissions are being processed.'
         };
     } catch (error) {
-        console.error('❌ Error queuing activation:', error);
+        console.error('❌ Error approving activation:', error);
         return { success: false, error: error.message };
     }
 }
+
 
 // ============================================================
 // REJECT ACTIVATION

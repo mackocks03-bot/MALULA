@@ -454,13 +454,26 @@ export function AdminPayments() {
 
     const filtered = payments.filter(p => !q || p.uid?.toLowerCase().includes(q.toLowerCase()) || p.reference?.toLowerCase().includes(q.toLowerCase()));
 
-    const openModal = (action, p) => setModal({
-        action, id: p.id,
-        title: action === 'approve' ? 'Approve Payment' : action === 'reject' ? 'Reject Payment' : 'Delete Record',
-        subtitle: `Action required for invoice ${p.reference || p.transactionId || p.id}`,
-        details: [ { label: 'Client ID', value: p.uid }, { label: 'Amount', value: `$${(p.amountUSD||0).toFixed(2)}` }, { label: 'Method', value: p.method || p.channel }, { label: 'Dated', value: new Date(p.createdAt).toLocaleString() } ],
-        reason: 'Verification failed', setReason: (r) => setModal(m => ({...m, reason: r}))
-    });
+    const openModal = (action, p) => {
+        const u = usersMap[p.uid] || {};
+        const currency = u.currency || p.nativeCurrency || 'TZS';
+        const nativeAmt = p.amountTZS || p.nativeAmount || p.amount || 0;
+        const amountDisplay = `${currency} ${Number(nativeAmt).toLocaleString()}`;
+        setModal({
+            action, id: p.id,
+            title: action === 'approve' ? 'Approve Payment' : action === 'reject' ? 'Reject Payment' : 'Delete Record',
+            subtitle: `Action required for invoice ${p.reference || p.transactionId || p.id}`,
+            details: [
+                { label: 'Client ID', value: p.uid },
+                { label: 'Username', value: u.username || u.fullName || '—' },
+                { label: 'Amount', value: amountDisplay },
+                { label: 'Method', value: p.method || p.channel || 'PalmPesa' },
+                { label: 'Phone', value: p.phone || p.phoneNumber || '—' },
+                { label: 'Dated', value: p.createdAt ? new Date(p.createdAt).toLocaleString() : '—' }
+            ],
+            reason: 'Verification failed', setReason: (r) => setModal(m => ({...m, reason: r}))
+        });
+    };
 
     const handleConfirm = async () => {
         setProcessing(true);
@@ -508,8 +521,11 @@ export function AdminPayments() {
                                     </td>
                                     <td><b>{p.method || p.channel || 'PalmPesa'}</b></td>
                                     <td className="gov-amount-highlight">
-                                        ${(p.amountUSD || 0).toFixed(2)}
-                                        <div style={{ fontSize: 11, color: '#666' }}>{currency} {((p.amountUSD || 0) * rate).toLocaleString(undefined, {maximumFractionDigits:0})}</div>
+                                        {(() => {
+                                            const nativeAmt = p.amountTZS || p.nativeAmount || p.amount || 0;
+                                            const cur = u.currency || p.nativeCurrency || 'TZS';
+                                            return `${cur} ${Number(nativeAmt).toLocaleString()}`;
+                                        })()}
                                     </td>
                                     <td>{p.createdAt ? new Date(p.createdAt).toLocaleString() : 'N/A'}</td>
                                     <td><StatusBadge status={p.status} /></td>
