@@ -4,6 +4,8 @@
 
 import { auth } from './firebase-config.js';
 
+const API_URL = import.meta.env.VITE_API_BASE_URL || '';
+
 async function authHeaders() {
     const user = auth.currentUser;
     if (!user) throw new Error('Not authenticated');
@@ -15,14 +17,14 @@ async function authHeaders() {
 }
 
 export async function getPalmpesaConfig() {
-    const res = await fetch('/api/deposits/palmpesa/config');
+    const res = await fetch(`${API_URL}/api/deposits/palmpesa/config`);
     if (!res.ok) throw new Error('Could not load payment config');
     return res.json();
 }
 
 export async function initiatePalmpesaDeposit({ phone, amount, name, email, country }) {
     const headers = await authHeaders();
-    const res = await fetch('/api/deposits/palmpesa/initiate', {
+    const res = await fetch(`${API_URL}/api/deposits/palmpesa/initiate`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ phone, amount, name, email, country })
@@ -37,7 +39,7 @@ export async function initiatePalmpesaDeposit({ phone, amount, name, email, coun
 export async function checkPalmpesaDepositStatus(orderId, amount) {
     const headers = await authHeaders();
     const query = amount ? `?amount=${encodeURIComponent(amount)}` : '';
-    const res = await fetch(`/api/deposits/palmpesa/status/${encodeURIComponent(orderId)}${query}`, {
+    const res = await fetch(`${API_URL}/api/deposits/palmpesa/status/${encodeURIComponent(orderId)}${query}`, {
         headers
     });
     const data = await res.json();
@@ -77,14 +79,14 @@ export function pollPalmpesaStatus(orderId, amount, { intervalMs = 3000, maxAtte
 // ── Activation (account opening fee) ──
 
 export async function getActivationPalmpesaConfig() {
-    const res = await fetch('/api/activation/palmpesa/config');
+    const res = await fetch(`${API_URL}/api/activation/palmpesa/config`);
     if (!res.ok) throw new Error('Could not load activation payment config');
     return res.json();
 }
 
 export async function initiatePalmpesaActivation({ phone, name, email, country }) {
     const headers = await authHeaders();
-    const res = await fetch('/api/activation/palmpesa/initiate', {
+    const res = await fetch(`${API_URL}/api/activation/palmpesa/initiate`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ phone, name, email, country })
@@ -99,7 +101,7 @@ export async function initiatePalmpesaActivation({ phone, name, email, country }
 export async function checkPalmpesaActivationStatus(orderId, amount) {
     const headers = await authHeaders();
     const query = amount ? `?amount=${encodeURIComponent(amount)}` : '';
-    const res = await fetch(`/api/activation/palmpesa/status/${encodeURIComponent(orderId)}${query}`, {
+    const res = await fetch(`${API_URL}/api/activation/palmpesa/status/${encodeURIComponent(orderId)}${query}`, {
         headers
     });
     const data = await res.json();
