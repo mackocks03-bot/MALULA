@@ -1,0 +1,28 @@
+/* AdminWithdrawals.css */
+.gov-withdrawals-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--gov-white);
+    padding: 16px;
+    border: 1px solid var(--gov-border);
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+}
+.gov-withdrawals-search {
+    flex: 1;
+    max-width: 400px;
+}
+.gov-method-badge {
+    background: var(--gov-grey-bg);
+    border: 1px solid var(--gov-border);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+.gov-wd-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--gov-text-muted);
+}

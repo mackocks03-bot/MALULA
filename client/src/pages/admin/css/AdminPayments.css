@@ -1,0 +1,28 @@
+/* AdminPayments.css */
+.gov-payments-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--gov-white);
+    padding: 16px;
+    border: 1px solid var(--gov-border);
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+}
+.gov-payments-search {
+    flex: 1;
+    max-width: 400px;
+}
+.gov-amount-highlight {
+    font-weight: 700;
+    color: var(--gov-success);
+}
+.gov-mono-text {
+    font-family: monospace;
+    color: var(--gov-text-muted);
+}
+.gov-action-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}

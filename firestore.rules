@@ -1,0 +1,82 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Core function to check if user is an admin
+    function isAdmin() {
+      return request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // loginIndex: needed for username-availability checks at registration (unauthenticated)
+    match /loginIndex/{username} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // settings: read-only for everyone (exchange rates, fee config used at registration)
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /users/{userId} {
+
+      allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
+    }
+
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /tasks/{taskId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+    
+    match /sellerProducts/{productId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.sellerUid == request.auth.uid;
+      allow update, delete: if request.auth != null && (resource.data.sellerUid == request.auth.uid || isAdmin());
+    }
+    
+    match /products/{productId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+    
+    match /notifications/{notifId} {
+      allow read, update: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow create, delete: if isAdmin();
+    }
+
+    match /withdrawals/{withdrawalId} {
+      allow read: if request.auth != null && (resource.data.uid == request.auth.uid || isAdmin());
+      // Client needs to create withdrawals
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+    
+    match /transactions/{transactionId} {
+      allow read: if request.auth != null && (resource.data.uid == request.auth.uid || isAdmin());
+      // Client creates transactions occasionally
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+    
+    match /activationPayments/{paymentId} {
+      allow read: if request.auth != null && (resource.data.uid == request.auth.uid || isAdmin());
+      // Client queues payments
+      allow create, update: if request.auth != null && (request.resource.data.uid == request.auth.uid || resource.data.uid == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+    
+    // Default fallback (block writes unless admin)
+    match /{document=**} {
+      allow read: if request.auth != null && isAdmin();
+      allow write: if request.auth != null && isAdmin();
+    }
+  }
+}
