@@ -27,7 +27,7 @@ export async function processReferralCommission(referredUid, referrerUsername, c
     const q = query(collection(db, 'referrals'), where('referrerUid', '==', referrerUid), where('uid', '==', referredUid));
     const existingSnapshot = await getDocs(q);
     
-    if (!existingSnapshot.empty) return null;
+    if (!existingSnapshot.empty && existingSnapshot.docs[0].data().isActive) return null;
     
     const referredDoc = await getDoc(doc(db, 'users', referredUid));
     if (!referredDoc.exists()) return null;
@@ -60,19 +60,30 @@ export async function processReferralCommission(referredUid, referrerUsername, c
       createdAt: Date.now()
     });
     
-    await addDoc(collection(db, 'referrals'), {
-      referrerUid,
-      uid: referredUid,
-      username: referred.username,
-      fullName: referred.fullName,
-      phone: referred.phone,
-      country: referred.country,
-      createdAt: Date.now(),
-      isActive: true,
-      level: 1,
-      bonusUSD: bonusUSD,
-      currency: displayCurrency
-    });
+    // Update the existing referral doc (created at registration) instead of adding a duplicate
+    const existingRef = existingSnapshot.docs[0]?.ref;
+    if (existingRef) {
+      await updateDoc(existingRef, {
+        isActive: true,
+        bonusUSD: bonusUSD,
+        currency: displayCurrency,
+        activatedAt: Date.now()
+      });
+    } else {
+      await addDoc(collection(db, 'referrals'), {
+        referrerUid,
+        uid: referredUid,
+        username: referred.username,
+        fullName: referred.fullName,
+        phone: referred.phone,
+        country: referred.country,
+        createdAt: Date.now(),
+        isActive: true,
+        level: 1,
+        bonusUSD: bonusUSD,
+        currency: displayCurrency
+      });
+    }
     
     if (referrer.referrer) {
       await processLevel2Commission(referredUid, referrer.referrer, displayCurrency);
@@ -87,8 +98,8 @@ async function processLevel2Commission(referredUid, referrerUsername, currency) 
     const bonuses = await getReferralBonuses();
     const bonusUSD = bonuses.level2 || 1.00;
     
-    const referrerLower = referrerUsername.toLowerCase();
-    const referrerDoc = await getDoc(doc(db, 'loginIndex', referrerLower));
+    // Use exact username (no toLowerCase) — loginIndex keys are case-sensitive
+    const referrerDoc = await getDoc(doc(db, 'loginIndex', referrerUsername));
     if (!referrerDoc.exists()) return;
     
     const referrerUid = referrerDoc.data().uid;
@@ -116,20 +127,27 @@ async function processLevel2Commission(referredUid, referrerUsername, currency) 
       createdAt: Date.now()
     });
     
-    await addDoc(collection(db, 'referrals'), {
-      referrerUid,
-      uid: referredUid,
-      isActive: true,
-      level: 2,
-      bonusUSD: bonusUSD,
-      currency: currency,
-      createdAt: Date.now()
-    });
+    // Check for existing level-2 referral doc, update or create
+    const existingQ = query(collection(db, 'referrals'), where('referrerUid', '==', referrerUid), where('uid', '==', referredUid), where('level', '==', 2));
+    const existingSnap = await getDocs(existingQ);
+    if (!existingSnap.empty) {
+      await updateDoc(existingSnap.docs[0].ref, { isActive: true, bonusUSD, currency, activatedAt: Date.now() });
+    } else {
+      await addDoc(collection(db, 'referrals'), {
+        referrerUid,
+        uid: referredUid,
+        isActive: true,
+        level: 2,
+        bonusUSD: bonusUSD,
+        currency: currency,
+        createdAt: Date.now()
+      });
+    }
     
     if (referrer.referrer) {
       await processLevel3Commission(referredUid, referrer.referrer, currency);
     }
-  } catch (error) {}
+  } catch (error) { console.error('Level 2 commission error:', error); }
 }
 
 async function processLevel3Commission(referredUid, referrerUsername, currency) {
@@ -137,8 +155,8 @@ async function processLevel3Commission(referredUid, referrerUsername, currency) 
     const bonuses = await getReferralBonuses();
     const bonusUSD = bonuses.level3 || 0.50;
     
-    const referrerLower = referrerUsername.toLowerCase();
-    const referrerDoc = await getDoc(doc(db, 'loginIndex', referrerLower));
+    // Use exact username (no toLowerCase) — loginIndex keys are case-sensitive
+    const referrerDoc = await getDoc(doc(db, 'loginIndex', referrerUsername));
     if (!referrerDoc.exists()) return;
     
     const referrerUid = referrerDoc.data().uid;
@@ -166,16 +184,23 @@ async function processLevel3Commission(referredUid, referrerUsername, currency) 
       createdAt: Date.now()
     });
     
-    await addDoc(collection(db, 'referrals'), {
-      referrerUid,
-      uid: referredUid,
-      isActive: true,
-      level: 3,
-      bonusUSD: bonusUSD,
-      currency: currency,
-      createdAt: Date.now()
-    });
-  } catch (error) {}
+    // Check for existing level-3 referral doc, update or create
+    const existingQ = query(collection(db, 'referrals'), where('referrerUid', '==', referrerUid), where('uid', '==', referredUid), where('level', '==', 3));
+    const existingSnap = await getDocs(existingQ);
+    if (!existingSnap.empty) {
+      await updateDoc(existingSnap.docs[0].ref, { isActive: true, bonusUSD, currency, activatedAt: Date.now() });
+    } else {
+      await addDoc(collection(db, 'referrals'), {
+        referrerUid,
+        uid: referredUid,
+        isActive: true,
+        level: 3,
+        bonusUSD: bonusUSD,
+        currency: currency,
+        createdAt: Date.now()
+      });
+    }
+  } catch (error) { console.error('Level 3 commission error:', error); }
 }
 
 export async function getReferralTree(uid) {
