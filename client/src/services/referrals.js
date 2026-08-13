@@ -164,44 +164,49 @@ async function processLevel3Commission(referredUid, referrerUsername, currency) 
   } catch (error) { console.error('Level 3 commission error:', error); }
 }
 
-// Helper to batch fetch user details from UIDs
-async function fetchUserDetailsForIds(ids) {
-  if (!ids || ids.length === 0) return [];
-  try {
-    const promises = ids.map(id => getDoc(doc(db, 'users', id)));
-    const snaps = await Promise.all(promises);
-    return snaps.map(s => {
-      if (!s.exists()) return null;
-      const data = s.data();
-      return {
-        uid: data.uid,
-        username: data.username,
-        fullName: data.fullName,
-        createdAt: data.createdAt,
-        isActive: Boolean(data.activationStatus === 'approved' || data.isActive)
-      };
-    }).filter(d => d !== null);
-  } catch(e) {
-    return [];
-  }
+// Map a users collection snapshot doc to a display object
+function mapUserDoc(d) {
+  const data = d.data ? d.data() : d;
+  return {
+    uid: data.uid,
+    username: data.username,
+    fullName: data.fullName,
+    createdAt: data.createdAt,
+    isActive: data.activationStatus === 'approved' || Boolean(data.isActive)
+  };
 }
 
 export async function getReferralTree(uid) {
   try {
+    // Get the current user's username (the referral link uses username as ref param)
     const userDoc = await getDoc(doc(db, 'users', uid));
     if (!userDoc.exists()) return { level1: [], level2: [], level3: [] };
-    
-    const userData = userDoc.data();
-    const refs = userData.referrals || { level1: [], level2: [], level3: [] };
-    
-    const [level1, level2, level3] = await Promise.all([
-      fetchUserDetailsForIds(refs.level1),
-      fetchUserDetailsForIds(refs.level2),
-      fetchUserDetailsForIds(refs.level3)
-    ]);
-    
+    const username = userDoc.data().username;
+    if (!username) return { level1: [], level2: [], level3: [] };
+
+    // Level 1: users whose `referrer` field equals this user's username
+    const l1Snap = await getDocs(query(collection(db, 'users'), where('referrer', '==', username)));
+    const level1 = l1Snap.docs.map(mapUserDoc);
+
+    // Level 2: for each L1 user, find users who listed them as referrer
+    const level2 = [];
+    await Promise.all(level1.map(async l1User => {
+      if (!l1User.username) return;
+      const l2Snap = await getDocs(query(collection(db, 'users'), where('referrer', '==', l1User.username)));
+      l2Snap.docs.forEach(d => level2.push(mapUserDoc(d)));
+    }));
+
+    // Level 3: for each L2 user, find users who listed them as referrer
+    const level3 = [];
+    await Promise.all(level2.map(async l2User => {
+      if (!l2User.username) return;
+      const l3Snap = await getDocs(query(collection(db, 'users'), where('referrer', '==', l2User.username)));
+      l3Snap.docs.forEach(d => level3.push(mapUserDoc(d)));
+    }));
+
     return { level1, level2, level3 };
   } catch (error) {
+    console.error('getReferralTree error:', error);
     return { level1: [], level2: [], level3: [] };
   }
 }
