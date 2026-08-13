@@ -153,14 +153,6 @@ export async function registerUser(email, password, userData) {
         
         stepLog('4', '💾 Saving user data...');
         
-        let openingFeeUSD = 5.80;
-        try {
-            const settings = await getSettings();
-            openingFeeUSD = settings?.openingFeeUSD || 5.80;
-        } catch (e) {
-            console.warn('⚠️ Could not get opening fee, using default:', e);
-        }
-        
         const currency = userData.currency || 'TZS';
         
         const fullUserData = {
@@ -178,8 +170,6 @@ export async function registerUser(email, password, userData) {
             balance: 0,
             totalProfit: 0,
             withdrawn: 0,
-            welcomeBonus: 4.00,
-            openingFee: openingFeeUSD,
             referralCount: 0,
             referrer: userData.referrer || null,
             language: userData.language || 'en',

@@ -92,11 +92,11 @@ export default function Dashboard() {
 
                     <div className="dash-stats-grid">
                         <div className="stat-card">
-                            <div className="amount">{formatCurrency(userData?.activationFee || userData?.openingFee || dashboardFees.activation || 14500, currency)}</div>
+                            <div className="amount">{formatCurrency(dashboardFees.activation, currency)}</div>
                             <div className="label">{translate('dashboard.openingFee')}</div>
                         </div>
                         <div className="stat-card">
-                            <div className="amount">{formatCurrency(userData?.welcomeBonus || dashboardFees.welcome || 9000, currency)}</div>
+                            <div className="amount">{formatCurrency(dashboardFees.welcome, currency)}</div>
                             <div className="label">{translate('dashboard.welcomeBonus')}</div>
                         </div>
                     </div>
