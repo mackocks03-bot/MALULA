@@ -18,7 +18,7 @@ export default function Withdraw() {
     const [method, setMethod] = useState('mpesa');
     const [loading, setLoading] = useState(false);
     const [withdrawals, setWithdrawals] = useState([]);
-    const [limits, setLimits] = useState({ min: 4, max: 500, fee: 0 });
+    const [limits, setLimits] = useState({ min: 0, max: 0, fee: 0 });
     const [stats, setStats] = useState(null);
 
     useEffect(() => {
@@ -34,8 +34,9 @@ export default function Withdraw() {
     }, [userData, phone]);
 
     useEffect(() => {
-        getWithdrawLimits().then(l => setLimits(l || { min: 4, max: 500, fee: 0 }));
-    }, []);
+        const currency = userData?.currency || 'TZS';
+        getWithdrawLimits(currency).then(l => setLimits(l || { min: 0, max: 0, fee: 0 }));
+    }, [userData?.currency]);
 
     useEffect(() => {
         if (!user) return;

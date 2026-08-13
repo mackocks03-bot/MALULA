@@ -415,7 +415,7 @@ export function AdminUsers() {
                                             <span>{u.countryName || u.country || 'N/A'}</span>
                                         </div>
                                     </td>
-                                    <td style={{ fontWeight: 700, color: '#2E7D32' }}>${(u.balance || 0).toFixed(2)}</td>
+                                    <td style={{ fontWeight: 700, color: '#2E7D32' }}>{u.currency || 'TZS'} {Number(u.balance || 0).toLocaleString()}</td>
                                     <td><StatusBadge status={u.isActive ? 'active' : 'pending'} /></td>
                                 </tr>
                             );
@@ -578,13 +578,25 @@ export function AdminWithdrawals() {
 
     const filtered = items.filter(w => !q || w.uid?.toLowerCase().includes(q.toLowerCase()) || w.phone?.includes(q));
 
-    const openModal = (action, w) => setModal({
-        action, id: w.id, uid: w.uid,
-        title: action === 'approve' ? 'Authenticate Payout' : action === 'reject' ? 'Deny Payout' : 'Strike Record',
-        subtitle: `Disbursement requisition ${w.id}`,
-        details: [ { label: 'Client ID', value: w.uid }, { label: 'Amount', value: `$${(w.amountUSD || w.amount || 0).toFixed(2)}` }, { label: 'Destination', value: w.phone || w.phoneNumber || w.address }, { label: 'Gateway', value: w.method } ],
-        reason: 'Compliance Failure', setReason: (r) => setModal(m => ({...m, reason: r}))
-    });
+    const openModal = (action, w) => {
+        const u = usersMap[w.uid] || {};
+        const currency = w.currency || u.currency || 'TZS';
+        const nativeAmt = w.amount || 0;
+        setModal({
+            action, id: w.id, uid: w.uid,
+            title: action === 'approve' ? 'Authenticate Payout' : action === 'reject' ? 'Deny Payout' : 'Strike Record',
+            subtitle: `Disbursement requisition ${w.id}`,
+            details: [
+                { label: 'Client ID', value: w.uid },
+                { label: 'Username', value: u.username || u.fullName || '—' },
+                { label: 'Amount', value: `${currency} ${Number(nativeAmt).toLocaleString()}` },
+                { label: 'Fee', value: w.fee ? `${currency} ${Number(w.fee).toLocaleString()}` : 'None' },
+                { label: 'Destination', value: w.phone || w.phoneNumber || w.address || '—' },
+                { label: 'Gateway', value: w.method || '—' }
+            ],
+            reason: 'Compliance Failure', setReason: (r) => setModal(m => ({...m, reason: r}))
+        });
+    };
 
     const handleConfirm = async () => {
         setProcessing(true);
@@ -628,8 +640,10 @@ export function AdminWithdrawals() {
                                         </div>
                                     </td>
                                     <td>
-                                        <div style={{ fontWeight: 700 }}>${(w.amountUSD || w.amount || 0).toFixed(2)}</div>
-                                        <div style={{ fontSize: 11, color: '#666' }}>{currency} {((w.amountUSD || w.amount || 0) * rate).toLocaleString(undefined, {maximumFractionDigits:0})}</div>
+                                        <div style={{ fontWeight: 700, color: 'var(--gov-blue)' }}>
+                                            {w.currency || u.currency || 'TZS'} {Number(w.amount || 0).toLocaleString()}
+                                        </div>
+                                        {w.fee > 0 && <div style={{ fontSize: 11, color: '#999' }}>Fee: {Number(w.fee).toLocaleString()}</div>}
                                     </td>
                                     <td>
                                         <div style={{ fontWeight: 600 }}>{w.phone || w.phoneNumber || w.address || 'MISSING'}</div>
