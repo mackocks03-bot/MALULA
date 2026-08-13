@@ -31,7 +31,8 @@ import {
     startAfter,
     endAt,
     endBefore,
-    writeBatch
+    writeBatch,
+    arrayUnion
 } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
@@ -75,6 +76,7 @@ export {
     endAt,
     endBefore,
     writeBatch,
+    arrayUnion,
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
     sendPasswordResetEmail,

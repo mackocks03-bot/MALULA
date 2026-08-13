@@ -24,7 +24,8 @@ import {
     signOut,
     onAuthStateChanged,
     fetchSignInMethodsForEmail,
-    deleteUser
+    deleteUser,
+    arrayUnion
 } from './firebase-config.js';
 import { getSettings } from './settings.js';
 
@@ -63,24 +64,7 @@ async function removeFromLoginIndex(username) {
     }
 }
 
-async function addReferral(referrerUid, referredData) {
-    try {
-        const result = await addDoc(collection(db, 'referrals'), {
-            referrerUid,
-            uid: referredData.uid,
-            username: referredData.username,
-            fullName: referredData.fullName || '',
-            phone: referredData.phone || '',
-            country: referredData.country || '',
-            createdAt: Date.now(),
-            isActive: false,
-            level: referredData.level || 1
-        });
-        return { success: true, id: result.id };
-    } catch (error) {
-        return { success: false, error: error.message };
-    }
-}
+// old addReferral removed because it relied on separate collection
 
 async function deleteQueryRecords(q) {
   const snapshot = await getDocs(q);
@@ -187,7 +171,11 @@ export async function registerUser(email, password, userData) {
                 whatsapp: 0,
                 ads: 0
             },
-            // Add this to ensure data exists
+            referrals: {
+                level1: [],
+                level2: [],
+                level3: []
+            },
             testField: 'ok'
         };
         
@@ -231,23 +219,44 @@ export async function registerUser(email, password, userData) {
                     const referrerData = referrerSnapshot.data();
                     const referrerUid = referrerData.uid;
 
-                    await addReferral(referrerUid, {
-                        uid: uid,
-                        username: username,
-                        fullName: userData.fullName,
-                        phone: userData.phone,
-                        country: userData.country,
-                        level: 1
-                    });
-
                     const refUserSnapshot = await getDoc(doc(db, 'users', referrerUid));
                     if (refUserSnapshot.exists()) {
                         const refUserData = refUserSnapshot.data();
+                        
+                        // 1. Add to Level 1
                         await updateDoc(doc(db, 'users', referrerUid), {
+                            'referrals.level1': arrayUnion(uid),
                             referralCount: (refUserData.referralCount || 0) + 1
                         });
+                        
+                        // 2. Add to Level 2
+                        if (refUserData.referrer) {
+                            const l2Snap = await getDoc(doc(db, 'loginIndex', refUserData.referrer));
+                            if (l2Snap.exists()) {
+                                const l2uid = l2Snap.data().uid;
+                                await updateDoc(doc(db, 'users', l2uid), {
+                                    'referrals.level2': arrayUnion(uid)
+                                });
+                                
+                                const l2UserSnap = await getDoc(doc(db, 'users', l2uid));
+                                if (l2UserSnap.exists()) {
+                                    const l2UserData = l2UserSnap.data();
+                                    // 3. Add to Level 3
+                                    if (l2UserData.referrer) {
+                                        const l3Snap = await getDoc(doc(db, 'loginIndex', l2UserData.referrer));
+                                        if (l3Snap.exists()) {
+                                            const l3uid = l3Snap.data().uid;
+                                            await updateDoc(doc(db, 'users', l3uid), {
+                                                'referrals.level3': arrayUnion(uid)
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
                     }
-                    stepLog('6', '✅ Referral saved');
+                    stepLog('6', '✅ Referral arrays updated');
                 } else {
                     stepLog('6', '⚠️ Referrer username not found in loginIndex');
                 }

@@ -1,6 +1,6 @@
 /**
  * Referral Service
- * Handles referral tracking and commissions
+ * Handles referral tracking and commissions using embedded arrays
  */
 
 import { db, doc, getDoc, getDocs, updateDoc, addDoc, collection, query, where } from './firebase-config.js';
@@ -23,30 +23,31 @@ export async function processReferralCommission(referredUid, referrerUsername, c
     
     const referrer = referrerUserDoc.data();
     
-    // Check if this referral already exists
-    const q = query(collection(db, 'referrals'), where('referrerUid', '==', referrerUid), where('uid', '==', referredUid));
-    const existingSnapshot = await getDocs(q);
-    
-    if (!existingSnapshot.empty && existingSnapshot.docs[0].data().isActive) return null;
-    
     const referredDoc = await getDoc(doc(db, 'users', referredUid));
     if (!referredDoc.exists()) return null;
-    
     const referred = referredDoc.data();
     
+    // Safety check: Prevent double crediting by checking transactions
+    const txQuery = query(
+      collection(db, 'transactions'),
+      where('uid', '==', referrerUid),
+      where('referredUid', '==', referredUid),
+      where('type', '==', 'referral_bonus'),
+      where('level', '==', 1)
+    );
+    const txSnap = await getDocs(txQuery);
+    if (!txSnap.empty) return null; // Already paid for this user
+
     const bonuses = await getReferralBonuses();
     const bonusUSD = bonuses.level1 || 2.00;
     
     const displayCurrency = currency || referrer.currency || 'TZS';
-    
     const currentBalance = referrer.balance || 0;
     const currentProfit = referrer.totalProfit || 0;
-    const currentReferrals = referrer.referralCount || 0;
     
     await updateDoc(doc(db, 'users', referrerUid), {
       balance: currentBalance + bonusUSD,
-      totalProfit: currentProfit + bonusUSD,
-      referralCount: currentReferrals + 1
+      totalProfit: currentProfit + bonusUSD
     });
     
     await addDoc(collection(db, 'transactions'), {
@@ -59,31 +60,6 @@ export async function processReferralCommission(referredUid, referrerUsername, c
       level: 1,
       createdAt: Date.now()
     });
-    
-    // Update the existing referral doc (created at registration) instead of adding a duplicate
-    const existingRef = existingSnapshot.docs[0]?.ref;
-    if (existingRef) {
-      await updateDoc(existingRef, {
-        isActive: true,
-        bonusUSD: bonusUSD,
-        currency: displayCurrency,
-        activatedAt: Date.now()
-      });
-    } else {
-      await addDoc(collection(db, 'referrals'), {
-        referrerUid,
-        uid: referredUid,
-        username: referred.username,
-        fullName: referred.fullName,
-        phone: referred.phone,
-        country: referred.country,
-        createdAt: Date.now(),
-        isActive: true,
-        level: 1,
-        bonusUSD: bonusUSD,
-        currency: displayCurrency
-      });
-    }
     
     if (referrer.referrer) {
       await processLevel2Commission(referredUid, referrer.referrer, displayCurrency);
@@ -98,7 +74,6 @@ async function processLevel2Commission(referredUid, referrerUsername, currency) 
     const bonuses = await getReferralBonuses();
     const bonusUSD = bonuses.level2 || 1.00;
     
-    // Use exact username (no toLowerCase) — loginIndex keys are case-sensitive
     const referrerDoc = await getDoc(doc(db, 'loginIndex', referrerUsername));
     if (!referrerDoc.exists()) return;
     
@@ -108,6 +83,16 @@ async function processLevel2Commission(referredUid, referrerUsername, currency) 
     
     const referrer = referrerUserDoc.data();
     
+    const txQuery = query(
+      collection(db, 'transactions'),
+      where('uid', '==', referrerUid),
+      where('referredUid', '==', referredUid),
+      where('type', '==', 'referral_bonus'),
+      where('level', '==', 2)
+    );
+    const txSnap = await getDocs(txQuery);
+    if (!txSnap.empty) return; // Already paid
+
     const currentBalance = referrer.balance || 0;
     const currentProfit = referrer.totalProfit || 0;
     
@@ -127,23 +112,6 @@ async function processLevel2Commission(referredUid, referrerUsername, currency) 
       createdAt: Date.now()
     });
     
-    // Check for existing level-2 referral doc, update or create
-    const existingQ = query(collection(db, 'referrals'), where('referrerUid', '==', referrerUid), where('uid', '==', referredUid), where('level', '==', 2));
-    const existingSnap = await getDocs(existingQ);
-    if (!existingSnap.empty) {
-      await updateDoc(existingSnap.docs[0].ref, { isActive: true, bonusUSD, currency, activatedAt: Date.now() });
-    } else {
-      await addDoc(collection(db, 'referrals'), {
-        referrerUid,
-        uid: referredUid,
-        isActive: true,
-        level: 2,
-        bonusUSD: bonusUSD,
-        currency: currency,
-        createdAt: Date.now()
-      });
-    }
-    
     if (referrer.referrer) {
       await processLevel3Commission(referredUid, referrer.referrer, currency);
     }
@@ -155,7 +123,6 @@ async function processLevel3Commission(referredUid, referrerUsername, currency) 
     const bonuses = await getReferralBonuses();
     const bonusUSD = bonuses.level3 || 0.50;
     
-    // Use exact username (no toLowerCase) — loginIndex keys are case-sensitive
     const referrerDoc = await getDoc(doc(db, 'loginIndex', referrerUsername));
     if (!referrerDoc.exists()) return;
     
@@ -165,6 +132,16 @@ async function processLevel3Commission(referredUid, referrerUsername, currency) 
     
     const referrer = referrerUserDoc.data();
     
+    const txQuery = query(
+      collection(db, 'transactions'),
+      where('uid', '==', referrerUid),
+      where('referredUid', '==', referredUid),
+      where('type', '==', 'referral_bonus'),
+      where('level', '==', 3)
+    );
+    const txSnap = await getDocs(txQuery);
+    if (!txSnap.empty) return; // Already paid
+
     const currentBalance = referrer.balance || 0;
     const currentProfit = referrer.totalProfit || 0;
     
@@ -183,40 +160,45 @@ async function processLevel3Commission(referredUid, referrerUsername, currency) 
       level: 3,
       createdAt: Date.now()
     });
-    
-    // Check for existing level-3 referral doc, update or create
-    const existingQ = query(collection(db, 'referrals'), where('referrerUid', '==', referrerUid), where('uid', '==', referredUid), where('level', '==', 3));
-    const existingSnap = await getDocs(existingQ);
-    if (!existingSnap.empty) {
-      await updateDoc(existingSnap.docs[0].ref, { isActive: true, bonusUSD, currency, activatedAt: Date.now() });
-    } else {
-      await addDoc(collection(db, 'referrals'), {
-        referrerUid,
-        uid: referredUid,
-        isActive: true,
-        level: 3,
-        bonusUSD: bonusUSD,
-        currency: currency,
-        createdAt: Date.now()
-      });
-    }
+
   } catch (error) { console.error('Level 3 commission error:', error); }
+}
+
+// Helper to batch fetch user details from UIDs
+async function fetchUserDetailsForIds(ids) {
+  if (!ids || ids.length === 0) return [];
+  try {
+    const promises = ids.map(id => getDoc(doc(db, 'users', id)));
+    const snaps = await Promise.all(promises);
+    return snaps.map(s => {
+      if (!s.exists()) return null;
+      const data = s.data();
+      return {
+        uid: data.uid,
+        username: data.username,
+        fullName: data.fullName,
+        createdAt: data.createdAt,
+        isActive: Boolean(data.activationStatus === 'approved' || data.isActive)
+      };
+    }).filter(d => d !== null);
+  } catch(e) {
+    return [];
+  }
 }
 
 export async function getReferralTree(uid) {
   try {
-    const q = query(collection(db, 'referrals'), where('referrerUid', '==', uid));
-    const snapshot = await getDocs(q);
+    const userDoc = await getDoc(doc(db, 'users', uid));
+    if (!userDoc.exists()) return { level1: [], level2: [], level3: [] };
     
-    if (snapshot.empty) {
-      return { level1: [], level2: [], level3: [] };
-    }
+    const userData = userDoc.data();
+    const refs = userData.referrals || { level1: [], level2: [], level3: [] };
     
-    const referrals = snapshot.docs.map(doc => doc.data());
-    
-    const level1 = referrals.filter(r => r.level === 1 || !r.level);
-    const level2 = referrals.filter(r => r.level === 2);
-    const level3 = referrals.filter(r => r.level === 3);
+    const [level1, level2, level3] = await Promise.all([
+      fetchUserDetailsForIds(refs.level1),
+      fetchUserDetailsForIds(refs.level2),
+      fetchUserDetailsForIds(refs.level3)
+    ]);
     
     return { level1, level2, level3 };
   } catch (error) {
@@ -226,8 +208,10 @@ export async function getReferralTree(uid) {
 
 export async function getReferralCount(uid) {
   try {
-    const tree = await getReferralTree(uid);
-    return tree.level1.length;
+    const userDoc = await getDoc(doc(db, 'users', uid));
+    if (!userDoc.exists()) return 0;
+    const refs = userDoc.data().referrals || {};
+    return (refs.level1 || []).length;
   } catch (error) { return 0; }
 }
 

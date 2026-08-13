@@ -119,20 +119,7 @@ export async function processReferralBonus(db, {
         createdAt: now
     });
 
-    const referralsQuery = await db.collection('referrals')
-                                   .where('referrerUid', '==', referrerUid)
-                                   .where('uid', '==', newUserId)
-                                   .get();
-    if (!referralsQuery.empty) {
-        const refDoc = referralsQuery.docs[0];
-        await refDoc.ref.update({
-            isActive: true,
-            bonusNATIVE: localBonusAmount,
-            bonusUSD: bonusAmount,
-            activatedAt: now,
-            level
-        });
-    }
+    // (Legacy referrals collection update removed. Frontend Affiliate page now reads native referral sub-arrays directly from user objects and dynamically infers activity statuses)
 
     await db.collection('notifications').add({
         uid: referrerUid,

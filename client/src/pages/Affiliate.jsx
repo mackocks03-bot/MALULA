@@ -35,9 +35,8 @@ export default function Affiliate() {
             setTree(t);
         };
         loadTree();
-        // Listen to the referrals COLLECTION filtered by this user's UID (not a single doc)
-        const q = query(collection(db, 'referrals'), where('referrerUid', '==', user.uid));
-        const unsub = onSnapshot(q, () => loadTree());
+        // Listen to the user document for changes in the embedded referrals arrays
+        const unsub = onSnapshot(doc(db, 'users', user.uid), () => loadTree());
         return () => unsub();
     }, [user]);
 
