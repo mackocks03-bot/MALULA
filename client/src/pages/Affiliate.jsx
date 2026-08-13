@@ -3,7 +3,7 @@ import DashboardLayout from '../components/DashboardLayout.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useToast } from '../contexts/ToastContext.jsx';
-import { toLocalDisplay } from '../utils/helpers.js';
+import { toLocalDisplay, formatCurrency } from '../utils/helpers.js';
 import { getReferralTree } from '../services/referrals.js';
 import { db, doc, onSnapshot } from '../services/firebase-config.js';
 import dataStore from '../utils/dataStore.js';
@@ -75,7 +75,7 @@ export default function Affiliate() {
                             <div className="label">{translate('dashboard.referrals')}</div>
                         </div>
                         <div className="stat-card">
-                            <div className="amount">{toLocalDisplay(userData?.totalReferralBonus || userData?.referralEarnings || 0, currency).formatted}</div>
+                            <div className="amount">{formatCurrency(userData?.totalReferralBonus || userData?.referralEarnings || 0, currency)}</div>
                             <div className="label">{translate('affiliate.earnings') || 'Referral Earnings'}</div>
                         </div>
                     </div>
