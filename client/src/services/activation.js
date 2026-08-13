@@ -26,20 +26,13 @@ export async function approveActivation(paymentId) {
         const uid = payment.uid;
         if (!uid) return { success: false, error: 'Payment has no associated user ID' };
 
-        // 1. Directly activate the user in Firestore (reliable, immediate)
-        const userRef = doc(db, 'users', uid);
-        await updateDoc(userRef, {
-            isActive: true,
-            activationStatus: 'approved',
-            activatedAt: now,
-            activatedByAdmin: true
-        });
 
-        // 2. Mark payment as approved
+
+        // 1. Mark payment as approved to trigger Cloud Function
         await updateDoc(paymentRef, {
             status: 'approved',
             approvedAt: now,
-            adminApproveRequested: true,  // triggers Cloud Function for commissions
+            adminApproveRequested: true,
             adminApprovedAt: now
         });
 
