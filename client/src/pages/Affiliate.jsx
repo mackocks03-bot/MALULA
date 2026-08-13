@@ -5,7 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useToast } from '../contexts/ToastContext.jsx';
 import { toLocalDisplay, formatCurrency } from '../utils/helpers.js';
 import { getReferralTree } from '../services/referrals.js';
-import { db, doc, onSnapshot } from '../services/firebase-config.js';
+import { db, doc, collection, query, where, onSnapshot } from '../services/firebase-config.js';
 import dataStore from '../utils/dataStore.js';
 
 export default function Affiliate() {
@@ -35,7 +35,9 @@ export default function Affiliate() {
             setTree(t);
         };
         loadTree();
-        const unsub = onSnapshot(doc(db, 'referrals', user.uid), () => loadTree());
+        // Listen to the referrals COLLECTION filtered by this user's UID (not a single doc)
+        const q = query(collection(db, 'referrals'), where('referrerUid', '==', user.uid));
+        const unsub = onSnapshot(q, () => loadTree());
         return () => unsub();
     }, [user]);
 
