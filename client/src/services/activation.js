@@ -39,9 +39,8 @@ export async function approveActivation(paymentId) {
         await updateDoc(paymentRef, {
             status: 'approved',
             approvedAt: now,
-            adminApproveRequested: true,  // also triggers Cloud Function for commissions
-            adminApprovedAt: now,
-            activationProcessed: true     // prevent double-processing
+            adminApproveRequested: true,  // triggers Cloud Function for commissions
+            adminApprovedAt: now
         });
 
         // 3. Add activation notification for user

@@ -73,16 +73,8 @@ export default function Activation() {
                 const data = snap.data();
                 setStatus(data.activationStatus || 'pending');
                 if (data.isActive || data.activationStatus === 'approved') {
-                    if (isTanzania && palmpesaStatus !== 'success') {
-                        setPalmpesaStatus('success');
-                        setTimeout(() => {
-                            showToast(translate('activation.redirecting') || 'Account activated!', 'success');
-                            navigate('/dashboard');
-                        }, 2500); // Wait for bouncing animation
-                    } else if (!isTanzania) {
-                         showToast(translate('activation.redirecting') || 'Account activated!', 'success');
-                         navigate('/dashboard');
-                    }
+                    showToast(translate('activation.redirecting') || 'Account activated!', 'success');
+                    navigate('/dashboard');
                 }
             }
         });
