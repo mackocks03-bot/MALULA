@@ -4,7 +4,7 @@
  * Backend: USD, processes referral bonuses from /settings RTDB
  */
 
-import { db, doc, getDoc, getDocs, updateDoc, addDoc, collection, deleteDoc } from './firebase-config.js';
+import { db, doc, getDoc, getDocs, updateDoc, addDoc, collection, deleteDoc, onSnapshot } from './firebase-config.js';
 
 // ============================================================
 // APPROVE ACTIVATION
@@ -36,20 +36,40 @@ export async function approveActivation(paymentId) {
             adminApprovedAt: now
         });
 
-        // 3. Add activation notification for user
-        await addDoc(collection(db, 'notifications'), {
-            uid,
-            type: 'activation',
-            title: 'Account Activated! 🎉',
-            message: 'Your account has been activated by admin. Welcome aboard!',
-            read: false,
-            createdAt: now
-        });
+        // 2. Wait for Cloud Function to complete
+        return new Promise((resolve) => {
+            const timeout = setTimeout(() => {
+                unsub();
+                resolve({ success: false, error: 'Approval request sent, but Cloud Function timed out responding (> 20s).' });
+            }, 20000);
 
-        return {
-            success: true,
-            message: 'Account activated successfully! Commissions are being processed.'
-        };
+            const unsub = onSnapshot(paymentRef, (snap) => {
+                const data = snap.data();
+                if (data?.activationProcessed === true) {
+                    clearTimeout(timeout);
+                    unsub();
+                    
+                    // Add activation notification for user
+                    addDoc(collection(db, 'notifications'), {
+                        uid,
+                        type: 'activation',
+                        title: 'Account Activated! 🎉',
+                        message: 'Your account has been activated by admin. Welcome aboard!',
+                        read: false,
+                        createdAt: now
+                    }).catch(console.error);
+
+                    resolve({
+                        success: true,
+                        message: 'Account activated successfully! Commissions are being processed.'
+                    });
+                } else if (data?.processingError) {
+                    clearTimeout(timeout);
+                    unsub();
+                    resolve({ success: false, error: `Backend processing error: ${data.processingError}` });
+                }
+            });
+        });
     } catch (error) {
         console.error('❌ Error approving activation:', error);
         return { success: false, error: error.message };
