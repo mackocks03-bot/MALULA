@@ -22,8 +22,17 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-
+      // Owner or admin: full access
       allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      
+      // Any authenticated user may append their OWN uid to another user's referrals arrays
+      // (needed during registration when writing referrer's doc from the new user's auth context)
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['referrals', 'referralCount'])
+        && request.resource.data.referrals.level1 is list
+        && request.resource.data.referrals.level2 is list
+        && request.resource.data.referrals.level3 is list;
     }
 
     match /settings/{docId} {
