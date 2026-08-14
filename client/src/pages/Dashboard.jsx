@@ -116,16 +116,33 @@ export default function Dashboard() {
 
                     <div className="earnings-section">
                         <div className="section-title">{translate('dashboard.earnings')}</div>
-                        {['chat', 'tiktok', 'facebook', 'youtube', 'whatsapp', 'ads'].map(key => (
-                            <div key={key} className="earning-item">
-                                <div className="left"><span className="name">{translate(`dashboard.${key}`)}</span></div>
-                                <span className="value">{displayEarning(key)}</span>
-                            </div>
-                        ))}
+                        {[
+                            { key: 'chat',     icon: '💭', label: translate('dashboard.chat')     || 'Chat Earnings' },
+                            { key: 'tiktok',   icon: '🎵', label: translate('dashboard.tiktok')   || 'TikTok Earnings' },
+                            { key: 'facebook', icon: '📘', label: translate('dashboard.facebook') || 'Facebook Earnings' },
+                            { key: 'youtube',  icon: '📺', label: translate('dashboard.youtube')  || 'YouTube Earnings' },
+                            { key: 'whatsapp', icon: '💬', label: translate('dashboard.whatsapp') || 'WhatsApp Earnings' },
+                            { key: 'ads',      icon: '📢', label: translate('dashboard.ads')      || 'Ad Earnings' },
+                        ].map(({ key, icon, label }) => {
+                            const val = taskBalances[key] || earnings[key] || 0;
+                            return (
+                                <div key={key} className="earning-item">
+                                    <div className="left"><span className="name">{icon} {label}</span></div>
+                                    <span className="value" style={{ color: val > 0 ? 'var(--color-green)' : undefined }}>{formatCurrency(val, currency)}</span>
+                                </div>
+                            );
+                        })}
                         <div className="earning-item">
-                            <div className="left"><span className="name">{translate('dashboard.spinEarnings')}</span></div>
-                            <span className="value">{formatCurrency(spinEarnings, currency)}</span>
+                            <div className="left"><span className="name">🎰 {translate('dashboard.spinEarnings') || 'Spin Earnings'}</span></div>
+                            <span className="value" style={{ color: spinEarnings > 0 ? 'var(--color-green)' : undefined }}>{formatCurrency(spinEarnings, currency)}</span>
                         </div>
+                        {(userData?.welcomeBonus || 0) > 0 && (
+                            <div className="earning-item">
+                                <div className="left"><span className="name">🎁 {translate('dashboard.welcomeBonus') || 'Welcome Bonus'}</span></div>
+                                <span className="value" style={{ color: 'var(--color-green)' }}>{userData.welcomeBonus}</span>
+                            </div>
+                        )}
+
                     </div>
 
                     <div className="referral-section">

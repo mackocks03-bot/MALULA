@@ -16,6 +16,7 @@ export default function Withdraw() {
     const [amount, setAmount] = useState('');
     const [phone, setPhone] = useState('');
     const [method, setMethod] = useState('mpesa');
+    const [wallet, setWallet] = useState('balance');
     const [loading, setLoading] = useState(false);
     const [withdrawals, setWithdrawals] = useState([]);
     const [limits, setLimits] = useState({ min: 0, max: 0, fee: 0 });
@@ -49,6 +50,11 @@ export default function Withdraw() {
 
     const currency = userData?.currency || 'TZS';
 
+    const availableBalance = 
+        wallet === 'balance' ? (userData?.balance || 0) :
+        wallet === 'welcomeBonus' ? (userData?.welcomeBonus || 0) :
+        wallet.startsWith('earnings.') ? (userData?.earnings?.[wallet.split('.')[1]] || 0) : 0;
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         const amt = parseFloat(amount);
@@ -60,7 +66,8 @@ export default function Withdraw() {
             const result = await requestWithdrawal(user.uid, {
                 amount: amt,
                 phone: phone.trim(),
-                method
+                method,
+                wallet
             });
             if (result.success) {
                 showToast(translate('withdraw.submitted') || 'Withdrawal submitted!', 'success');
@@ -81,8 +88,12 @@ export default function Withdraw() {
                     <h2 className="page-title">{translate('withdraw.title')}</h2>
 
                     <div className="profit-card">
-                        <div className="amount">{formatCurrency(userData?.balance || 0, currency)}</div>
-                        <div className="label">{translate('withdraw.available') || 'Available Balance'}</div>
+                        <div className="amount">{formatCurrency(availableBalance, currency)}</div>
+                        <div className="label">{translate('withdraw.available') || 'Available Balance'} - {
+                            wallet === 'balance' ? 'Main' : 
+                            wallet === 'welcomeBonus' ? 'Welcome Bonus' : 
+                            wallet.split('.')[1].charAt(0).toUpperCase() + wallet.split('.')[1].slice(1)
+                        }</div>
                     </div>
 
                     <div className="dash-stats-grid">
@@ -103,6 +114,19 @@ export default function Withdraw() {
                     </div>
 
                     <form onSubmit={handleSubmit} className="withdraw-form">
+                        <div className="form-group">
+                            <label className="form-label">{translate('withdraw.wallet') || 'Select Wallet'}</label>
+                            <select className="form-control" value={wallet} onChange={e => setWallet(e.target.value)}>
+                                <option value="balance">Main Balance</option>
+                                <option value="welcomeBonus">Welcome Bonus</option>
+                                <option value="earnings.youtube">YouTube Earnings</option>
+                                <option value="earnings.facebook">Facebook Earnings</option>
+                                <option value="earnings.whatsapp">WhatsApp Earnings</option>
+                                <option value="earnings.tiktok">TikTok Earnings</option>
+                                <option value="earnings.chat">Chat Earnings</option>
+                                <option value="earnings.ads">Ad Posting Earnings</option>
+                            </select>
+                        </div>
                         <div className="form-group">
                             <label className="form-label">{translate('withdraw.amount') || `Amount (USD or ${currency})`}</label>
                             <input type="number" step="0.01" className="form-control" value={amount} onChange={e => setAmount(e.target.value)} placeholder={`Min ${formatCurrency(limits.min, currency)}`} />

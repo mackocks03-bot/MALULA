@@ -34,6 +34,8 @@ export default function Activation() {
     const [palmpesaAmountTZS, setPalmpesaAmountTZS] = useState(null);
     const [palmpesaStatus, setPalmpesaStatus] = useState('idle'); // 'idle' | 'pushing' | 'waiting' | 'failed' | 'success'
     const [palmpesaMessage, setPalmpesaMessage] = useState('');
+    const [isSuccess, setIsSuccess] = useState(false);
+    const successTriggered = useRef(false);
     const pollStopRef = useRef(null);
 
     const country = userData?.country || 'TZ';
@@ -72,14 +74,24 @@ export default function Activation() {
             if (snap.exists()) {
                 const data = snap.data();
                 setStatus(data.activationStatus || 'pending');
-                if (data.isActive || data.activationStatus === 'approved') {
-                    showToast(translate('activation.redirecting') || 'Account activated!', 'success');
-                    navigate('/dashboard');
+                
+                // Only consider it activated when isActive is actually true. 
+                // This prevents navigation loops when activationStatus is 'approved' 
+                // but Context doesn't see isActive=true yet.
+                if (data.isActive && !successTriggered.current) {
+                    successTriggered.current = true;
+                    setIsSuccess(true);
+                    
+                    showToast(translate('activation.success') || 'Account activated successfully!', 'success');
+                    
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 2500);
                 }
             }
         });
         return () => unsub();
-    }, [user, navigate, showToast, translate]);
+    }, [user, showToast, translate]);
 
     useEffect(() => () => pollStopRef.current?.(), []);
 
@@ -227,13 +239,40 @@ export default function Activation() {
                         <div className="label">{translate('dashboard.openingFee')}</div>
                     </div>
 
-                    {status === 'rejected' && (
+                    {isSuccess && (
+                        <div style={{
+                            padding: '30px 20px', borderRadius: 16, marginBottom: 20,
+                            background: 'rgba(16, 185, 129, 0.1)', border: '2px solid rgba(16, 185, 129, 0.4)',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
+                            animation: 'modalPopIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                        }}>
+                            <div style={{
+                                width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg, #10B981, #059669)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+                                animation: 'pulse 1s var(--transition-base) infinite, bounce 2s var(--transition-base) infinite', boxShadow: '0 0 30px rgba(16, 185, 129, 0.5)',
+                                transformOrigin: 'center'
+                            }}>
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
+                            <div style={{ color: '#10B981', fontWeight: 800, fontSize: 22, animation: 'fadeInUp 0.5s ease', marginBottom: 8 }}>
+                                Account Activated Successfull!
+                            </div>
+                            <div style={{ color: 'var(--text-secondary)', fontSize: 15, animation: 'fadeInUp 0.7s ease', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span className="spinner" style={{ width: 14, height: 14, border: '2px solid rgba(16, 185, 129, 0.3)', borderTopColor: '#10B981', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                                Redirecting...
+                            </div>
+                        </div>
+                    )}
+
+                    {!isSuccess && status === 'rejected' && (
                         <div className="alert alert-error visible" style={{ marginBottom: 16 }}>
                             {translate('activation.rejected') || 'Activation rejected.'} {rejectReason}
                         </div>
                     )}
 
-                    {(status === 'pending' || status === 'rejected') && (
+                    {!isSuccess && (status === 'pending' || status === 'rejected') && (
                         <>
                             {isTanzania && palmpesaEnabled === null && (
                                 <div style={{ textAlign: 'center', padding: '40px 0' }}>

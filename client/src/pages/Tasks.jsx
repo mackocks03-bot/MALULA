@@ -10,15 +10,17 @@ import { db, doc, setDoc, updateDoc, addDoc, collection, onSnapshot } from '../s
 
 const DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
-const DEFAULT_DAY_TASKS = {
-    monday: { icon: '📺', title: 'YouTube Watch & Earn', category: 'youtube', rewardPerItem: 0.08, totalItems: 10, isVideo: true },
-    tuesday: { icon: '📘', title: 'Facebook Watch & Earn', category: 'facebook', rewardPerItem: 0.08, totalItems: 10, isVideo: true },
-    wednesday: { icon: '💬', title: 'WhatsApp Status Task', category: 'whatsapp', rewardPerItem: 0.16, totalItems: 5, isWhatsapp: true },
-    thursday: { icon: '📢', title: 'Ad Posting Task', category: 'ads', rewardPerItem: 0.08, totalItems: 10 },
-    friday: { icon: '🎵', title: 'TikTok Watch & Earn', category: 'tiktok', rewardPerItem: 0.08, totalItems: 10, isVideo: true },
-    saturday: { icon: '💭', title: 'Chat & Earn', category: 'chat', rewardPerItem: 0.08, totalItems: 10, link: '/chat' },
-    sunday: { icon: '🏆', title: 'Weekly Challenge', category: 'challenge', rewardPerItem: 0, totalItems: 1, link: '/challenge' }
+const FALLBACK_DAY_TASKS = {
+    monday:    { icon: '📺', title: 'YouTube Watch & Earn',  category: 'youtube',   rewardPerItem: 0.08, totalItems: 10, isVideo: true },
+    tuesday:   { icon: '📘', title: 'Facebook Watch & Earn', category: 'facebook',  rewardPerItem: 0.08, totalItems: 10, isVideo: true },
+    wednesday: { icon: '💬', title: 'WhatsApp Status Task',  category: 'whatsapp',  rewardPerItem: 0.16, totalItems: 5,  isWhatsapp: true },
+    thursday:  { icon: '📢', title: 'Ad Posting Task',       category: 'ads',       rewardPerItem: 0.08, totalItems: 10 },
+    friday:    { icon: '🎵', title: 'TikTok Watch & Earn',   category: 'tiktok',    rewardPerItem: 0.08, totalItems: 10, isVideo: true },
+    saturday:  { icon: '💭', title: 'Chat & Earn',           category: 'chat',      rewardPerItem: 0.08, totalItems: 10, link: '/chat' },
+    sunday:    { icon: '🏆', title: 'Weekly Challenge',       category: 'challenge', rewardPerItem: 0,    totalItems: 1,  link: '/challenge' },
 };
+
+const CATEGORY_ICONS = { youtube: '📺', facebook: '📘', whatsapp: '💬', ads: '📢', tiktok: '🎵', chat: '💭', challenge: '🏆' };
 
 export default function Tasks() {
     const { user, userData } = useAuth();
@@ -31,7 +33,20 @@ export default function Tasks() {
     const [adminSettings, setAdminSettings] = useState({});
 
     const todayKey = DAY_KEYS[new Date().getDay()];
-    const todayTask = { ...DEFAULT_DAY_TASKS[todayKey], ...(adminSettings[todayKey] || {}) };
+    const todayFallback = FALLBACK_DAY_TASKS[todayKey] || {};
+    const adminCfg = adminSettings[todayKey] || {};
+
+    // Merge: admin config overrides fallback, but preserve flags based on category
+    const cat = adminCfg.category || todayFallback.category;
+    const todayTask = {
+        ...todayFallback,
+        ...adminCfg,
+        icon: CATEGORY_ICONS[cat] || todayFallback.icon || '📋',
+        isVideo: ['youtube', 'facebook', 'tiktok'].includes(cat),
+        isWhatsapp: cat === 'whatsapp',
+        link: cat === 'chat' ? '/chat' : cat === 'challenge' ? '/challenge' : adminCfg.link || todayFallback.link,
+    };
+
     const currency = userData?.currency || 'TZS';
     const taskKey = `task_${todayKey}_${new Date().toISOString().split('T')[0]}`;
     const scheduledId = `scheduled_${todayKey}`;
@@ -182,12 +197,30 @@ export default function Tasks() {
                     </div>
 
                     <div className="section-title">{translate('tasks.weeklySchedule') || 'Weekly Schedule'}</div>
-                    {weekTasks.map(task => (
-                        <div key={task.dayKey} className="earning-item" style={{ opacity: task.isToday ? 1 : 0.6 }}>
-                            <div className="left"><span>{task.icon} {task.title}</span></div>
-                            <span className="value">{task.isToday ? (translate('tasks.today') || 'Today') : task.day}</span>
-                        </div>
-                    ))}
+                    {DAY_KEYS.slice(1).concat(DAY_KEYS.slice(0, 1)).map((dayKey, i) => {
+                        const fallback = FALLBACK_DAY_TASKS[dayKey] || {};
+                        const admCfg = adminSettings[dayKey] || {};
+                        const merged = { ...fallback, ...admCfg };
+                        const dayCat = merged.category;
+                        const dayIcon = CATEGORY_ICONS[dayCat] || fallback.icon || '📋';
+                        const rewardUSD = (merged.rewardPerItem || 0) * (merged.totalItems || 1);
+                        const isToday = dayKey === todayKey;
+                        const isOff = merged.active === false;
+                        return (
+                            <div key={dayKey} className="earning-item" style={{ opacity: isOff ? 0.4 : isToday ? 1 : 0.65 }}>
+                                <div className="left">
+                                    <span style={{ fontWeight: isToday ? 700 : 400 }}>
+                                        {dayIcon} {merged.title || fallback.title}
+                                        {isToday && <span style={{ marginLeft: 6, background: 'var(--color-gold)', color: '#000', fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 8 }}>TODAY</span>}
+                                        {isOff && <span style={{ marginLeft: 6, color: '#aaa', fontSize: 10 }}>OFF</span>}
+                                    </span>
+                                </div>
+                                <span className="value" style={{ color: isToday ? 'var(--color-green)' : undefined }}>
+                                    {isOff ? '—' : formatCurrency(rewardUSD, currency)}
+                                </span>
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
         </DashboardLayout>

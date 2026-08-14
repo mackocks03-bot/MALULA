@@ -39,7 +39,17 @@ export async function requestWithdrawal(uid, withdrawalData) {
         
         const userData = userResult.data;
         const currency = userData.currency || 'TZS';
-        const balance = userData.balance || 0;
+        const walletType = withdrawalData.wallet || 'balance';
+        
+        let availableBalance = 0;
+        if (walletType === 'balance') {
+            availableBalance = userData.balance || 0;
+        } else if (walletType === 'welcomeBonus') {
+            availableBalance = userData.welcomeBonus || 0;
+        } else if (walletType.startsWith('earnings.')) {
+            const platform = walletType.split('.')[1];
+            availableBalance = userData.earnings?.[platform] || 0;
+        }
         
         // Validate amount
         const amount = withdrawalData.amount || 0;
@@ -67,18 +77,18 @@ export async function requestWithdrawal(uid, withdrawalData) {
         }
         
         // Check balance
-        if (amount > balance) {
-            return { success: false, error: 'Insufficient balance' };
+        if (amount > availableBalance) {
+            return { success: false, error: 'Insufficient balance in selected wallet' };
         }
         
         // Calculate fee (if any)
         const fee = limits.fee || 0;
         const totalDeduct = amount + fee;
         
-        if (totalDeduct > balance) {
+        if (totalDeduct > availableBalance) {
             return { 
                 success: false, 
-                error: `Insufficient balance (including fee of ${formatCurrency(fee, currency)})` 
+                error: `Insufficient balance (including fee of ${formatCurrency(fee, currency)}) in selected wallet` 
             };
         }
         
@@ -90,6 +100,7 @@ export async function requestWithdrawal(uid, withdrawalData) {
             amount: amount,
             fee: fee,
             totalDeduct: totalDeduct,
+            wallet: walletType,
             method: withdrawalData.method || 'mpesa',
             phone: withdrawalData.phone || withdrawalData.phoneNumber || '',
             note: withdrawalData.note || '',
@@ -101,9 +112,16 @@ export async function requestWithdrawal(uid, withdrawalData) {
         });
         
         // Update user balance (deduct)
-        await updateUser(uid, {
-            balance: balance - totalDeduct
-        });
+        const updatePayload = {};
+        if (walletType === 'balance') {
+            updatePayload.balance = availableBalance - totalDeduct;
+        } else if (walletType === 'welcomeBonus') {
+            updatePayload.welcomeBonus = availableBalance - totalDeduct;
+        } else if (walletType.startsWith('earnings.')) {
+            updatePayload[walletType] = availableBalance - totalDeduct;
+        }
+        
+        await updateUser(uid, updatePayload);
         
         // Add transaction
         await addTransaction(uid, {
