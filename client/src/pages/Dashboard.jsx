@@ -96,7 +96,7 @@ export default function Dashboard() {
                             <div className="label">{translate('dashboard.openingFee')}</div>
                         </div>
                         <div className="stat-card">
-                            <div className="amount">{formatCurrency(dashboardFees.welcome, currency)}</div>
+                            <div className="amount">{formatCurrency(userData?.welcomeBonus || 0, currency).split(' ')[0]} {userData?.welcomeBonus || 0}</div>
                             <div className="label">{translate('dashboard.welcomeBonus')}</div>
                         </div>
                     </div>

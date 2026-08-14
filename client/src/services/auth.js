@@ -139,6 +139,17 @@ export async function registerUser(email, password, userData) {
         
         const currency = userData.currency || 'TZS';
         
+        let initialWelcomeBonus = 10000;
+        if (currency === 'KES') initialWelcomeBonus = 500;
+        else if (currency === 'TZS') initialWelcomeBonus = 10000;
+        else if (currency === 'UGX') initialWelcomeBonus = 15000;
+        else if (currency === 'MWK') initialWelcomeBonus = 10000;
+        else if (currency === 'ZMW') initialWelcomeBonus = 100;
+        else if (currency === 'RWF') initialWelcomeBonus = 5000;
+        else if (currency === 'BIF') initialWelcomeBonus = 10000;
+        else if (currency === 'CDF') initialWelcomeBonus = 10000;
+        else if (currency === 'MZN') initialWelcomeBonus = 260; // Hardcoded exact amount for Mozambique
+
         const fullUserData = {
             uid: uid,
             username: username,
@@ -162,6 +173,7 @@ export async function registerUser(email, password, userData) {
             isVerified: false,
             role: 'user',
             profilePic: null,
+            welcomeBonus: initialWelcomeBonus, // HARDCODED native amount
             referralLink: `${window.location.origin}/register?ref=${username}`,
             earnings: {
                 chat: 0,

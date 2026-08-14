@@ -3,7 +3,7 @@ import DashboardLayout from '../components/DashboardLayout.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useToast } from '../contexts/ToastContext.jsx';
-import { toLocalDisplay, getRate } from '../utils/helpers.js';
+import { formatCurrency } from '../utils/helpers.js';
 import { db, doc, setDoc, addDoc, collection, getDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, limit } from '../services/firebase-config.js';
 import dataStore from '../utils/dataStore.js';
 
@@ -88,27 +88,25 @@ export default function GlobalChat() {
             // Chat bonus: 10 messages on Wednesday (day 3)
             const isWednesday = new Date().getDay() === 3;
             if (isWednesday && newCount >= BONUS_THRESHOLD && !bonusClaimed) {
-                const rates = await dataStore.getCurrencyRates();
-                const rate = rates?.[currency] || getRate(currency);
-                const bonusUSD = BONUS_TZS / rate;
+                const bonusAmt = BONUS_TZS;
 
                 await updateDoc(doc(db, 'users', user.uid), {
-                    'earnings.chat': (userData?.earnings?.chat || 0) + bonusUSD,
-                    'taskBalances.chat': (userData?.taskBalances?.chat || 0) + bonusUSD,
-                    totalProfit: (userData?.totalProfit || 0) + bonusUSD,
-                    balance: (userData?.balance || 0) + bonusUSD
+                    'earnings.chat': (userData?.earnings?.chat || 0) + bonusAmt,
+                    'taskBalances.chat': (userData?.taskBalances?.chat || 0) + bonusAmt,
+                    totalProfit: (userData?.totalProfit || 0) + bonusAmt,
+                    balance: (userData?.balance || 0) + bonusAmt
                 });
                 await setDoc(doc(db, 'chatBonus', `${user.uid}_${today}`), { claimed: true });
                 await addDoc(collection(db, 'transactions'), {
                     uid: user.uid,
                     type: 'chat_bonus',
                     description: 'Daily chat bonus (10 messages)',
-                    amount: bonusUSD,
+                    amount: bonusAmt,
                     createdAt: Date.now()
                 });
                 setBonusClaimed(true);
                 refreshUserData();
-                showToast(`🎉 Chat bonus: ${toLocalDisplay(bonusUSD, currency).formatted}!`, 'success');
+                showToast(`🎉 Chat bonus: ${formatCurrency(bonusAmt, currency)}!`, 'success');
             }
 
             setText('');

@@ -3,7 +3,7 @@ import DashboardLayout from '../components/DashboardLayout.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useToast } from '../contexts/ToastContext.jsx';
-import { toLocalDisplay, formatCurrency } from '../utils/helpers.js';
+import { formatCurrency } from '../utils/helpers.js';
 import { getReferralTree } from '../services/referrals.js';
 import { db, doc, onSnapshot } from '../services/firebase-config.js';
 import dataStore from '../utils/dataStore.js';
@@ -149,7 +149,7 @@ export default function Affiliate() {
                     <div className="bonus-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, margin: '16px 0' }}>
                         {[1, 2, 3].map(level => (
                             <div key={level} className="stat-card" style={{ padding: '10px' }}>
-                                <div className="amount" style={{ fontSize: 14 }}>{toLocalDisplay(bonuses[`level${level}`], currency).formatted}</div>
+                                <div className="amount" style={{ fontSize: 14 }}>{formatCurrency(bonuses[`level${level}`], currency)}</div>
                                 <div className="label">Level {level}</div>
                             </div>
                         ))}

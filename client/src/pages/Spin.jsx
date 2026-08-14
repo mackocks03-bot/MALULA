@@ -3,7 +3,7 @@ import DashboardLayout from '../components/DashboardLayout.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useToast } from '../contexts/ToastContext.jsx';
-import { toLocalDisplay } from '../utils/helpers.js';
+import { formatCurrency } from '../utils/helpers.js';
 import { db, doc, updateDoc, addDoc, collection, query, where, getDocs } from '../services/firebase-config.js';
 
 const SEGMENTS = [
@@ -67,7 +67,7 @@ export default function Spin() {
                         amount: segment.value,
                         createdAt: Date.now()
                     });
-                    showToast(`🎉 Won ${toLocalDisplay(segment.value, currency).formatted}!`, 'success');
+                    showToast(`🎉 Won ${formatCurrency(segment.value, currency)}!`, 'success');
                 } else {
                     await updateDoc(doc(db, 'users', user.uid), { spinsUsed: (userData?.spinsUsed || 0) + 1 });
                     showToast(translate('spin.tryAgain') || 'Try Again!', 'info');
@@ -123,7 +123,7 @@ export default function Spin() {
                             <div className="section-title">{translate('spin.history') || 'Spin History'}</div>
                             {history.map(h => (
                                 <div key={h.id} className="earning-item">
-                                    <span>{h.amount > 0 ? `+$${h.amount.toFixed(2)}` : 'Try Again'}</span>
+                                    <span>{h.amount > 0 ? `+${formatCurrency(h.amount, currency)}` : 'Try Again'}</span>
                                     <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                                         {h.createdAt ? new Date(h.createdAt).toLocaleDateString() : ''}
                                     </span>

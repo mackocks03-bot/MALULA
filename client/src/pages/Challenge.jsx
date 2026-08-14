@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import DashboardLayout from '../components/DashboardLayout.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
-import { toLocalDisplay } from '../utils/helpers.js';
+import { formatCurrency } from '../utils/helpers.js';
 import { db, collection, getDocs } from '../services/firebase-config.js';
 import dataStore from '../utils/dataStore.js';
 
@@ -41,7 +41,7 @@ export default function Challenge() {
                     <h2 className="page-title">{translate('challenge.title')}</h2>
 
                     <div className="profit-card">
-                        <div className="amount">{toLocalDisplay(prizePool, currency).formatted}</div>
+                        <div className="amount">{formatCurrency(prizePool, currency)}</div>
                         <div className="label">{translate('challenge.prizePool') || 'Prize Pool'}</div>
                     </div>
 
