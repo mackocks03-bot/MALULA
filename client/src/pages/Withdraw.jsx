@@ -15,14 +15,15 @@ function ConfirmModal({ data, onConfirm, onClose }) {
         <div style={{
             position: 'fixed', inset: 0, zIndex: 9000,
             background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
-            display: 'flex', alignItems: 'flex-end', justifyContent: 'center'
+            display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+            animation: 'wd-fade-in 0.3s ease'
         }} onClick={e => e.target === e.currentTarget && onClose()}>
             <div style={{
                 background: 'var(--color-surface, #fff)', 
                 borderTopLeftRadius: 28, borderTopRightRadius: 28,
                 padding: '32px 24px 40px 24px', maxWidth: 500, width: '100%',
                 boxShadow: '0 -10px 40px rgba(0,0,0,0.2)',
-                animation: 'wd-slide-up-sheet 0.3s cubic-bezier(0.1,0.9,0.2,1)',
+                animation: 'wd-slide-up-sheet 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
                 marginBottom: 0
             }}>
                 <div style={{ textAlign: 'center', marginBottom: 20 }}>
@@ -70,14 +71,15 @@ function SuccessModal({ data, onClose }) {
         <div style={{
             position: 'fixed', inset: 0, zIndex: 9001,
             background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)',
-            display: 'flex', alignItems: 'flex-end', justifyContent: 'center'
+            display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+            animation: 'wd-fade-in 0.3s ease'
         }}>
             <div style={{
                 background: 'var(--color-surface, #fff)', 
                 borderTopLeftRadius: 28, borderTopRightRadius: 28,
                 padding: '40px 24px 40px 24px', maxWidth: 500, width: '100%', textAlign: 'center',
                 boxShadow: '0 -10px 40px rgba(0,0,0,0.2)',
-                animation: 'wd-slide-up-sheet 0.4s cubic-bezier(0.34,1.56,0.64,1)',
+                animation: 'wd-slide-up-sheet 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
                 marginBottom: 0
             }}>
                 <div style={{ fontSize: 64, animation: 'wd-bounce 0.8s ease infinite alternate', marginBottom: 12 }}>✅</div>
@@ -125,14 +127,15 @@ function ErrorModal({ errorMsg, onClose }) {
         <div style={{
             position: 'fixed', inset: 0, zIndex: 9002,
             background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-            display: 'flex', alignItems: 'flex-end', justifyContent: 'center'
+            display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+            animation: 'wd-fade-in 0.3s ease'
         }} onClick={e => e.target === e.currentTarget && onClose()}>
             <div style={{
                 background: 'var(--color-surface, #fff)', 
                 borderTopLeftRadius: 28, borderTopRightRadius: 28,
                 padding: '40px 24px 40px 24px', maxWidth: 500, width: '100%', textAlign: 'center',
                 boxShadow: '0 -10px 40px rgba(220,38,38,0.15)',
-                animation: 'wd-slide-up-sheet 0.3s cubic-bezier(0.1,0.9,0.2,1)',
+                animation: 'wd-slide-up-sheet 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
                 borderTop: '4px solid #ef4444',
                 marginBottom: 0
             }}>
@@ -451,6 +454,7 @@ export default function Withdraw() {
             </div>
 
             <style>{`
+                @keyframes wd-fade-in { from { opacity: 0; } to { opacity: 1; } }
                 @keyframes wd-pop { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
                 @keyframes wd-bounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
                 @keyframes wd-slide-up-sheet { from { transform: translateY(100%); } to { transform: translateY(0); } }
