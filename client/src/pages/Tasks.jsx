@@ -159,7 +159,15 @@ export default function Tasks() {
                         <p className="progress-text">{completed}/{total} {translate('tasks.completed') || 'completed'}</p>
 
                         {todayTask?.link ? (
-                            <Link to={todayTask.link} className="btn btn-primary btn-block">{translate('tasks.goToTask') || 'Go to Task'}</Link>
+                            todayTask.link.startsWith('http') ? (
+                                <a href={todayTask.link} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-block">
+                                    {translate('tasks.goToTask') || 'Go to Task'}
+                                </a>
+                            ) : (
+                                <Link to={todayTask.link} className="btn btn-primary btn-block">
+                                    {translate('tasks.goToTask') || 'Go to Task'}
+                                </Link>
+                            )
                         ) : todayTask?.isVideo ? (
                             <div className="video-container">
                                 {!watching ? (

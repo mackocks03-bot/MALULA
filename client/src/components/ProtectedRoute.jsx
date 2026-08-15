@@ -16,9 +16,6 @@ export function ProtectedRoute({ children, requireActive = false, guestOnly = fa
     }
 
     if (guestOnly) {
-        if (user) {
-            return <Navigate to={isActive ? '/dashboard' : '/activation'} replace />;
-        }
         return children;
     }
 

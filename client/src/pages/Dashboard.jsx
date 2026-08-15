@@ -9,6 +9,7 @@ import { formatCurrency } from '../utils/helpers.js';
 import { db, doc, onSnapshot } from '../services/firebase-config.js';
 import dataStore from '../utils/dataStore.js';
 import { getActivationFee, getWelcomeBonus } from '../services/settings.js';
+import { getWithdrawalStats } from '../services/withdraw.js';
 
 export default function Dashboard() {
     const { user, userData: initialData } = useAuth();
@@ -17,9 +18,17 @@ export default function Dashboard() {
     const [userData, setUserData] = useState(initialData);
     const [dailyMessage, setDailyMessage] = useState('Welcome to NEWHOPE-CHAT! Start earning today.');
     const [dashboardFees, setDashboardFees] = useState({ activation: 0, welcome: 0 });
+    const [realWithdrawn, setRealWithdrawn] = useState(0);
 
     useEffect(() => {
         if (!user) return;
+        
+        getWithdrawalStats(user.uid).then(r => {
+            if (r.success && r.data) {
+                setRealWithdrawn(r.data.totalWithdrawn || 0);
+            }
+        });
+
         const unsub = onSnapshot(doc(db, 'users', user.uid), (snap) => {
             if (snap.exists()) setUserData(snap.data());
         });
@@ -111,7 +120,7 @@ export default function Dashboard() {
 
                     <div className="balance-grid">
                         <div className="balance-card"><div className="amount gold">{formatCurrency(userData?.balance || 0, currency)}</div><div className="label">{translate('dashboard.balance')}</div></div>
-                        <div className="balance-card"><div className="amount green">{formatCurrency(userData?.withdrawn || 0, currency)}</div><div className="label">{translate('dashboard.withdrawn')}</div></div>
+                        <div className="balance-card"><div className="amount green">{formatCurrency(realWithdrawn, currency)}</div><div className="label">{translate('dashboard.withdrawn')}</div></div>
                     </div>
 
                     <div className="earnings-section">

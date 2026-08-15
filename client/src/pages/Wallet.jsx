@@ -11,6 +11,7 @@ import {
     initiatePalmpesaDeposit,
     pollPalmpesaStatus
 } from '../services/deposits.js';
+import { getWithdrawalStats } from '../services/withdraw.js';
 
 const TASK_KEYS = [
     { key: 'chat', icon: '💬' },
@@ -32,7 +33,10 @@ export default function Wallet() {
     const [transactions, setTransactions] = useState([]);
     const [depositAmount, setDepositAmount] = useState('');
     const [depositTxn, setDepositTxn] = useState('');
+    const [realWithdrawn, setRealWithdrawn] = useState(0);
     const [depositing, setDepositing] = useState(false);
+    const [depositMethod, setDepositMethod] = useState('auto'); // 'auto' | 'manual'
+    const [copied, setCopied] = useState(false);
 
     const [palmpesaEnabled, setPalmpesaEnabled] = useState(false);
     const [palmpesaAmount, setPalmpesaAmount] = useState('');
@@ -57,6 +61,13 @@ export default function Wallet() {
 
     useEffect(() => {
         if (!user) return;
+        
+        getWithdrawalStats(user.uid).then(r => {
+            if (r.success && r.data) {
+                setRealWithdrawn(r.data.totalWithdrawn || 0);
+            }
+        });
+
         const unsub = listenToTransactions(user.uid, (result) => {
             if (result.success) setTransactions(result.data || []);
         });
@@ -74,7 +85,14 @@ export default function Wallet() {
             .catch(() => setPalmpesaEnabled(false));
     }, [isTanzania]);
 
-    useEffect(() => () => pollStopRef.current?.(), []);
+    useEffect(() => pollStopRef.current?.(), []);
+
+    const copyPaymentNumber = () => {
+        navigator.clipboard.writeText(DEPOSIT_NUMBER).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
+    };
 
     const queueDepositOnClient = async (orderId, amountTZS, meta) => {
         await updateDoc(doc(db, 'palmpesaPending', orderId), {
@@ -200,7 +218,7 @@ export default function Wallet() {
                             <div className="label">{translate('wallet.shopBalance') || 'Shop Balance'}</div>
                         </div>
                         <div className="balance-card">
-                            <div className="amount green">{formatCurrency(userData?.withdrawn || 0, currency)}</div>
+                            <div className="amount green">{formatCurrency(realWithdrawn, currency)}</div>
                             <div className="label">{translate('dashboard.withdrawn')}</div>
                         </div>
                     </div>
@@ -211,15 +229,31 @@ export default function Wallet() {
                             {translate('wallet.depositNote')}
                         </p>
 
-                        {isTanzania && palmpesaEnabled ? (
+                        {/* Payment Method Toggle — Auto only for TZ */}
+                        {isTanzania && palmpesaEnabled && (
+                            <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+                                {[['auto', 'Automatic (M-Pesa)'], ['manual', 'Manual (USSD)']].map(([v, l]) => (
+                                    <button key={v} onClick={() => setDepositMethod(v)} style={{
+                                        flex: 1, padding: '8px 10px', borderRadius: 8, border: '1.5px solid',
+                                        borderColor: depositMethod === v ? 'var(--color-gold, #d4af37)' : 'var(--color-border)',
+                                        background: depositMethod === v ? 'rgba(212,175,55,0.1)' : 'transparent',
+                                        color: depositMethod === v ? 'var(--color-gold, #d4af37)' : 'var(--text-muted)',
+                                        fontWeight: 700, fontSize: 12, cursor: 'pointer', transition: 'all 0.2s'
+                                    }}>{l}</button>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* AUTOMATIC — PalmPesa (TZ only) */}
+                        {isTanzania && palmpesaEnabled && depositMethod === 'auto' ? (
                             <>
-                                <div className="deposit-payment-info" style={{ marginBottom: 16 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                                        <span style={{ fontSize: 24 }}>📱</span>
+                                <div className="deposit-payment-info" style={{ marginBottom: 12 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                                        <span style={{ fontSize: 20 }}>📱</span>
                                         <div>
-                                            <strong style={{ color: 'var(--color-gold)' }}>PalmPesa</strong>
-                                            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                                                {translate('wallet.palmpesaHint') || 'Automatic payment — M-Pesa, Airtel, Halopesa & more'}
+                                            <strong style={{ color: 'var(--color-gold)', fontSize: 13 }}>PalmPesa Automatic</strong>
+                                            <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                                                {translate('wallet.palmpesaHint') || 'M-Pesa, Airtel, Halopesa & more'}
                                             </div>
                                         </div>
                                     </div>
@@ -255,19 +289,12 @@ export default function Wallet() {
 
                                     {(palmpesaStatus === 'waiting' || palmpesaStatus === 'pushing') && (
                                         <div style={{
-                                            padding: 12,
-                                            borderRadius: 10,
-                                            background: 'var(--color-gold-soft)',
-                                            border: '1px solid var(--border-hover)',
-                                            marginBottom: 12,
-                                            fontSize: 13,
-                                            color: 'var(--text-secondary)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 10
+                                            padding: 12, borderRadius: 10, background: 'var(--color-gold-soft)',
+                                            border: '1px solid var(--border-hover)', marginBottom: 12,
+                                            fontSize: 11, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 10
                                         }}>
                                             <span className="spinner" style={{
-                                                width: 18, height: 18, border: '2px solid rgba(229,184,74,0.2)',
+                                                width: 16, height: 16, border: '2px solid rgba(229,184,74,0.2)',
                                                 borderTopColor: 'var(--color-gold)', borderRadius: '50%',
                                                 animation: 'spin 0.8s linear infinite', flexShrink: 0
                                             }} />
@@ -276,19 +303,13 @@ export default function Wallet() {
                                     )}
 
                                     {palmpesaStatus === 'success' && (
-                                        <div style={{
-                                            padding: 12, borderRadius: 10, marginBottom: 12,
-                                            background: 'var(--color-green-bg)', color: 'var(--color-green)', fontSize: 13
-                                        }}>
+                                        <div style={{ padding: 10, borderRadius: 10, marginBottom: 10, background: 'var(--color-green-bg)', color: 'var(--color-green)', fontSize: 11 }}>
                                             ✓ {palmpesaMessage}
                                         </div>
                                     )}
 
                                     {palmpesaStatus === 'failed' && (
-                                        <div style={{
-                                            padding: 12, borderRadius: 10, marginBottom: 12,
-                                            background: 'var(--color-red-bg)', color: 'var(--color-red)', fontSize: 13
-                                        }}>
+                                        <div style={{ padding: 10, borderRadius: 10, marginBottom: 10, background: 'var(--color-red-bg)', color: 'var(--color-red)', fontSize: 11 }}>
                                             {palmpesaMessage}
                                         </div>
                                     )}
@@ -305,9 +326,34 @@ export default function Wallet() {
                                 </form>
                             </>
                         ) : (
+                            /* MANUAL — USSD (all users + TZ who choose manual) */
                             <>
-                                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
-                                    {translate('wallet.depositTo') || 'Pay to'}: <strong>{DEPOSIT_NUMBER}</strong> (NEW HOPE)
+                                <div style={{
+                                    background: 'var(--color-bg, #f9f9f9)', borderRadius: 10, padding: '10px 14px',
+                                    marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                                }}>
+                                    <div>
+                                        <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600 }}>Pay to number</div>
+                                        <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--color-gold, #d4af37)', letterSpacing: 1 }}>{DEPOSIT_NUMBER}</div>
+                                        <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Account: NEW HOPE</div>
+                                    </div>
+                                    <button onClick={copyPaymentNumber} style={{
+                                        padding: '8px 14px', borderRadius: 8, border: '1.5px solid',
+                                        borderColor: copied ? '#16a34a' : 'var(--color-border)',
+                                        background: copied ? 'rgba(34,197,94,0.1)' : 'transparent',
+                                        color: copied ? '#16a34a' : 'var(--text-muted)',
+                                        fontWeight: 700, fontSize: 11, cursor: 'pointer', display: 'flex',
+                                        alignItems: 'center', gap: 5, transition: 'all 0.2s'
+                                    }}>
+                                        {copied ? (
+                                            <><svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Copied!</>
+                                        ) : (
+                                            <><svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Copy</>
+                                        )}
+                                    </button>
+                                </div>
+                                <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>
+                                    {translate('wallet.depositTo') || 'Send the amount via USSD, then submit the transaction details below for verification.'}
                                 </p>
                                 <form onSubmit={submitDeposit}>
                                     <div className="form-group">

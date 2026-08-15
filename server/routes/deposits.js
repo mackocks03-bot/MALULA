@@ -75,7 +75,8 @@ router.post('/palmpesa/initiate', async (req, res) => {
         await saveDepositPending(payment.orderId, {
             uid: user.uid,
             amountTZS: payment.amount,
-            phone: payment.phone
+            phone: payment.phone,
+            type: 'deposit'
         });
 
         res.json({
