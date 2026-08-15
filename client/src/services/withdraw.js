@@ -19,7 +19,7 @@ import {
     onSnapshot 
 } from './firebase-config.js';
 import { getUser, updateUser, addTransaction, addNotification } from './database.js';
-import { getSettings, getWithdrawLimits } from './settings.js';
+import { getSettings, getWithdrawLimits, getTaskWithdrawLimits } from './settings.js';
 import { toLocalDisplay, formatCurrency } from './currency.js';
 
 // ============================================================
@@ -57,10 +57,18 @@ export async function requestWithdrawal(uid, withdrawalData) {
             return { success: false, error: 'Invalid amount' };
         }
         
-        // Get withdrawal limits
-        const limits = await getWithdrawLimits();
-        const minAmount = limits.min || 4.00;
-        const maxAmount = limits.max || 500.00;
+        
+        // 🚨 NEW: Block if user already has a pending withdrawal request
+        const pendingQuery = query(collection(db, 'withdrawals'), where('uid', '==', uid), where('status', '==', 'pending'));
+        const pendingDocs = await getDocs(pendingQuery);
+        if (!pendingDocs.empty) {
+            return { success: false, error: 'You already have a pending withdrawal request. Please wait for it to be processed.' };
+        }
+
+        // Get withdrawal boundaries mapping to the specific wallet
+        const limits = await getWithdrawLimits(currency);
+        const minAmount = await getTaskWithdrawLimits(walletType, currency);
+        const maxAmount = limits.max || 5000000;
         
         if (amount < minAmount) {
             return { 
@@ -81,14 +89,15 @@ export async function requestWithdrawal(uid, withdrawalData) {
             return { success: false, error: 'Insufficient balance in selected wallet' };
         }
         
-        // Calculate fee (if any)
-        const fee = limits.fee || 0;
-        const totalDeduct = amount + fee;
+        // Calculate fee dynamically on top of the requested amount
+        const fee = Math.floor(amount * ((limits.feePercent || 0) / 100));
+        const totalDeduct = amount + fee; 
+        const receiveAmount = amount; 
         
         if (totalDeduct > availableBalance) {
             return { 
                 success: false, 
-                error: `Insufficient balance (including fee of ${formatCurrency(fee, currency)}) in selected wallet` 
+                error: `Insufficient balance (including fee of ${formatCurrency(fee, currency)})` 
             };
         }
         
@@ -97,11 +106,13 @@ export async function requestWithdrawal(uid, withdrawalData) {
         // Create withdrawal request
         const withdrawRef = await addDoc(collection(db, 'withdrawals'), {
             uid: uid,
-            amount: amount,
-            fee: fee,
-            totalDeduct: totalDeduct,
+            amount: amount,                 // Gross requested
+            fee: fee,                       // Fee carved out
+            receiveAmount: receiveAmount,   // Net amount for admin to send
+            totalDeduct: totalDeduct,       // Same as amount in this system
             wallet: walletType,
             method: withdrawalData.method || 'mpesa',
+            accountName: withdrawalData.accountName || '',
             phone: withdrawalData.phone || withdrawalData.phoneNumber || '',
             note: withdrawalData.note || '',
             status: 'pending',

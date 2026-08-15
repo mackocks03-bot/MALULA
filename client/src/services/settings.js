@@ -32,7 +32,10 @@ const DEFAULT_SETTINGS = {
     // Native Withdrawal Limits & Fees
     minWithdrawals: { TZS: 10000, KES: 500, UGX: 15000, MWK: 10000, ZMW: 100, RWF: 5000, BIF: 10000, CDF: 10000 },
     maxWithdrawals: { TZS: 1250000, KES: 65000, UGX: 1850000, MWK: 1500000, ZMW: 15000, RWF: 600000, BIF: 1500000, CDF: 1500000 },
-    withdrawFees: { TZS: 1000, KES: 50, UGX: 1500, MWK: 1000, ZMW: 10, RWF: 500, BIF: 1000, CDF: 1000 },
+    withdrawFeePercent: 13,
+    
+    // Base limits in TZS for Task Wallets
+    taskMinWithdrawalsBase: { tiktok: 200000, chat: 300000, welcomeBonus: 50000, youtube: 100000, facebook: 100000, whatsapp: 100000, ads: 100000 },
     
     // Commission Structure
     commissionLevel1: 10,
@@ -130,8 +133,51 @@ export async function getWithdrawLimits(currency = 'TZS') {
     return {
         min: settings.minWithdrawals?.[currency] || DEFAULT_SETTINGS.minWithdrawals[currency] || 10000,
         max: settings.maxWithdrawals?.[currency] || DEFAULT_SETTINGS.maxWithdrawals[currency] || 1250000,
-        fee: settings.withdrawFees?.[currency] || DEFAULT_SETTINGS.withdrawFees[currency] || 1000
+        feePercent: settings.withdrawFeePercent !== undefined ? settings.withdrawFeePercent : DEFAULT_SETTINGS.withdrawFeePercent
     };
+}
+
+/**
+ * Get dynamic minimum withdrawal for specific task wallets
+ */
+export async function getTaskWithdrawLimits(walletType, currency = 'TZS') {
+    const settings = await getSettings();
+    
+    if (!walletType || walletType === 'balance') {
+        return settings.minWithdrawals?.[currency] || DEFAULT_SETTINGS.minWithdrawals[currency] || 10000;
+    }
+    
+    const key = walletType.replace('earnings.', '');
+    const baseTZS = settings.taskMinWithdrawalsBase?.[key] || DEFAULT_SETTINGS.taskMinWithdrawalsBase?.[key] || 100000;
+    
+    const ratesSnap = await getDoc(doc(db, 'settings', 'rates'));
+    let rate = 2500; // default for TZS
+    if (ratesSnap.exists()) {
+        const rates = ratesSnap.data();
+        if (rates[currency] && rates[currency] > 0) rate = rates[currency];
+        else if (currency === 'KES') rate = 130;
+        else if (currency === 'TZS') rate = 2500;
+        else if (currency === 'UGX') rate = 3700;
+        else if (currency === 'MWK') rate = 1750;
+        else if (currency === 'ZMW') rate = 27;
+        else if (currency === 'RWF') rate = 1350;
+        else if (currency === 'BIF') rate = 2900;
+        else if (currency === 'CDF') rate = 2800;
+        else if (currency === 'MZN') rate = 65;
+    } else {
+        if (currency === 'KES') rate = 130;
+        else if (currency === 'TZS') rate = 2500;
+        else if (currency === 'UGX') rate = 3700;
+        else if (currency === 'MWK') rate = 1750;
+        else if (currency === 'ZMW') rate = 27;
+        else if (currency === 'RWF') rate = 1350;
+        else if (currency === 'BIF') rate = 2900;
+        else if (currency === 'CDF') rate = 2800;
+        else if (currency === 'MZN') rate = 65;
+    }
+    
+    const targetMin = Math.round((baseTZS / 2500) * rate);
+    return targetMin;
 }
 
 /**
@@ -173,6 +219,7 @@ export default {
     getReferralBonuses,
     updateReferralBonuses,
     getWithdrawLimits,
+    getTaskWithdrawLimits,
     getCommissionStructure,
     getDailyMessage,
     updateDailyMessage,

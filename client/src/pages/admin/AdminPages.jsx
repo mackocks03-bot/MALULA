@@ -681,6 +681,14 @@ export function AdminPayments() {
 /* ═══════════════════════════════════════════════════════════
    WITHDRAWALS
 ═══════════════════════════════════════════════════════════ */
+
+const CopyIcon = () => (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+    </svg>
+);
+
 export function AdminWithdrawals() {
     const { showToast } = useToast();
     const [items, setItems] = useState([]);
@@ -706,24 +714,37 @@ export function AdminWithdrawals() {
 
     useEffect(() => { load(); }, [load]);
 
-    const filtered = items.filter(w => !q || w.uid?.toLowerCase().includes(q.toLowerCase()) || w.phone?.includes(q));
+    const filtered = items.filter(w => !q ||
+        w.uid?.toLowerCase().includes(q.toLowerCase()) ||
+        w.phone?.includes(q) ||
+        (w.accountName || '').toLowerCase().includes(q.toLowerCase()) ||
+        (w.referenceCode || '').toLowerCase().includes(q.toLowerCase()));
+
+    const copyToClipboard = (text) => {
+        navigator.clipboard.writeText(text).then(() => showToast('Copied!', 'success'));
+    };
 
     const openModal = (action, w) => {
         const u = usersMap[w.uid] || {};
         const currency = w.currency || u.currency || 'TZS';
         const nativeAmt = w.amount || 0;
+        const details = [
+            { label: 'Reference', value: w.referenceCode || w.id },
+            { label: 'Client ID', value: w.uid },
+            { label: 'Username', value: u.username || u.fullName || '—' },
+            { label: 'Account Name', value: w.accountName || '—' },
+            { label: 'Wallet', value: w.wallet || 'balance' },
+            { label: 'Amount', value: `${currency} ${Number(nativeAmt).toLocaleString()}` },
+            { label: 'Fee', value: w.fee ? `${currency} ${Number(w.fee).toLocaleString()}` : 'None' },
+            { label: 'Phone', value: w.phone || w.phoneNumber || w.address || '—' },
+            { label: 'Gateway', value: w.method || '—' },
+            { label: 'Date', value: w.createdAt ? new Date(w.createdAt).toLocaleString() : '—' },
+        ];
         setModal({
             action, id: w.id, uid: w.uid,
             title: action === 'approve' ? 'Authenticate Payout' : action === 'reject' ? 'Deny Payout' : 'Strike Record',
-            subtitle: `Disbursement requisition ${w.id}`,
-            details: [
-                { label: 'Client ID', value: w.uid },
-                { label: 'Username', value: u.username || u.fullName || '—' },
-                { label: 'Amount', value: `${currency} ${Number(nativeAmt).toLocaleString()}` },
-                { label: 'Fee', value: w.fee ? `${currency} ${Number(w.fee).toLocaleString()}` : 'None' },
-                { label: 'Destination', value: w.phone || w.phoneNumber || w.address || '—' },
-                { label: 'Gateway', value: w.method || '—' }
-            ],
+            subtitle: `Requisition ${w.referenceCode || w.id}`,
+            details,
             reason: 'Compliance Failure', setReason: (r) => setModal(m => ({...m, reason: r}))
         });
     };
@@ -754,32 +775,63 @@ export function AdminWithdrawals() {
             
             <div className="gov-table-container">
                 <table className="gov-table">
-                    <thead><tr><th>Recipient UID</th><th>Disbursement Val</th><th>Target Account / Routing</th><th>Gateway</th><th>Status</th><th>Audit Actions</th></tr></thead>
+                    <thead><tr>
+                        <th>Recipient</th>
+                        <th>Amount</th>
+                        <th>Account Details</th>
+                        <th>Wallet / Method</th>
+                        <th>Reference</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr></thead>
                     <tbody>
                         {filtered.map(w => {
                             const u = usersMap[w.uid] || {};
-                            const cCode = (u.countryCode || 'TZ').toLowerCase();
-                            const rate = u.exchangeRate || 2600;
-                            const currency = u.currency || 'TSh';
+                            const cCode = (u.country || 'tz').toLowerCase();
+                            const currency = w.currency || u.currency || 'TZS';
+                            const phone = w.phone || w.phoneNumber || w.address || '';
+                            const name = w.accountName || u.fullName || '—';
                             return (
                                 <tr key={w.id}>
                                     <td>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                             <img src={`https://flagcdn.com/w40/${cCode}.png`} alt={cCode} style={{ width: 24, height: 16, objectFit: 'cover', borderRadius: 2 }} />
-                                            <div style={{ fontFamily: 'monospace', fontSize: 12 }}>{w.uid.slice(0, 16)}...</div>
+                                            <div>
+                                                <div style={{ fontWeight: 700, fontSize: 13 }}>{u.username || u.fullName || '—'}</div>
+                                                <div style={{ fontFamily: 'monospace', fontSize: 10, color: '#999' }}>{w.uid?.slice(0, 12)}...</div>
+                                            </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <div style={{ fontWeight: 700, color: 'var(--gov-blue)' }}>
-                                            {w.currency || u.currency || 'TZS'} {Number(w.amount || 0).toLocaleString()}
+                                        <div style={{ fontWeight: 800, color: 'var(--gov-blue)', fontSize: 14 }}>
+                                            {currency} {Number(w.amount || 0).toLocaleString()} <span style={{fontSize: 10, fontWeight: 500, color: '#666'}}>(Requested)</span>
                                         </div>
-                                        {w.fee > 0 && <div style={{ fontSize: 11, color: '#999' }}>Fee: {Number(w.fee).toLocaleString()}</div>}
+                                        {w.fee > 0 && <div style={{ fontSize: 11, color: '#ca8a04' }}>+ Fee: {currency} {Number(w.fee).toLocaleString()}</div>}
+                                        <div style={{ fontSize: 12, fontWeight: 700, color: '#16a34a', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            Payout: {currency} {Number(w.receiveAmount ?? w.amount).toLocaleString()}
+                                            <button onClick={() => copyToClipboard(Number(w.receiveAmount ?? w.amount).toString())} title="Copy amount" style={{ border: 'none', background: 'rgba(22,163,74,0.1)', color: '#16a34a', borderRadius: 4, padding: '2px 6px', display: 'flex', alignItems: 'center', cursor: 'pointer' }}><CopyIcon /></button>
+                                        </div>
                                     </td>
                                     <td>
-                                        <div style={{ fontWeight: 600 }}>{w.phone || w.phoneNumber || w.address || 'MISSING'}</div>
-                                        <div className="gov-wd-label">Destination</div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                <span style={{ fontSize: 12, fontWeight: 600 }}>👤 {name}</span>
+                                                <button onClick={() => copyToClipboard(name)} title="Copy name" style={{ border: 'none', background: 'rgba(99,102,241,0.1)', color: '#6366f1', borderRadius: 4, padding: '2px 6px', display: 'flex', alignItems: 'center', cursor: 'pointer' }}><CopyIcon /></button>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>📞 {phone || 'N/A'}</span>
+                                                {phone && <button onClick={() => copyToClipboard(phone)} title="Copy phone" style={{ border: 'none', background: 'rgba(99,102,241,0.1)', color: '#6366f1', borderRadius: 4, padding: '2px 6px', display: 'flex', alignItems: 'center', cursor: 'pointer' }}><CopyIcon /></button>}
+                                            </div>
+                                        </div>
                                     </td>
-                                    <td><span className="gov-method-badge">{w.method || 'Unknown'}</span></td>
+                                    <td>
+                                        <div style={{ fontSize: 12, fontWeight: 700 }}>{w.wallet || 'Main Balance'}</div>
+                                        <span className="gov-method-badge">{w.method || 'Unknown'}</span>
+                                    </td>
+                                    <td>
+                                        <div style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--text-muted)' }}>{w.referenceCode || w.id?.slice(0,10)}</div>
+                                        <div style={{ fontSize: 10, color: '#bbb' }}>{w.createdAt ? new Date(w.createdAt).toLocaleDateString() : ''}</div>
+                                    </td>
                                     <td><StatusBadge status={w.status} /></td>
                                     <td>
                                         <div className="gov-action-group">
@@ -1305,9 +1357,10 @@ export function AdminSettings() {
     const [settings, setSettings] = useState({
         activationFees: { TZS: 14500, KES: 650, UGX: 18500 },
         minWithdrawals: { TZS: 10000, KES: 500, UGX: 15000 },
-        withdrawFees: { TZS: 1000, KES: 50, UGX: 1500 }
+        withdrawFeePercent: 13,
+        taskMinWithdrawalsBase: { tiktok: 200000, chat: 300000, welcomeBonus: 50000, youtube: 100000, facebook: 100000, whatsapp: 100000, ads: 100000 }
     });
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState({ fees: false, withdrawals: false, taskLimits: false });
 
     useEffect(() => {
         getDocs(collection(db, 'settings')).then(snap => {
@@ -1317,37 +1370,37 @@ export function AdminSettings() {
                 setSettings(s => ({
                     activationFees: { ...s.activationFees, ...(merged.activationFees || {}) },
                     minWithdrawals: { ...s.minWithdrawals, ...(merged.minWithdrawals || {}) },
-                    withdrawFees: { ...s.withdrawFees, ...(merged.withdrawFees || {}) }
+                    withdrawFeePercent: merged.withdrawFeePercent !== undefined ? merged.withdrawFeePercent : s.withdrawFeePercent,
+                    taskMinWithdrawalsBase: { ...s.taskMinWithdrawalsBase, ...(merged.taskMinWithdrawalsBase || {}) }
                 }));
             }
         });
     }, []);
 
-    const handleChange = (category, currency, val) => {
+    const handleChange = (category, key, val) => {
         setSettings(prev => ({
             ...prev,
-            [category]: {
-                ...prev[category],
-                [currency]: val
-            }
+            [category]: { ...prev[category], [key]: val }
         }));
     };
 
-    const handleSave = async () => {
-        setLoading(true);
+    const makeSaveHandler = (fields, key, label) => async () => {
+        setLoading(prev => ({ ...prev, [key]: true }));
         try {
             const { setDoc } = await import('../../services/firebase-config.js');
-            await setDoc(doc(db, 'settings', 'general'), {
-                activationFees: settings.activationFees,
-                minWithdrawals: settings.minWithdrawals,
-                withdrawFees: settings.withdrawFees
-            }, { merge: true });
-            showToast('Parameters synced to database natively.', 'success');
-        } catch(e) { showToast('Update override failed', 'error'); }
-        setLoading(false);
+            const payload = {};
+            fields.forEach(f => { payload[f] = settings[f]; });
+            await setDoc(doc(db, 'settings', 'general'), payload, { merge: true });
+            showToast(`${label} saved successfully.`, 'success');
+        } catch(e) { showToast('Failed to save. Try again.', 'error'); }
+        setLoading(prev => ({ ...prev, [key]: false }));
     };
 
     const Currencies = ['TZS', 'KES', 'UGX', 'MWK', 'ZMW', 'RWF', 'BIF', 'CDF'];
+    const TaskWallets = ['tiktok', 'chat', 'welcomeBonus', 'youtube', 'facebook', 'whatsapp', 'ads'];
+    const saveFees = makeSaveHandler(['activationFees'], 'fees', 'Activation Fees');
+    const saveWithdrawals = makeSaveHandler(['minWithdrawals', 'withdrawFeePercent'], 'withdrawals', 'Withdrawal Limits');
+    const saveTaskLimits = makeSaveHandler(['taskMinWithdrawalsBase'], 'taskLimits', 'Task Wallet Limits');
 
     return (
         <div>
@@ -1364,23 +1417,52 @@ export function AdminSettings() {
                             <input className="gov-input" type="number" value={settings.activationFees[c] ?? ''} onChange={e => handleChange('activationFees', c, parseFloat(e.target.value))} style={{margin:0, flex: 1}} />
                         </div>
                     ))}
+                    <button className="gov-btn gov-btn-primary" onClick={saveFees} disabled={loading.fees} style={{ marginTop: 16, width: '100%' }}>
+                        {loading.fees ? 'Saving...' : 'Save Activation Fees'}
+                    </button>
                 </div>
 
                 <div className="gov-panel" style={{ padding: 24 }}>
-                    <h3 style={{marginTop: 0, marginBottom: 20}}>Minimum Withdrawals</h3>
+                    <h3 style={{marginTop: 0, marginBottom: 20}}>Withdrawal Parameters</h3>
+                    
+                    <div style={{ marginBottom: 20, padding: 12, background: 'rgba(99,102,241,0.05)', borderRadius: 8, border: '1px solid rgba(99,102,241,0.2)' }}>
+                        <div style={{ fontWeight: 700, marginBottom: 6, color: 'var(--gov-blue)' }}>Universal Withdrawal Fee (%)</div>
+                        <input 
+                            className="gov-input" 
+                            type="number" 
+                            step="0.1" 
+                            value={settings.withdrawFeePercent ?? ''} 
+                            onChange={e => setSettings(prev => ({ ...prev, withdrawFeePercent: parseFloat(e.target.value) || 0 }))} 
+                            style={{ margin: 0, width: '100%' }} 
+                        />
+                    </div>
+                    
+                    <div style={{ fontWeight: 700, marginBottom: 12 }}>Minimum Withdrawal Amounts</div>
                     {Currencies.map(c => (
                         <div key={c} style={{display: 'flex', alignItems: 'center', marginBottom: 12}}>
                             <div style={{width: 60, fontWeight: 700}}>{c}</div>
                             <input className="gov-input" type="number" value={settings.minWithdrawals[c] ?? ''} onChange={e => handleChange('minWithdrawals', c, parseFloat(e.target.value))} style={{margin:0, flex: 1}} />
                         </div>
                     ))}
+                    <button className="gov-btn gov-btn-primary" onClick={saveWithdrawals} disabled={loading.withdrawals} style={{ marginTop: 16, width: '100%' }}>
+                        {loading.withdrawals ? 'Saving...' : 'Save Withdrawal Limits'}
+                    </button>
+                </div>
+
+                <div className="gov-panel" style={{ padding: 24 }}>
+                    <h3 style={{marginTop: 0, marginBottom: 20}}>Task Wallets Minimum (Base TZS)</h3>
+                    {['tiktok', 'chat', 'welcomeBonus', 'youtube', 'facebook', 'whatsapp', 'ads'].map(w => (
+                        <div key={w} style={{display: 'flex', alignItems: 'center', marginBottom: 12}}>
+                            <div style={{width: 100, fontWeight: 700, fontSize: 12, textTransform: 'capitalize'}}>{w === 'welcomeBonus' ? 'Welcome' : w.charAt(0).toUpperCase() + w.slice(1)}</div>
+                            <input className="gov-input" type="number" value={settings.taskMinWithdrawalsBase[w] ?? ''} onChange={e => handleChange('taskMinWithdrawalsBase', w, parseFloat(e.target.value))} style={{margin:0, flex: 1}} />
+                        </div>
+                    ))}
+                    <button className="gov-btn gov-btn-primary" onClick={saveTaskLimits} disabled={loading.taskLimits} style={{ marginTop: 16, width: '100%' }}>
+                        {loading.taskLimits ? 'Saving...' : 'Save Task Wallet Limits'}
+                    </button>
                 </div>
 
             </div>
-            
-            <button className="gov-btn gov-btn-primary" onClick={handleSave} disabled={loading} style={{ width: 300, display: 'block', marginBottom: 40 }}>
-                {loading ? 'Applying...' : 'Apply Native Parameters'}
-            </button>
         </div>
     );
 }
