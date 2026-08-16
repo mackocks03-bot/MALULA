@@ -70,6 +70,12 @@ export default function Tasks() {
     const taskKey = `task_${todayKey}_${new Date().toISOString().split('T')[0]}`;
     const scheduledId = `scheduled_${todayKey}`;
 
+    // Compute progress variables early — used by useEffects below
+    const completed = taskProgress.completed || 0;
+    const total = todayTask?.totalItems || 1;
+    const progress = Math.min((completed / total) * 100, 100);
+    const isDone = taskProgress.status === 'completed' || taskProgress.status === 'pending_verification' || completed >= total;
+
     useEffect(() => {
         getScheduledTaskSettings().then(r => {
             if (r.success && r.data) setAdminSettings(r.data);
@@ -84,11 +90,6 @@ export default function Tasks() {
         });
         return () => unsub();
     }, [user, taskKey]);
-
-    const completed = taskProgress.completed || 0;
-    const total = todayTask?.totalItems || 1;
-    const progress = Math.min((completed / total) * 100, 100);
-    const isDone = taskProgress.status === 'completed' || taskProgress.status === 'pending_verification' || completed >= total;
 
     useEffect(() => {
         if (!watching || isDone) return;
