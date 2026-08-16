@@ -160,8 +160,8 @@ export default function Terms() {
                         <h3 style={S.h3}>6.4 Withdrawal Processing Times</h3>
                         <p style={S.p}>Withdrawals are not processed instantaneously. Upon submitting a withdrawal request, it enters a pending state awaiting administrator review and approval. The standard processing timeline is:</p>
                         <ul style={S.ul}>
-                            <li style={S.li}<strong>Mobile Money (M-Pesa, Airtel, MTN, etc.):</strong> Processed within 24–72 hours of submission during business days</li>
-                            <li style={S.li><strong>Cryptocurrency (USDT, BTC):</strong> May take up to 5 business days due to compliance review</li>
+                            <li style={S.li}><strong>Mobile Money (M-Pesa, Airtel, MTN, etc.):</strong> Processed within 24–72 hours of submission during business days</li>
+                            <li style={S.li}><strong>Cryptocurrency (USDT, BTC):</strong> May take up to 5 business days due to compliance review</li>
                             <li style={S.li}><strong>Bank Transfer:</strong> Where available, up to 7 business days</li>
                         </ul>
                         <p style={S.p}>Delays may occur during peak usage periods, public holidays, or during system maintenance. NEWHOPE is not responsible for delays caused by third-party payment processors, mobile network operators, or banking institutions. Once a withdrawal is approved, NEWHOPE will transmit the payment to your registered mobile money account or wallet. Any subsequent delay is outside NEWHOPE's control.</p>

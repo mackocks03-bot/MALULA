@@ -195,7 +195,7 @@ export default function Register() {
                         <div className="form-group">
                             <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
                                 <input type="checkbox" checked={form.agreeTerms} onChange={e => update('agreeTerms', e.target.checked)} />
-                                {translate('auth.agreeTerms')}
+                                <span>I agree to the <Link to="/terms" style={{ color: 'var(--color-gold)', textDecoration: 'none' }}>Terms & Conditions</Link></span>
                             </label>
                         </div>
                         <button type="submit" className="btn-primary-auth" disabled={loading}>
