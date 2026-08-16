@@ -1653,3 +1653,95 @@ input:focus, textarea:focus, select:focus {
     transform: translate(-50%, -50%) scale(1.04);
     box-shadow: 0 6px 28px rgba(229, 184, 74, 0.25);
 }
+
+/* ============================================================
+   TRANSACTIONS UI OVERHAUL
+   ============================================================ */
+.transactions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.wallet-empty-state {
+    text-align: center;
+    padding: 40px 16px;
+    background: var(--bg-card);
+    border: 1px dashed var(--border-color);
+    border-radius: 16px;
+    color: var(--text-muted);
+}
+.wallet-empty-state svg {
+    margin-bottom: 16px;
+    color: var(--border-hover);
+}
+.wallet-empty-state p {
+    font-size: 14px;
+    margin: 0;
+    font-weight: 500;
+}
+
+.transaction-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+}
+
+.transaction-item:hover {
+    transform: translateY(-2px);
+    border-color: var(--border-hover);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+}
+
+.txn-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.txn-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.txn-title {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text-primary);
+    margin-bottom: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-transform: capitalize;
+}
+
+.txn-date {
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.2px;
+}
+
+.txn-amount {
+    font-weight: 700;
+    font-size: 16px;
+    font-family: 'Poppins', sans-serif;
+    white-space: nowrap;
+}
+
+.txn-amount.positive {
+    color: var(--color-green);
+}
+
+.txn-amount.negative {
+    color: var(--text-primary);
+}

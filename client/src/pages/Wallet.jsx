@@ -418,18 +418,58 @@ export default function Wallet() {
                     <div className="section-title" style={{ marginTop: 24 }}>{translate('wallet.transactions') || 'Transactions'}</div>
                     <div className="transactions-list">
                         {transactions.length === 0 ? (
-                            <p className="empty-state">{translate('wallet.noTransactions') || 'No transactions yet'}</p>
-                        ) : transactions.map(tx => (
-                            <div key={tx.id} className="transaction-item">
-                                <div className="left">
-                                    <div className="type">{tx.description || tx.type || 'Transaction'}</div>
-                                    <div className="date">{tx.createdAt ? new Date(tx.createdAt).toLocaleString() : ''}</div>
-                                </div>
-                                <div className={`amount ${(tx.amount || 0) >= 0 ? 'positive' : 'negative'}`}>
-                                    {formatCurrency(Math.abs(tx.amount || 0), currency)}
-                                </div>
+                            <div className="wallet-empty-state">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
+                                </svg>
+                                <p>{translate('wallet.noTransactions') || 'No transactions yet'}</p>
                             </div>
-                        ))}
+                        ) : transactions.map(tx => {
+                            const isCredit = (tx.amount || 0) >= 0;
+                            const type = (tx.type || '').toLowerCase();
+                            const isWithdraw = type.includes('withdraw');
+                            const isTask = type.includes('task') || type.includes('earn');
+                            const isDeposit = type.includes('deposit') || type.includes('shop');
+                            const isBonus = type.includes('bonus') || type.includes('referral') || type.includes('commission') || type.includes('spin');
+
+                            let iconBg, iconColor, IconSVG;
+                            if (isWithdraw) {
+                                iconBg = 'rgba(239,68,68,0.1)'; iconColor = '#EF4444';
+                                IconSVG = <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5m-7 7 7-7 7 7"/></svg>;
+                            } else if (isDeposit) {
+                                iconBg = 'rgba(16,185,129,0.1)'; iconColor = '#10B981';
+                                IconSVG = <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14m7-7-7 7-7-7"/></svg>;
+                            } else if (isTask) {
+                                iconBg = 'rgba(139,92,246,0.1)'; iconColor = '#8B5CF6';
+                                IconSVG = <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12l2 2 4-4"/><rect x="3" y="3" width="18" height="18" rx="3"/></svg>;
+                            } else if (isBonus) {
+                                iconBg = 'rgba(229,184,74,0.1)'; iconColor = 'var(--color-gold)';
+                                IconSVG = <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
+                            } else {
+                                iconBg = 'rgba(99,102,241,0.1)'; iconColor = '#6366F1';
+                                IconSVG = <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>;
+                            }
+
+                            const label = tx.description || tx.type?.replace(/_/g, ' ') || 'Transaction';
+                            const dateStr = tx.createdAt
+                                ? new Date(tx.createdAt).toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                                : '';
+
+                            return (
+                                <div key={tx.id} className="transaction-item">
+                                    <div className="txn-icon-wrapper" style={{ background: iconBg }}>
+                                        {IconSVG}
+                                    </div>
+                                    <div className="txn-details">
+                                        <div className="txn-title">{label}</div>
+                                        <div className="txn-date">{dateStr}</div>
+                                    </div>
+                                    <div className={`txn-amount ${isCredit ? 'positive' : 'negative'}`}>
+                                        {isCredit ? '+' : '-'}{formatCurrency(Math.abs(tx.amount || 0), currency)}
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             </div>
