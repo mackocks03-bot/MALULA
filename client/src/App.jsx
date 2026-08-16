@@ -48,7 +48,7 @@ export default function App() {
             <Route path="/chat" element={<ProtectedRoute requireActive><GlobalChat /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute requireActive><Profile /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute requireActive><Notifications /></ProtectedRoute>} />
-            <Route path="/terms" element={<ProtectedRoute requireActive><Terms /></ProtectedRoute>} />
+            <Route path="/terms" element={<Terms />} />
 
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminLayout />}>
