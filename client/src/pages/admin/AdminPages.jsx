@@ -1401,19 +1401,30 @@ export function AdminSettings() {
         withdrawFeePercent: 13,
         taskMinWithdrawalsBase: { tiktok: 200000, chat: 300000, welcomeBonus: 50000, youtube: 100000, facebook: 100000, whatsapp: 100000, ads: 100000 }
     });
-    const [loading, setLoading] = useState({ fees: false, withdrawals: false, taskLimits: false });
+    const [rates, setRates] = useState({ TZS: 2500, KES: 130, UGX: 3700, MWK: 1750, ZMW: 27, RWF: 1350, BIF: 2900, CDF: 2800, MZN: 65 });
+    const [commissions, setCommissions] = useState({ level1: 9000, level2: 3000, level3: 1000 });
+    const [loading, setLoading] = useState({ fees: false, withdrawals: false, taskLimits: false, rates: false, commissions: false });
 
     useEffect(() => {
         getDocs(collection(db, 'settings')).then(snap => {
             const merged = {};
-            snap.docs.forEach(d => Object.assign(merged, d.data()));
-            if (Object.keys(merged).length) {
+            snap.docs.forEach(d => Object.assign(merged, { [d.id]: d.data() }));
+            const general = merged.general || {};
+            const ratesDoc = merged.rates || {};
+
+            if (Object.keys(general).length) {
                 setSettings(s => ({
-                    activationFees: { ...s.activationFees, ...(merged.activationFees || {}) },
-                    minWithdrawals: { ...s.minWithdrawals, ...(merged.minWithdrawals || {}) },
-                    withdrawFeePercent: merged.withdrawFeePercent !== undefined ? merged.withdrawFeePercent : s.withdrawFeePercent,
-                    taskMinWithdrawalsBase: { ...s.taskMinWithdrawalsBase, ...(merged.taskMinWithdrawalsBase || {}) }
+                    activationFees: { ...s.activationFees, ...(general.activationFees || {}) },
+                    minWithdrawals: { ...s.minWithdrawals, ...(general.minWithdrawals || {}) },
+                    withdrawFeePercent: general.withdrawFeePercent !== undefined ? general.withdrawFeePercent : s.withdrawFeePercent,
+                    taskMinWithdrawalsBase: { ...s.taskMinWithdrawalsBase, ...(general.taskMinWithdrawalsBase || {}) }
                 }));
+                // Commissions stored as base multipliers, convert to TZS for display
+                const tzRate = ratesDoc.TZS || 2500;
+                if (general.referralLevel1) setCommissions({ level1: Math.round(general.referralLevel1 * tzRate), level2: Math.round((general.referralLevel2 || 1.2) * tzRate), level3: Math.round((general.referralLevel3 || 0.4) * tzRate) });
+            }
+            if (Object.keys(ratesDoc).length) {
+                setRates(r => ({ ...r, ...ratesDoc }));
             }
         });
     }, []);
@@ -1500,6 +1511,85 @@ export function AdminSettings() {
                     ))}
                     <button className="gov-btn gov-btn-primary" onClick={saveTaskLimits} disabled={loading.taskLimits} style={{ marginTop: 16, width: '100%' }}>
                         {loading.taskLimits ? 'Saving...' : 'Save Task Wallet Limits'}
+                    </button>
+                </div>
+
+                {/* ── Exchange Rates Panel ── */}
+                <div className="gov-panel" style={{ padding: 24 }}>
+                    <h3 style={{ marginTop: 0, marginBottom: 6 }}>Exchange Rates (per USD)</h3>
+                    <p style={{ fontSize: 12, color: 'var(--gov-text-muted)', marginBottom: 20 }}>
+                        These rates convert USD base amounts to local currency for commissions, task earnings, and withdrawals.
+                    </p>
+                    {Object.keys(rates).map(c => (
+                        <div key={c} style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+                            <div style={{ width: 60, fontWeight: 700 }}>{c}</div>
+                            <input
+                                className="gov-input"
+                                type="number"
+                                value={rates[c] ?? ''}
+                                onChange={e => setRates(prev => ({ ...prev, [c]: parseFloat(e.target.value) || 0 }))}
+                                style={{ margin: 0, flex: 1 }}
+                            />
+                        </div>
+                    ))}
+                    <button
+                        className="gov-btn gov-btn-primary"
+                        disabled={loading.rates}
+                        style={{ marginTop: 16, width: '100%' }}
+                        onClick={async () => {
+                            setLoading(prev => ({ ...prev, rates: true }));
+                            try {
+                                const { setDoc } = await import('../../services/firebase-config.js');
+                                await setDoc(doc(db, 'settings', 'rates'), rates, { merge: true });
+                                showToast('Exchange rates saved.', 'success');
+                            } catch { showToast('Failed to save rates.', 'error'); }
+                            setLoading(prev => ({ ...prev, rates: false }));
+                        }}
+                    >
+                        {loading.rates ? 'Saving...' : 'Save Exchange Rates'}
+                    </button>
+                </div>
+
+                {/* ── Referral Commissions Panel ── */}
+                <div className="gov-panel" style={{ padding: 24 }}>
+                    <h3 style={{ marginTop: 0, marginBottom: 6 }}>Referral Commissions (TZS)</h3>
+                    <p style={{ fontSize: 12, color: 'var(--gov-text-muted)', marginBottom: 20 }}>
+                        Enter amounts in TZS. They will be auto-converted to other currencies using the exchange rates above.
+                    </p>
+                    {[1, 2, 3].map(lvl => (
+                        <div key={lvl} style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+                            <div style={{ width: 80, fontWeight: 700 }}>Level {lvl}</div>
+                            <input
+                                className="gov-input"
+                                type="number"
+                                value={commissions[`level${lvl}`] ?? ''}
+                                onChange={e => setCommissions(prev => ({ ...prev, [`level${lvl}`]: parseFloat(e.target.value) || 0 }))}
+                                style={{ margin: 0, flex: 1 }}
+                                placeholder={lvl === 1 ? '9000' : lvl === 2 ? '3000' : '1000'}
+                            />
+                            <span style={{ marginLeft: 8, color: 'var(--gov-text-muted)', fontSize: 11 }}>TZS</span>
+                        </div>
+                    ))}
+                    <button
+                        className="gov-btn gov-btn-primary"
+                        disabled={loading.commissions}
+                        style={{ marginTop: 16, width: '100%' }}
+                        onClick={async () => {
+                            setLoading(prev => ({ ...prev, commissions: true }));
+                            try {
+                                const { setDoc } = await import('../../services/firebase-config.js');
+                                const tzRate = rates.TZS || 2500;
+                                await setDoc(doc(db, 'settings', 'general'), {
+                                    referralLevel1: commissions.level1 / tzRate,
+                                    referralLevel2: commissions.level2 / tzRate,
+                                    referralLevel3: commissions.level3 / tzRate,
+                                }, { merge: true });
+                                showToast('Referral commissions saved.', 'success');
+                            } catch { showToast('Failed to save commissions.', 'error'); }
+                            setLoading(prev => ({ ...prev, commissions: false }));
+                        }}
+                    >
+                        {loading.commissions ? 'Saving...' : 'Save Referral Commissions'}
                     </button>
                 </div>
 
