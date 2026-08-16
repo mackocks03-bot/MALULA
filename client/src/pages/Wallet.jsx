@@ -91,7 +91,9 @@ export default function Wallet() {
             }
         });
 
-        const unsub = listenToTransactions(user.uid, (data) => setTransactions(data));
+        const unsub = listenToTransactions(user.uid, (result) => {
+            if (result.success) setTransactions(result.data || []);
+        });
         return () => {
             if (typeof unsub === 'function') unsub();
             if (pollStopRef.current) pollStopRef.current();
