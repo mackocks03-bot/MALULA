@@ -145,10 +145,10 @@ export async function requestWithdrawal(uid, withdrawalData) {
         });
         
         // Add notification
-        const display = toLocalDisplay(amount, currency);
+        const formattedAmount = formatCurrency(amount, currency);
         await addNotification(uid, {
             type: 'withdraw',
-            message: `💳 Withdrawal of ${display.formatted} submitted. Processing...`,
+            message: `💳 Withdrawal of ${formattedAmount} submitted. Processing...`,
             reference: referenceCode
         });
         
