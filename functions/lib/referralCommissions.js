@@ -20,9 +20,9 @@ export async function loadBonusSettings(db) {
     const s = snap.exists ? snap.data() : {};
     return {
         welcomeBonus: parseFloat(s.welcomeBonus) || 4.0,
-        referralL1: parseFloat(s.referralLevel1) || 2.0,
-        referralL2: parseFloat(s.referralLevel2) || 1.0,
-        referralL3: parseFloat(s.referralLevel3) || 0.5
+        referralL1: parseFloat(s.referralLevel1) || 3.6, // 9000 TZS
+        referralL2: parseFloat(s.referralLevel2) || 1.2, // 3000 TZS
+        referralL3: parseFloat(s.referralLevel3) || 0.4  // 1000 TZS
     };
 }
 
