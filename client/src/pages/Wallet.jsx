@@ -233,6 +233,8 @@ export default function Wallet() {
         setDepositing(false);
     };
 
+    const globalLoading = depositing || palmpesaStatus === 'pushing' || palmpesaStatus === 'waiting';
+
     return (
         <DashboardLayout>
             {globalLoading && <CinematicLoader text={palmpesaStatus === 'waiting' ? (translate('wallet.palmpesaWaiting') || 'Waiting for payment...') : (translate('app.processing') || 'Processing...')} />}
