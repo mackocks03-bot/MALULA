@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TopBar from '../components/TopBar.jsx';
 import Logo from '../components/Logo.jsx';
+import CinematicLoader from '../components/CinematicLoader.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useToast } from '../contexts/ToastContext.jsx';
@@ -224,10 +225,16 @@ export default function Activation() {
         
     const selectedMethodData = methods.find(m => m.id === selectedMethod);
     const showPalmpesa = isTanzania && palmpesaEnabled;
+    const globalLoading = loading || palmpesaStatus === 'pushing' || palmpesaStatus === 'waiting' || (isTanzania && palmpesaEnabled === null);
 
     return (
         <>
             <TopBar />
+            {globalLoading && <CinematicLoader text={
+                (palmpesaStatus === 'waiting' || palmpesaStatus === 'pushing') ? palmpesaMessage : 
+                (isTanzania && palmpesaEnabled === null) ? 'Loading Payment Systems...' : 
+                translate('app.processing') || 'Processing...'
+            } />}
             <div className="auth-container">
                 <div className="auth-card" style={{ maxWidth: 520 }}>
                     <Logo />
@@ -260,7 +267,6 @@ export default function Activation() {
                                 Account Activated Successfull!
                             </div>
                             <div style={{ color: 'var(--text-secondary)', fontSize: 15, animation: 'fadeInUp 0.7s ease', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <span className="spinner" style={{ width: 14, height: 14, border: '2px solid rgba(16, 185, 129, 0.3)', borderTopColor: '#10B981', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
                                 Redirecting...
                             </div>
                         </div>
@@ -274,19 +280,6 @@ export default function Activation() {
 
                     {!isSuccess && (status === 'pending' || status === 'rejected') && (
                         <>
-                            {isTanzania && palmpesaEnabled === null && (
-                                <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                                    <span className="spinner" style={{
-                                        width: 32, height: 32, border: '3px solid rgba(229,184,74,0.2)',
-                                        borderTopColor: 'var(--color-gold)', borderRadius: '50%',
-                                        animation: 'spin 0.8s linear infinite', display: 'inline-block'
-                                    }} />
-                                    <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 12 }}>
-                                        Loading automatic payments...
-                                    </p>
-                                </div>
-                            )}
-
                             {isTanzania && palmpesaEnabled !== null && (
                                 <>
                                     {showPalmpesa ? (
@@ -343,22 +336,6 @@ export default function Activation() {
                                             </div>
                                         </div>
 
-                                        {(palmpesaStatus === 'waiting' || palmpesaStatus === 'pushing') && (
-                                            <div style={{
-                                                padding: 12, borderRadius: 10, marginBottom: 12,
-                                                background: 'var(--color-gold-soft)', border: '1px solid var(--border-hover)',
-                                                fontSize: 13, color: 'var(--text-secondary)',
-                                                display: 'flex', alignItems: 'center', gap: 10
-                                            }}>
-                                                <span className="spinner" style={{
-                                                    width: 18, height: 18, border: '2px solid rgba(229,184,74,0.2)',
-                                                    borderTopColor: 'var(--color-gold)', borderRadius: '50%',
-                                                    animation: 'spin 0.8s linear infinite', flexShrink: 0
-                                                }} />
-                                                {palmpesaMessage}
-                                            </div>
-                                        )}
-
                                         {palmpesaStatus === 'failed' && (
                                             <div style={{
                                                 padding: 12, borderRadius: 10, marginBottom: 12,
@@ -393,9 +370,7 @@ export default function Activation() {
                                             className="btn-primary-auth"
                                             disabled={loading || palmpesaStatus === 'waiting' || palmpesaStatus === 'pushing'}
                                         >
-                                            {loading || palmpesaStatus === 'waiting' || palmpesaStatus === 'pushing'
-                                                ? translate('app.processing')
-                                                : translate('activation.palmpesaPay') || 'Pay & Activate with PalmPesa'}
+                                            {translate('activation.palmpesaPay') || 'Pay & Activate with PalmPesa'}
                                         </button>
                                     </form>
                                 </>
@@ -450,7 +425,7 @@ export default function Activation() {
                                             <input className="form-control" value={transactionId} onChange={e => setTransactionId(e.target.value)} placeholder="Enter transaction ID" required />
                                         </div>
                                         <button type="submit" className="btn-primary-auth" disabled={loading}>
-                                            {loading ? translate('app.processing') : translate('activation.confirm') || 'Confirm Payment'}
+                                            {translate('activation.confirm') || 'Confirm Payment'}
                                         </button>
                                     </form>
                                     {status === 'pending' && (

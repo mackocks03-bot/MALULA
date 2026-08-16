@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import TopBar from '../components/TopBar.jsx';
 import Logo from '../components/Logo.jsx';
 import AppDownload from '../components/AppDownload.jsx';
+import CinematicLoader from '../components/CinematicLoader.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useToast } from '../contexts/ToastContext.jsx';
 import { COUNTRIES } from '../utils/helpers.js';
@@ -129,9 +130,10 @@ export default function Register() {
         <>
             <TopBar />
             <div className="auth-container">
-                <div className="auth-card" style={{ maxWidth: 520 }}>
+                <div className="auth-card animate-in fade-in slide-up">
+                    {loading && <CinematicLoader text="Creating account..." />}
                     <Logo />
-                    <h1 className="auth-title">{translate('auth.register')}</h1>
+                    <h1 className="auth-title">{translate('register.title') || translate('home.title')}</h1>
                     <p className="auth-subtitle">{translate('register.subtitle') || translate('home.subtitle')}</p>
                     {referralCode && (
                         <p className="auth-subtitle">
@@ -235,6 +237,7 @@ export function ForgotPassword() {
             <TopBar />
             <div className="auth-container">
                 <div className="auth-card">
+                    {loading && <CinematicLoader text="Validating..." />}
                     <Logo />
                     <h1 className="auth-title">{translate('auth.resetPassword')}</h1>
                     {sent ? (

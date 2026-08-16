@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import DashboardLayout from '../components/DashboardLayout.jsx';
+import CinematicLoader from '../components/CinematicLoader.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useToast } from '../contexts/ToastContext.jsx';
@@ -162,6 +163,7 @@ export default function Tasks() {
 
     return (
         <DashboardLayout>
+            {completing && <CinematicLoader text="Processing Reward..." />}
             <div className="dashboard-container">
                 <div className="dashboard-content">
                     <h2 className="page-title">{translate('tasks.title')}</h2>
@@ -237,7 +239,6 @@ export default function Tasks() {
                                                     </div>
                                                 )}
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 10, background: 'var(--color-gold-soft)', border: '1px solid var(--border-hover)', marginBottom: 8 }}>
-                                                    <span className="spinner" style={{ width: 14, height: 14, border: '2px solid rgba(212,175,55,0.2)', borderTopColor: 'var(--color-gold)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
                                                     <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                                                         {watchSeconds < 15
                                                             ? `Watching... ${15 - watchSeconds}s remaining`

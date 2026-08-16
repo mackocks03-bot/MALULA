@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import TopBar from '../components/TopBar.jsx';
 import Logo from '../components/Logo.jsx';
 import AppDownload from '../components/AppDownload.jsx';
+import CinematicLoader from '../components/CinematicLoader.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useToast } from '../contexts/ToastContext.jsx';
 import { loginUser, getUserData } from '../services/auth.js';
@@ -68,7 +69,8 @@ export default function Login() {
         <>
             <TopBar />
             <div className="auth-container">
-                <div className="auth-card">
+                <div className="auth-card animate-in fade-in slide-up">
+                    {loading && <CinematicLoader text={translate('login.loggingIn') || "Authenticating..."} />}
                     <Logo />
                     <h1 className="auth-title">{translate('login.title')} <span className="gold">Back</span></h1>
                     <p className="auth-subtitle">{translate('login.subtitle')}</p>
@@ -95,7 +97,6 @@ export default function Login() {
                             <Link to="/forgot-password">{translate('auth.forgotPassword')}</Link>
                         </div>
                         <button type="submit" className="btn-primary-auth" disabled={loading}>
-                            {loading && <span className="spinner" style={{ display: 'inline-block', width: 18, height: 18, border: '2px solid rgba(26,22,18,0.15)', borderTopColor: 'var(--color-on-gold)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />}
                             <span>{loading ? translate('login.loggingIn') : translate('login.button')}</span>
                         </button>
                     </form>

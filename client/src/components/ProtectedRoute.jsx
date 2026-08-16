@@ -1,18 +1,12 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import CinematicLoader from './CinematicLoader.jsx';
 
 export function ProtectedRoute({ children, requireActive = false, guestOnly = false }) {
     const { user, userData, loading, isActive } = useAuth();
 
     if (loading) {
-        return (
-            <div className="auth-container">
-                <div className="auth-card" style={{ textAlign: 'center' }}>
-                    <div className="spinner" style={{ margin: '20px auto', width: 40, height: 40, border: '3px solid var(--border-color)', borderTopColor: 'var(--color-gold)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                    <p>Loading...</p>
-                </div>
-            </div>
-        );
+        return <CinematicLoader text="Securing connection..." />;
     }
 
     if (guestOnly) {

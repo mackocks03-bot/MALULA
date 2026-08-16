@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import DashboardLayout from '../components/DashboardLayout.jsx';
+import CinematicLoader from '../components/CinematicLoader.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useToast } from '../contexts/ToastContext.jsx';
@@ -90,10 +91,11 @@ export default function Wallet() {
             }
         });
 
-        const unsub = listenToTransactions(user.uid, (result) => {
-            if (result.success) setTransactions(result.data || []);
-        });
-        return () => { if (typeof unsub === 'function') unsub(); };
+        const unsub = listenToTransactions(user.uid, (data) => setTransactions(data));
+        return () => {
+            if (typeof unsub === 'function') unsub();
+            if (pollStopRef.current) pollStopRef.current();
+        };
     }, [user]);
 
     useEffect(() => {
@@ -116,8 +118,6 @@ export default function Wallet() {
                 setPalmpesaConfigLoading(false);
             });
     }, [isTanzania]);
-
-    useEffect(() => pollStopRef.current?.(), []);
 
     const copyPaymentNumber = () => {
         navigator.clipboard.writeText(DEPOSIT_NUMBER).then(() => {
@@ -235,6 +235,7 @@ export default function Wallet() {
 
     return (
         <DashboardLayout>
+            {globalLoading && <CinematicLoader text={palmpesaStatus === 'waiting' ? (translate('wallet.palmpesaWaiting') || 'Waiting for payment...') : (translate('app.processing') || 'Processing...')} />}
             <div className="dashboard-container">
                 <div className="dashboard-content">
                     <h2 className="page-title">{translate('wallet.title')}</h2>
@@ -267,6 +268,14 @@ export default function Wallet() {
                             </div>
                         ) : (
                         <>
+                            {palmpesaStatus === 'waiting' ? (
+                                <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                                    <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                                        {translate('wallet.palmpesaPrompt') || 'Please check your phone and enter your PIN to confirm the payment.'}
+                                    </p>
+                                </div>
+                            ) : (
+                            <>
                             {/* Payment Method Toggle — Auto only for TZ */}
                             {isTanzania && palmpesaEnabled && (
                             <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
@@ -280,132 +289,107 @@ export default function Wallet() {
                                     }}>{l}</button>
                                 ))}
                             </div>
-                        )}
+                            )}
 
-                        {/* AUTOMATIC — PalmPesa (TZ only) */}
-                        {isTanzania && palmpesaEnabled && depositMethod === 'auto' ? (
-                            <>
-                                <div className="deposit-payment-info" style={{ marginBottom: 12 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                                        <span style={{ fontSize: 20 }}>📱</span>
-                                        <div>
-                                            <strong style={{ color: 'var(--color-gold)', fontSize: 13 }}>PalmPesa Automatic</strong>
-                                            <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
-                                                {translate('wallet.palmpesaHint') || 'M-Pesa, Airtel, Halopesa & more'}
+                            {/* AUTOMATIC — PalmPesa (TZ only) */}
+                            {isTanzania && palmpesaEnabled && depositMethod === 'auto' ? (
+                                <>
+                                    <div className="deposit-payment-info" style={{ marginBottom: 12 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                                            <span style={{ fontSize: 20 }}>📱</span>
+                                            <div>
+                                                <strong style={{ color: 'var(--color-gold)', fontSize: 13 }}>PalmPesa Automatic</strong>
+                                                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                                                    {translate('wallet.palmpesaHint') || 'M-Pesa, Airtel, Halopesa & more'}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <form onSubmit={submitPalmpesaDeposit}>
-                                    <div className="form-group">
-                                        <label className="form-label">{translate('wallet.amountSent') || 'Amount (TZS)'}</label>
-                                        <input
-                                            type="number"
-                                            min={MIN_PALMPESA_TZS}
-                                            step="1"
-                                            className="form-control"
-                                            placeholder={`Min TZS ${MIN_PALMPESA_TZS}`}
-                                            value={palmpesaAmount}
-                                            onChange={e => setPalmpesaAmount(e.target.value)}
-                                            disabled={palmpesaStatus === 'pushing' || palmpesaStatus === 'waiting'}
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label className="form-label">{translate('wallet.senderNumber') || 'Mobile Number'}</label>
-                                        <div className="phone-input-group">
-                                            <span className="country-code active">+255</span>
+                                    <form onSubmit={submitPalmpesaDeposit}>
+                                        <div className="form-group">
+                                            <label className="form-label">{translate('wallet.amountSent') || 'Amount (TZS)'}</label>
                                             <input
+                                                type="number"
+                                                min={MIN_PALMPESA_TZS}
+                                                step="1"
                                                 className="form-control"
-                                                placeholder="7XX XXX XXX"
-                                                value={palmpesaPhone}
-                                                onChange={e => setPalmpesaPhone(e.target.value)}
+                                                placeholder={`Min TZS ${MIN_PALMPESA_TZS}`}
+                                                value={palmpesaAmount}
+                                                onChange={e => setPalmpesaAmount(e.target.value)}
                                                 disabled={palmpesaStatus === 'pushing' || palmpesaStatus === 'waiting'}
                                             />
                                         </div>
-                                    </div>
-
-                                    {(palmpesaStatus === 'waiting' || palmpesaStatus === 'pushing') && (
-                                        <div style={{
-                                            padding: 12, borderRadius: 10, background: 'var(--color-gold-soft)',
-                                            border: '1px solid var(--border-hover)', marginBottom: 12,
-                                            fontSize: 11, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 10
-                                        }}>
-                                            <span className="spinner" style={{
-                                                width: 16, height: 16, border: '2px solid rgba(229,184,74,0.2)',
-                                                borderTopColor: 'var(--color-gold)', borderRadius: '50%',
-                                                animation: 'spin 0.8s linear infinite', flexShrink: 0
-                                            }} />
-                                            {palmpesaMessage}
+                                        <div className="form-group">
+                                            <label className="form-label">{translate('wallet.senderNumber') || 'Mobile Number'}</label>
+                                            <div className="phone-input-group">
+                                                <span className="country-code active">+255</span>
+                                                <input
+                                                    className="form-control"
+                                                    placeholder="7XX XXX XXX"
+                                                    value={palmpesaPhone}
+                                                    onChange={e => setPalmpesaPhone(e.target.value)}
+                                                    disabled={palmpesaStatus === 'pushing' || palmpesaStatus === 'waiting'}
+                                                />
+                                            </div>
                                         </div>
-                                    )}
 
-                                    {palmpesaStatus === 'success' && (
-                                        <div style={{ padding: 10, borderRadius: 10, marginBottom: 10, background: 'var(--color-green-bg)', color: 'var(--color-green)', fontSize: 11 }}>
-                                            ✓ {palmpesaMessage}
-                                        </div>
-                                    )}
-
-                                    {palmpesaStatus === 'failed' && (
-                                        <div style={{ padding: 10, borderRadius: 10, marginBottom: 10, background: 'var(--color-red-bg)', color: 'var(--color-red)', fontSize: 11 }}>
-                                            {palmpesaMessage}
-                                        </div>
-                                    )}
-
-                                    <button
-                                        type="submit"
-                                        className="btn btn-primary btn-block"
-                                        disabled={palmpesaStatus === 'pushing' || palmpesaStatus === 'waiting'}
-                                    >
-                                        {palmpesaStatus === 'pushing' || palmpesaStatus === 'waiting'
-                                            ? translate('app.processing')
-                                            : translate('wallet.palmpesaPay') || 'Pay with PalmPesa'}
-                                    </button>
-                                </form>
-                            </>
-                        ) : (
-                            /* MANUAL — USSD (all users + TZ who choose manual) */
-                            <>
-                                <div style={{
-                                    background: 'var(--color-bg, #f9f9f9)', borderRadius: 10, padding: '10px 14px',
-                                    marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-                                }}>
-                                    <div>
-                                        <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600 }}>Pay to number</div>
-                                        <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--color-gold, #d4af37)', letterSpacing: 1 }}>{DEPOSIT_NUMBER}</div>
-                                        <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Account: NEW HOPE</div>
-                                    </div>
-                                    <button onClick={copyPaymentNumber} style={{
-                                        padding: '8px 14px', borderRadius: 8, border: '1.5px solid',
-                                        borderColor: copied ? '#16a34a' : 'var(--color-border)',
-                                        background: copied ? 'rgba(34,197,94,0.1)' : 'transparent',
-                                        color: copied ? '#16a34a' : 'var(--text-muted)',
-                                        fontWeight: 700, fontSize: 11, cursor: 'pointer', display: 'flex',
-                                        alignItems: 'center', gap: 5, transition: 'all 0.2s'
+                                        <button
+                                            type="submit"
+                                            className="btn btn-primary btn-block"
+                                            disabled={palmpesaStatus === 'pushing' || palmpesaStatus === 'waiting'}
+                                        >
+                                            {palmpesaStatus === 'pushing' || palmpesaStatus === 'waiting'
+                                                ? translate('app.processing')
+                                                : translate('wallet.palmpesaPay') || 'Pay with PalmPesa'}
+                                        </button>
+                                    </form>
+                                </>
+                            ) : (
+                                /* MANUAL — USSD (all users + TZ who choose manual) */
+                                <>
+                                    <div style={{
+                                        background: 'var(--color-bg, #f9f9f9)', borderRadius: 10, padding: '10px 14px',
+                                        marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between'
                                     }}>
-                                        {copied ? (
-                                            <><svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Copied!</>
-                                        ) : (
-                                            <><svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Copy</>
-                                        )}
-                                    </button>
-                                </div>
-                                <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>
-                                    {translate('wallet.depositTo') || 'Send the amount via USSD, then submit the transaction details below for verification.'}
-                                </p>
-                                <form onSubmit={submitDeposit}>
-                                    <div className="form-group">
-                                        <input type="number" step="0.01" className="form-control" placeholder={`Amount (${currency})`} value={depositAmount} onChange={e => setDepositAmount(e.target.value)} />
+                                        <div>
+                                            <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600 }}>Pay to number</div>
+                                            <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--color-gold, #d4af37)', letterSpacing: 1 }}>{DEPOSIT_NUMBER}</div>
+                                            <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Account: NEW HOPE</div>
+                                        </div>
+                                        <button onClick={copyPaymentNumber} style={{
+                                            padding: '8px 14px', borderRadius: 8, border: '1.5px solid',
+                                            borderColor: copied ? '#16a34a' : 'var(--color-border)',
+                                            background: copied ? 'rgba(34,197,94,0.1)' : 'transparent',
+                                            color: copied ? '#16a34a' : 'var(--text-muted)',
+                                            fontWeight: 700, fontSize: 11, cursor: 'pointer', display: 'flex',
+                                            alignItems: 'center', gap: 5, transition: 'all 0.2s'
+                                        }}>
+                                            {copied ? (
+                                                <><svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Copied!</>
+                                            ) : (
+                                                <><svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Copy</>
+                                            )}
+                                        </button>
                                     </div>
-                                    <div className="form-group">
-                                        <input className="form-control" placeholder="Transaction ID" value={depositTxn} onChange={e => setDepositTxn(e.target.value)} />
-                                    </div>
-                                    <button type="submit" className="btn btn-primary btn-block" disabled={depositing}>
-                                        {depositing ? translate('app.processing') : translate('wallet.submitDeposit') || 'Submit Deposit'}
-                                    </button>
-                                </form>
+                                    <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>
+                                        {translate('wallet.depositTo') || 'Send the amount via USSD, then submit the transaction details below for verification.'}
+                                    </p>
+                                    <form onSubmit={submitDeposit}>
+                                        <div className="form-group">
+                                            <input type="number" step="0.01" className="form-control" placeholder={`Amount (${currency})`} value={depositAmount} onChange={e => setDepositAmount(e.target.value)} />
+                                        </div>
+                                        <div className="form-group">
+                                            <input className="form-control" placeholder="Transaction ID" value={depositTxn} onChange={e => setDepositTxn(e.target.value)} />
+                                        </div>
+                                        <button type="submit" className="btn btn-primary btn-block" disabled={depositing}>
+                                            {depositing ? translate('app.processing') : translate('wallet.submitDeposit') || 'Submit Deposit'}
+                                        </button>
+                                    </form>
+                                </>
+                            )}
                             </>
-                        )}
+                            )}
                         </>
                         )}
                     </div>
