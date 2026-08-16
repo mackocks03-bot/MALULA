@@ -58,6 +58,13 @@ export default function Wallet() {
     const [depositMethod, setDepositMethod] = useState('auto'); // 'auto' | 'manual'
     const [copied, setCopied] = useState(false);
 
+    // Compute base derived variables early for use in useState below
+    const country = userData?.country || initialData?.country || 'TZ';
+    const countryInfo = getCountry(country);
+    const currency = userData?.currency || initialData?.currency || countryInfo.currency || 'TZS';
+    const isTanzania = country === 'TZ';
+    const taskBalances = userData?.taskBalances || initialData?.taskBalances || {};
+
     const [palmpesaEnabled, setPalmpesaEnabled] = useState(false);
     const [palmpesaConfigLoading, setPalmpesaConfigLoading] = useState(isTanzania);
     const [palmpesaAmount, setPalmpesaAmount] = useState('');
@@ -65,12 +72,6 @@ export default function Wallet() {
     const [palmpesaStatus, setPalmpesaStatus] = useState('idle'); // idle | pushing | waiting | success | failed
     const [palmpesaMessage, setPalmpesaMessage] = useState('');
     const pollStopRef = useRef(null);
-
-    const country = userData?.country || 'TZ';
-    const countryInfo = getCountry(country);
-    const currency = userData?.currency || countryInfo.currency || 'TZS';
-    const isTanzania = country === 'TZ';
-    const taskBalances = userData?.taskBalances || {};
 
     useEffect(() => {
         if (!user) return;
