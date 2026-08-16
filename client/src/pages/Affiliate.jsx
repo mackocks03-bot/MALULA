@@ -5,7 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useToast } from '../contexts/ToastContext.jsx';
 import { formatCurrency } from '../utils/helpers.js';
 import { getReferralTree } from '../services/referrals.js';
-import { db, doc, onSnapshot } from '../services/firebase-config.js';
+import { db, doc, onSnapshot, getDoc } from '../services/firebase-config.js';
 import dataStore from '../utils/dataStore.js';
 
 const TABS = [
@@ -29,7 +29,7 @@ export default function Affiliate() {
     const { showToast } = useToast();
     const [userData, setUserData] = useState(initialData);
     const [tree, setTree] = useState({ level1: [], level2: [], level3: [] });
-    const [bonuses, setBonuses] = useState({ level1: 2, level2: 1, level3: 0.5 });
+    const [bonuses, setBonuses] = useState({ level1: 0, level2: 0, level3: 0 });
     const [activeTab, setActiveTab] = useState('all');
     const [loading, setLoading] = useState(true);
 
@@ -58,14 +58,36 @@ export default function Affiliate() {
     }, [user]);
 
     useEffect(() => {
-        dataStore.getReferralSettings().then(s => {
-            if (s) setBonuses({
-                level1: s.level1 || s.level1Bonus || 2,
-                level2: s.level2 || s.level2Bonus || 1,
-                level3: s.level3 || s.level3Bonus || 0.5
-            });
-        });
-    }, []);
+        const fetchCommissions = async () => {
+            try {
+                // Read raw base multipliers from settings/general
+                const generalSnap = await getDoc(doc(db, 'settings', 'general'));
+                const general = generalSnap.exists() ? generalSnap.data() : {};
+                const l1Base = parseFloat(general.referralLevel1) || 3.6;
+                const l2Base = parseFloat(general.referralLevel2) || 1.2;
+                const l3Base = parseFloat(general.referralLevel3) || 0.4;
+
+                // Fetch the exchange rate for the user's currency
+                const userCurrency = userData?.currency || 'TZS';
+                let rate = 2500;
+                const ratesSnap = await getDoc(doc(db, 'settings', 'rates'));
+                if (ratesSnap.exists()) {
+                    const rates = ratesSnap.data();
+                    if (rates[userCurrency] && rates[userCurrency] > 0) rate = rates[userCurrency];
+                }
+
+                // Convert to native amounts
+                setBonuses({
+                    level1: Math.round(l1Base * rate),
+                    level2: Math.round(l2Base * rate),
+                    level3: Math.round(l3Base * rate)
+                });
+            } catch (e) {
+                console.error('Failed to load commission rates:', e);
+            }
+        };
+        fetchCommissions();
+    }, [userData?.currency]);
 
     const allReferrals = [
         ...tree.level1.map(r => ({ ...r, _level: 1 })),
