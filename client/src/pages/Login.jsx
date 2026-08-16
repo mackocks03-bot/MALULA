@@ -19,22 +19,17 @@ export default function Login() {
     const [error, setError] = useState('');
 
     const findUserByUsername = async (name) => {
+        // If the user typed an email address, just return it directly so they can log in via email!
+        if (name.includes('@')) {
+            return { uid: null, email: name.toLowerCase(), username: name, country: 'TZ' };
+        }
+
         const snap = await getDoc(doc(db, 'loginIndex', name));
         if (snap.exists()) {
             const data = snap.data();
             return { uid: data.uid, email: data.email, username: data.username || name, country: data.country || 'TZ' };
         }
-        const usersSnap = await getDocs(collection(db, 'users'));
-        if (!usersSnap.empty) {
-            const lower = name.toLowerCase();
-            for (const docSnap of usersSnap.docs) {
-                const data = docSnap.data();
-                if ((data.username || '').toLowerCase() === lower) {
-                    await setDoc(doc(db, 'loginIndex', data.username), { uid: docSnap.id, email: data.email || '', username: data.username, country: data.country || 'TZ' });
-                    return { uid: docSnap.id, email: data.email || '', username: data.username, country: data.country || 'TZ' };
-                }
-            }
-        }
+        
         return null;
     };
 
@@ -47,16 +42,24 @@ export default function Login() {
         setLoading(true);
         try {
             const lookup = await findUserByUsername(username.trim());
-            if (!lookup) { setError(translate('login.usernameNotFound')); setLoading(false); return; }
+            if (!lookup) { 
+                setError(translate('login.usernameNotFound') || 'Username not found.'); 
+                setLoading(false); 
+                return; 
+            }
 
             const result = await loginUser(lookup.email, password);
-            if (!result.success) { setError(translate('login.invalidCredentials')); setLoading(false); return; }
+            if (!result.success) { 
+                setError(result.error || translate('login.invalidCredentials') || 'Incorrect password.'); 
+                setLoading(false); 
+                return; 
+            }
 
             const userData = await getUserData(result.user.uid);
             const isActive = userData?.isActive === true || userData?.activationStatus === 'approved';
             navigate(isActive ? '/dashboard' : '/activation');
         } catch (err) {
-            setError(translate('login.error'));
+            setError(err.message || translate('login.error') || 'An unexpected error occurred. Please try again.');
         }
         setLoading(false);
     };

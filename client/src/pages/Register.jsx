@@ -74,6 +74,13 @@ export default function Register() {
         if (form.password !== form.confirmPassword) { showToast(translate('auth.passwordsDontMatch'), 'error'); return; }
         if (form.password.length < 8) { showToast(translate('login.passwordMinLength') || 'Password min 8 chars', 'error'); return; }
 
+        // Enforce username to be a mixture of letters and numbers, with NO spaces
+        const usernameRegex = /^(?=.*[a-zA-Z])(?=.*[0-9])[a-zA-Z0-9]+$/;
+        if (!usernameRegex.test(form.username)) {
+            showToast(translate('register.invalidUsername') || 'Username must be a single word containing both letters and numbers (no spaces).', 'error');
+            return;
+        }
+
         let cleanPhone = form.phone.replace(/\D/g, '');
         if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1);
         if (cleanPhone.length !== selectedCountry.digits) {
@@ -140,7 +147,13 @@ export default function Register() {
                         </div>
                         <div className="form-group">
                             <label className="form-label">{translate('auth.username')}</label>
-                            <input className="form-control" value={form.username} onChange={e => update('username', e.target.value)} required />
+                            <input 
+                                className="form-control" 
+                                value={form.username} 
+                                onChange={e => update('username', e.target.value.replace(/\s+/g, ''))} 
+                                placeholder="e.g. john123"
+                                required 
+                            />
                         </div>
                         <div className="form-group">
                             <label className="form-label">{translate('auth.email')}</label>
@@ -155,9 +168,15 @@ export default function Register() {
                             <div className="phone-input-group">
                                 <span className="country-code active">{selectedCountry.phoneCode}</span>
                                 <input 
-                                    className="form-control" 
+                                    className="form-control"
+                                    type="tel"
                                     value={form.phone} 
-                                    onChange={e => update('phone', e.target.value.replace(/\D/g, ''))} 
+                                    onChange={e => {
+                                        let digits = e.target.value.replace(/\D/g, '');
+                                        // Max length allows for a leading zero if typed
+                                        let maxLen = digits.startsWith('0') ? selectedCountry.digits + 1 : selectedCountry.digits;
+                                        update('phone', digits.slice(0, maxLen));
+                                    }} 
                                     placeholder={selectedCountry.digits === 9 ? "7XX XXX XXX" : ""}
                                     required 
                                 />

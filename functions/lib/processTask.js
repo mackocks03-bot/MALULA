@@ -28,6 +28,21 @@ export async function runTaskProcessing(db, userTaskId, claim) {
     
     if (!uid || !taskId) return;
 
+    // Reject immediately if the timestamp doesn't match the current server timezone (Dar es Salaam / EAT / UTC+3)
+    const nowMs = Date.now();
+    const serverDate = new Date(nowMs + (3 * 3600000));
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const serverDay = dayNames[serverDate.getUTCDay()];
+
+    if (!taskId.includes(serverDay)) {
+        await db.collection('userTasks').doc(userTaskId).update({
+            taskProcessed: true,
+            status: 'rejected',
+            rejectReason: 'Timezone manipulation blocked. Submitted task does not match server day.'
+        });
+        return;
+    }
+
     const claimRef = db.collection('userTasks').doc(userTaskId);
     const userRef = db.collection('users').doc(uid);
 
@@ -47,7 +62,7 @@ export async function runTaskProcessing(db, userTaskId, claim) {
         }
 
         const user = userSnap.data();
-        const currency = user.currency || 'TZS';
+        const currency = claim.rewardCurrency || user.currency || 'TZS';
 
         if (!user.isActive || user.activationStatus !== 'approved') {
             await claimRef.update({ taskProcessed: true, status: 'rejected', rejectReason: 'Account not active' });
@@ -75,12 +90,17 @@ export async function runTaskProcessing(db, userTaskId, claim) {
         const categoryEarnings = parseFloat(earnings[category]) || 0;
         earnings[category] = categoryEarnings + reward;
         
+        const taskBalances = user.taskBalances || {};
+        const categoryTaskBal = parseFloat(taskBalances[category]) || 0;
+        taskBalances[category] = categoryTaskBal + reward;
+
         const txRef = db.collection('transactions').doc();
 
         batch.update(userRef, {
             balance: newBalance,
             totalProfit: currentProfit + reward,
-            earnings: earnings
+            earnings: earnings,
+            taskBalances: taskBalances
         });
 
         batch.set(txRef, {

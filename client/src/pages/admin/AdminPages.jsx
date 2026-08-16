@@ -1132,25 +1132,27 @@ export function AdminReferrals() {
    TASKS ADMIN
 ═══════════════════════════════════════════════════════════ */
 const TASK_CATEGORY_OPTIONS = [
-    { value: 'youtube',  label: '📺 YouTube Watch & Earn',    key: 'youtube' },
-    { value: 'facebook', label: '📘 Facebook Watch & Earn',   key: 'facebook' },
-    { value: 'whatsapp', label: '💬 WhatsApp Status Task',    key: 'whatsapp' },
-    { value: 'ads',      label: '📢 Ad Posting Task',         key: 'ads' },
-    { value: 'tiktok',   label: '🎵 TikTok Watch & Earn',     key: 'tiktok' },
-    { value: 'chat',     label: '💭 Chat & Earn',             key: 'chat' },
-    { value: 'challenge',label: '🏆 Weekly Challenge',         key: 'challenge' },
+    { value: 'youtube',   label: 'YouTube Watch & Earn' },
+    { value: 'facebook',  label: 'Facebook Watch & Earn' },
+    { value: 'whatsapp',  label: 'WhatsApp Status Task' },
+    { value: 'ads',       label: 'Ad Posting Task' },
+    { value: 'tiktok',    label: 'TikTok Watch & Earn' },
+    { value: 'chat',      label: 'Chat & Earn' },
+    { value: 'challenge', label: 'Weekly Challenge' },
 ];
+
+const TASK_CURRENCIES = ['TZS', 'KES', 'UGX', 'MWK', 'ZMW', 'RWF', 'BIF', 'CDF'];
 
 const WEEK_DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
 const DEFAULT_SCHEDULE = {
-    monday:    { category: 'youtube',   title: 'YouTube Watch & Earn',   rewardPerItem: 0.08, totalItems: 10, active: true, description: 'Watch 10 YouTube videos.' },
-    tuesday:   { category: 'facebook',  title: 'Facebook Watch & Earn',  rewardPerItem: 0.08, totalItems: 10, active: true, description: 'Watch 10 Facebook videos.' },
-    wednesday: { category: 'whatsapp',  title: 'WhatsApp Status Task',   rewardPerItem: 0.16, totalItems: 5,  active: true, description: 'Post 5 WhatsApp statuses.' },
-    thursday:  { category: 'ads',       title: 'Ad Posting Task',        rewardPerItem: 0.08, totalItems: 10, active: true, description: 'Post 10 ads.' },
-    friday:    { category: 'tiktok',    title: 'TikTok Watch & Earn',    rewardPerItem: 0.08, totalItems: 10, active: true, description: 'Watch 10 TikTok videos.' },
-    saturday:  { category: 'chat',      title: 'Chat & Earn',            rewardPerItem: 0.08, totalItems: 10, active: true, description: 'Send 10 chat messages.' },
-    sunday:    { category: 'challenge', title: 'Weekly Challenge',        rewardPerItem: 0,    totalItems: 1,  active: true, description: 'Complete the weekly challenge.' },
+    monday:    { category: 'youtube',   title: 'YouTube Watch & Earn',   totalItems: 10, active: true, description: 'Watch 10 YouTube videos.',   videoUrl: '', countryRewards: { TZS: 1000, KES: 50, UGX: 3000, MWK: 800, ZMW: 10, RWF: 500, BIF: 1000, CDF: 1000 } },
+    tuesday:   { category: 'facebook',  title: 'Facebook Watch & Earn',  totalItems: 10, active: true, description: 'Watch 10 Facebook videos.',  videoUrl: '', countryRewards: { TZS: 1000, KES: 50, UGX: 3000, MWK: 800, ZMW: 10, RWF: 500, BIF: 1000, CDF: 1000 } },
+    wednesday: { category: 'whatsapp',  title: 'WhatsApp Status Task',   totalItems: 5,  active: true, description: 'Post 5 WhatsApp statuses.', videoUrl: '', countryRewards: { TZS: 2000, KES: 100, UGX: 6000, MWK: 1600, ZMW: 20, RWF: 1000, BIF: 2000, CDF: 2000 } },
+    thursday:  { category: 'ads',       title: 'Ad Posting Task',        totalItems: 10, active: true, description: 'Post 10 ads.',              videoUrl: '', countryRewards: { TZS: 1000, KES: 50, UGX: 3000, MWK: 800, ZMW: 10, RWF: 500, BIF: 1000, CDF: 1000 } },
+    friday:    { category: 'tiktok',    title: 'TikTok Watch & Earn',    totalItems: 10, active: true, description: 'Watch 10 TikTok videos.',   videoUrl: '', countryRewards: { TZS: 1000, KES: 50, UGX: 3000, MWK: 800, ZMW: 10, RWF: 500, BIF: 1000, CDF: 1000 } },
+    saturday:  { category: 'chat',      title: 'Chat & Earn',            totalItems: 10, active: true, description: 'Send 10 chat messages.',    videoUrl: '', countryRewards: { TZS: 1000, KES: 50, UGX: 3000, MWK: 800, ZMW: 10, RWF: 500, BIF: 1000, CDF: 1000 } },
+    sunday:    { category: 'challenge', title: 'Weekly Challenge',        totalItems: 1,  active: true, description: 'Complete weekly challenge.',videoUrl: '', countryRewards: { TZS: 5000, KES: 250, UGX: 15000, MWK: 4000, ZMW: 50, RWF: 2500, BIF: 5000, CDF: 5000 } },
 };
 
 export function AdminTasks() {
@@ -1167,7 +1169,11 @@ export function AdminTasks() {
                     setSchedule(prev => {
                         const merged = { ...prev };
                         for (const day of WEEK_DAYS) {
-                            if (r.data[day]) merged[day] = { ...prev[day], ...r.data[day] };
+                            if (r.data[day]) merged[day] = {
+                                ...prev[day],
+                                ...r.data[day],
+                                countryRewards: { ...(prev[day]?.countryRewards || {}), ...(r.data[day]?.countryRewards || {}) }
+                            };
                         }
                         return merged;
                     });
@@ -1198,6 +1204,16 @@ export function AdminTasks() {
         setSchedule(prev => ({ ...prev, [day]: { ...prev[day], [field]: value } }));
     };
 
+    const updateCountryReward = (day, currency, value) => {
+        setSchedule(prev => ({
+            ...prev,
+            [day]: {
+                ...prev[day],
+                countryRewards: { ...(prev[day]?.countryRewards || {}), [currency]: parseFloat(value) || 0 }
+            }
+        }));
+    };
+
     const dayLabel = (day) => day.charAt(0).toUpperCase() + day.slice(1);
 
     if (loading) return <div style={{ padding: 32, color: '#888' }}>Loading task schedule...</div>;
@@ -1205,13 +1221,13 @@ export function AdminTasks() {
     return (
         <div>
             <h1 className="gov-title">Task Schedule Manager</h1>
-            <p className="gov-subtitle">Configure which task runs on each day of the week. Changes are reflected immediately to all users.</p>
+            <p className="gov-subtitle">Configure per-country earnings and video URLs for each daily task. Changes apply immediately to all users.</p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {WEEK_DAYS.map(day => {
                     const cfg = schedule[day] || {};
                     const catOption = TASK_CATEGORY_OPTIONS.find(o => o.value === cfg.category);
-                    const totalReward = ((cfg.rewardPerItem || 0) * (cfg.totalItems || 1)).toFixed(2);
+                    const tzReward = cfg.countryRewards?.TZS || 0;
                     const isEditing = editing === day;
 
                     return (
@@ -1221,11 +1237,12 @@ export function AdminTasks() {
                                     <div style={{ minWidth: 100, fontWeight: 700, fontSize: 15, color: 'var(--gov-blue)' }}>{dayLabel(day)}</div>
                                     <div style={{ flex: 1 }}>
                                         <div style={{ fontWeight: 600 }}>{catOption?.label || cfg.category}</div>
-                                        <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{cfg.description || cfg.title}</div>
+                                        <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{cfg.description}</div>
+                                        {cfg.videoUrl && <div style={{ fontSize: 11, color: 'var(--gov-blue)', marginTop: 4 }}>🎬 Video: {cfg.videoUrl.slice(0, 50)}...</div>}
                                     </div>
-                                    <div style={{ textAlign: 'right', minWidth: 120 }}>
-                                        <div style={{ fontWeight: 700, color: '#2E7D32' }}>${totalReward} total</div>
-                                        <div style={{ fontSize: 11, color: '#aaa' }}>${cfg.rewardPerItem} × {cfg.totalItems} items</div>
+                                    <div style={{ textAlign: 'right', minWidth: 140 }}>
+                                        <div style={{ fontWeight: 700, color: '#2E7D32', fontSize: 14 }}>TZS {tzReward.toLocaleString()}</div>
+                                        <div style={{ fontSize: 11, color: '#aaa' }}>{cfg.totalItems} items · {Object.keys(cfg.countryRewards || {}).length} countries</div>
                                     </div>
                                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                                         <span style={{ padding: '2px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, background: cfg.active !== false ? '#e8f5e9' : '#fafafa', color: cfg.active !== false ? '#2E7D32' : '#aaa', border: `1px solid ${cfg.active !== false ? '#c8e6c9' : '#eee'}` }}>
@@ -1237,13 +1254,15 @@ export function AdminTasks() {
                             ) : (
                                 <div>
                                     <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--gov-blue)', marginBottom: 16 }}>Editing: {dayLabel(day)}</div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                                    
+                                    {/* Basic Settings */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
                                         <div>
                                             <label style={{ fontSize: 12, color: '#888', display: 'block', marginBottom: 4 }}>Task Category</label>
                                             <select className="gov-input" value={cfg.category || ''} onChange={e => {
                                                 const opt = TASK_CATEGORY_OPTIONS.find(o => o.value === e.target.value);
                                                 updateDayField(day, 'category', e.target.value);
-                                                if (opt && !cfg.title) updateDayField(day, 'title', opt.label);
+                                                if (opt) updateDayField(day, 'title', opt.label);
                                             }}>
                                                 {TASK_CATEGORY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                                             </select>
@@ -1253,19 +1272,41 @@ export function AdminTasks() {
                                             <input className="gov-input" value={cfg.title || ''} onChange={e => updateDayField(day, 'title', e.target.value)} placeholder="Task title shown to users" />
                                         </div>
                                         <div>
-                                            <label style={{ fontSize: 12, color: '#888', display: 'block', marginBottom: 4 }}>Reward per item (USD)</label>
-                                            <input className="gov-input" type="number" step="0.01" value={cfg.rewardPerItem || 0} onChange={e => updateDayField(day, 'rewardPerItem', parseFloat(e.target.value) || 0)} />
+                                            <label style={{ fontSize: 12, color: '#888', display: 'block', marginBottom: 4 }}>Total Items (Videos/Tasks Count)</label>
+                                            <input className="gov-input" type="number" step="1" value={cfg.totalItems || 1} onChange={e => updateDayField(day, 'totalItems', parseInt(e.target.value) || 1)} />
                                         </div>
                                         <div>
-                                            <label style={{ fontSize: 12, color: '#888', display: 'block', marginBottom: 4 }}>Total Items</label>
-                                            <input className="gov-input" type="number" step="1" value={cfg.totalItems || 1} onChange={e => updateDayField(day, 'totalItems', parseInt(e.target.value) || 1)} />
+                                            <label style={{ fontSize: 12, color: '#888', display: 'block', marginBottom: 4 }}>Video URL (for YouTube/Facebook/TikTok)</label>
+                                            <input className="gov-input" value={cfg.videoUrl || ''} onChange={e => updateDayField(day, 'videoUrl', e.target.value)} placeholder="https://youtube.com/watch?v=..." />
                                         </div>
                                         <div style={{ gridColumn: '1 / -1' }}>
                                             <label style={{ fontSize: 12, color: '#888', display: 'block', marginBottom: 4 }}>Description</label>
                                             <input className="gov-input" value={cfg.description || ''} onChange={e => updateDayField(day, 'description', e.target.value)} placeholder="Description shown to users" />
                                         </div>
                                     </div>
-                                    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+
+                                    {/* Per-Country Earnings */}
+                                    <div style={{ marginBottom: 16 }}>
+                                        <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10, color: '#444', textTransform: 'uppercase', letterSpacing: 0.5 }}>Earnings Per Country (Total Task Reward)</div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10 }}>
+                                            {TASK_CURRENCIES.map(curr => (
+                                                <div key={curr} style={{ background: '#f8f9fa', borderRadius: 8, padding: '10px 12px', border: '1.5px solid #e0e0e0' }}>
+                                                    <label style={{ fontSize: 11, color: '#888', fontWeight: 700, display: 'block', marginBottom: 4 }}>{curr}</label>
+                                                    <input
+                                                        className="gov-input"
+                                                        type="number"
+                                                        step="1"
+                                                        style={{ margin: 0, padding: '6px 8px', fontWeight: 700, fontSize: 15 }}
+                                                        value={cfg.countryRewards?.[curr] ?? ''}
+                                                        onChange={e => updateCountryReward(day, curr, e.target.value)}
+                                                        placeholder="0"
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                                         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
                                             <input type="checkbox" checked={cfg.active !== false} onChange={e => updateDayField(day, 'active', e.target.checked)} />
                                             Task Active
@@ -1275,7 +1316,7 @@ export function AdminTasks() {
                                         </button>
                                         <button className="gov-btn gov-btn-outline" onClick={() => setEditing(null)}>Cancel</button>
                                         <span style={{ marginLeft: 'auto', fontSize: 12, color: '#2E7D32' }}>
-                                            Total reward: <b>${((cfg.rewardPerItem || 0) * (cfg.totalItems || 1)).toFixed(2)}</b>
+                                            TZS earnings: <b>{(cfg.countryRewards?.TZS || 0).toLocaleString()}</b>
                                         </span>
                                     </div>
                                 </div>

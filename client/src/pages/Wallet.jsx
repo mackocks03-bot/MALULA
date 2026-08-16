@@ -3,7 +3,7 @@ import DashboardLayout from '../components/DashboardLayout.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useToast } from '../contexts/ToastContext.jsx';
-import { formatCurrency, getCountry } from '../utils/helpers.js';
+import { formatCurrency, getCountry, CURRENCY_SYMBOLS } from '../utils/helpers.js';
 import { listenToTransactions } from '../services/database.js';
 import { db, doc, collection, onSnapshot, addDoc, updateDoc } from '../services/firebase-config.js';
 import {
@@ -13,13 +13,33 @@ import {
 } from '../services/deposits.js';
 import { getWithdrawalStats } from '../services/withdraw.js';
 
+// SVG task category icons for wallet task balance cards
+const TaskCatIcon = ({ cat, size = 16 }) => {
+    const paths = {
+        youtube:   'M22.54 6.42a2.78 2.78 0 00-1.95-1.97C18.88 4 12 4 12 4s-6.88 0-8.59.45A2.78 2.78 0 001.46 6.42 29 29 0 001 12a29 29 0 00.46 5.58A2.78 2.78 0 003.41 19c1.71.45 8.59.45 8.59.45s6.88 0 8.59-.45a2.78 2.78 0 001.95-1.97A29 29 0 0023 12a29 29 0 00-.46-5.58zM9.75 15.02V8.98L15.5 12l-5.75 3.02z',
+        facebook:  'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z',
+        whatsapp:  'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z',
+        ads:       'M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z',
+        tiktok:    'M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.28 6.28 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V9.17a8.24 8.24 0 004.85 1.56V7.3a4.85 4.85 0 01-1.08-.61z',
+        chat:      'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z',
+        challenge: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z',
+    };
+    const d = paths[cat] || paths.chat;
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d={d} />
+        </svg>
+    );
+};
+
 const TASK_KEYS = [
-    { key: 'chat', icon: '💬' },
-    { key: 'youtube', icon: '▶️' },
-    { key: 'facebook', icon: '📘' },
-    { key: 'whatsapp', icon: '📱' },
-    { key: 'tiktok', icon: '🎵' },
-    { key: 'ads', icon: '📢' }
+    { key: 'chat', label: 'Chat' },
+    { key: 'youtube', label: 'YouTube' },
+    { key: 'facebook', label: 'Facebook' },
+    { key: 'whatsapp', label: 'WhatsApp' },
+    { key: 'tiktok', label: 'TikTok' },
+    { key: 'ads', label: 'Ads' },
+    { key: 'challenge', label: 'Challenge' },
 ];
 
 const DEPOSIT_NUMBER = '61105668';
@@ -39,6 +59,7 @@ export default function Wallet() {
     const [copied, setCopied] = useState(false);
 
     const [palmpesaEnabled, setPalmpesaEnabled] = useState(false);
+    const [palmpesaConfigLoading, setPalmpesaConfigLoading] = useState(isTanzania);
     const [palmpesaAmount, setPalmpesaAmount] = useState('');
     const [palmpesaPhone, setPalmpesaPhone] = useState('');
     const [palmpesaStatus, setPalmpesaStatus] = useState('idle'); // idle | pushing | waiting | success | failed
@@ -79,10 +100,20 @@ export default function Wallet() {
     }, [userData?.phone]);
 
     useEffect(() => {
-        if (!isTanzania) return;
+        if (!isTanzania) {
+            setPalmpesaConfigLoading(false);
+            return;
+        }
+        setPalmpesaConfigLoading(true);
         getPalmpesaConfig()
-            .then(cfg => setPalmpesaEnabled(Boolean(cfg.enabled)))
-            .catch(() => setPalmpesaEnabled(false));
+            .then(cfg => {
+                setPalmpesaEnabled(Boolean(cfg.enabled));
+                setPalmpesaConfigLoading(false);
+            })
+            .catch(() => {
+                setPalmpesaEnabled(false);
+                setPalmpesaConfigLoading(false);
+            });
     }, [isTanzania]);
 
     useEffect(() => pollStopRef.current?.(), []);
@@ -229,8 +260,14 @@ export default function Wallet() {
                             {translate('wallet.depositNote')}
                         </p>
 
-                        {/* Payment Method Toggle — Auto only for TZ */}
-                        {isTanzania && palmpesaEnabled && (
+                        {palmpesaConfigLoading ? (
+                            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                                <span className="spinner" style={{ display: 'inline-block', width: 24, height: 24, border: '2px solid var(--border-color)', borderTopColor: 'var(--color-gold)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                            </div>
+                        ) : (
+                        <>
+                            {/* Payment Method Toggle — Auto only for TZ */}
+                            {isTanzania && palmpesaEnabled && (
                             <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
                                 {[['auto', 'Automatic (M-Pesa)'], ['manual', 'Manual (USSD)']].map(([v, l]) => (
                                     <button key={v} onClick={() => setDepositMethod(v)} style={{
@@ -368,17 +405,25 @@ export default function Wallet() {
                                 </form>
                             </>
                         )}
+                        </>
+                        )}
                     </div>
 
-                    <div className="section-title">{translate('wallet.taskBalances') || 'Task Balances'}</div>
+                    <div className="section-title">{translate('wallet.taskBalances') || 'Task Earnings'}</div>
                     <div className="task-balances-grid">
-                        {TASK_KEYS.map(({ key, icon }) => (
-                            <div key={key} className="task-balance-card">
-                                <div className="icon">{icon}</div>
-                                <div className="amount">{formatCurrency(taskBalances[key] || 0, currency)}</div>
-                                <div className="label">{translate(`dashboard.${key}`) || key}</div>
-                            </div>
-                        ))}
+                        {TASK_KEYS.map(({ key, label }) => {
+                            const rawBalance = taskBalances[key] || 0;
+                            const symbol = CURRENCY_SYMBOLS[currency] || currency;
+                            return (
+                                <div key={key} className="task-balance-card">
+                                    <div className="icon" style={{ color: 'var(--color-gold)' }}>
+                                        <TaskCatIcon cat={key} size={20} />
+                                    </div>
+                                    <div className="amount">{symbol} {rawBalance.toLocaleString()}</div>
+                                    <div className="label">{translate(`dashboard.${key}`) || label}</div>
+                                </div>
+                            );
+                        })}
                     </div>
 
                     <div className="section-title" style={{ marginTop: 24 }}>{translate('wallet.transactions') || 'Transactions'}</div>

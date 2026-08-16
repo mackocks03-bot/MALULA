@@ -30,6 +30,38 @@ import {
 import { getSettings } from './settings.js';
 
 // ============================================================
+// ERROR SANITIZATION
+// ============================================================
+
+function sanitizeAuthError(error) {
+    const msg = error?.message || String(error);
+    if (!msg) return 'An unexpected error occurred.';
+    
+    // Obscure credential errors so users don't enumerate emails
+    if (msg.includes('auth/invalid-credential')) return 'Incorrect password or account not found.';
+    if (msg.includes('auth/user-not-found')) return 'Account not found.';
+    if (msg.includes('auth/wrong-password')) return 'Incorrect password.';
+    
+    if (msg.includes('auth/email-already-in-use')) return 'This email address is already registered.';
+    if (msg.includes('auth/weak-password')) return 'Password is too weak. Please use a stronger password.';
+    if (msg.includes('auth/invalid-email')) return 'Please enter a valid email address.';
+    if (msg.includes('auth/network-request-failed')) return 'Network error. Please check your connection.';
+    if (msg.includes('auth/too-many-requests')) return 'Too many failed login attempts. Please try again later.';
+    
+    // Catch-all database permission errors
+    if (msg.includes('permission-denied') || msg.includes('Missing or insufficient permissions')) {
+        return 'Access denied. You do not have permission to perform this action.';
+    }
+    
+    // Generic catch-all for any other raw database or firebase errors to avoid exposing the stack.
+    if (msg.includes('Firebase') || msg.includes('auth/') || msg.includes('db')) {
+        return 'An error occurred during authentication. Please try again.';
+    }
+    
+    return msg;
+}
+
+// ============================================================
 // HELPER FUNCTIONS
 // ============================================================
 
@@ -132,7 +164,7 @@ export async function registerUser(email, password, userData) {
             stepLog('3', `✅ Auth created: ${uid}`);
         } catch (authError) {
             stepLog('3', `❌ Auth creation failed: ${authError.message}`);
-            return { success: false, error: authError.message };
+            return { success: false, error: sanitizeAuthError(authError) };
         }
         
         stepLog('4', '💾 Saving user data...');
@@ -309,7 +341,7 @@ export async function registerUser(email, password, userData) {
                 await deleteUser(user);
             } catch (deleteError) {}
         }
-        return { success: false, error: error.message };
+        return { success: false, error: sanitizeAuthError(error) };
     }
 }
 
@@ -318,7 +350,7 @@ export async function loginUser(email, password) {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         return { success: true, user: userCredential.user };
     } catch (error) {
-        return { success: false, error: error.message };
+        return { success: false, error: sanitizeAuthError(error) };
     }
 }
 
@@ -327,7 +359,7 @@ export async function resetPassword(email) {
         await sendPasswordResetEmail(auth, email);
         return { success: true };
     } catch (error) {
-        return { success: false, error: error.message };
+        return { success: false, error: sanitizeAuthError(error) };
     }
 }
 
@@ -336,7 +368,7 @@ export async function logoutUser() {
         await signOut(auth);
         return { success: true };
     } catch (error) {
-        return { success: false, error: error.message };
+        return { success: false, error: sanitizeAuthError(error) };
     }
 }
 
@@ -374,7 +406,7 @@ export async function updateUserData(uid, updates) {
         await updateDoc(doc(db, 'users', uid), updates);
         return { success: true };
     } catch (error) {
-        return { success: false, error: error.message };
+        return { success: false, error: sanitizeAuthError(error) };
     }
 }
 
