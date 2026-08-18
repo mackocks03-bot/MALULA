@@ -61,13 +61,18 @@ export default function Activation() {
 
     useEffect(() => {
         if (!isTanzania) return;
+        loadPalmpesaConfig();
+    }, [isTanzania]);
+
+    const loadPalmpesaConfig = () => {
+        setPalmpesaEnabled(null); // show loading while retrying
         getActivationPalmpesaConfig()
             .then(cfg => {
                 setPalmpesaEnabled(Boolean(cfg.enabled));
                 if (cfg.amountTZS) setPalmpesaAmountTZS(cfg.amountTZS);
             })
             .catch(() => setPalmpesaEnabled(false));
-    }, [isTanzania]);
+    };
 
     useEffect(() => {
         if (!user) return;
@@ -386,8 +391,28 @@ export default function Activation() {
                                     </form>
                                 </>
                             ) : (
-                                <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-muted)', fontSize: 13 }}>
-                                    Automatic deposits are temporarily unavailable.
+                                <div style={{ textAlign: 'center', padding: '24px 16px' }}>
+                                    <div style={{ fontSize: 36, marginBottom: 10 }}>📵</div>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 16 }}>
+                                        Automatic M-Pesa payment is temporarily unavailable.
+                                    </p>
+                                    <button
+                                        onClick={loadPalmpesaConfig}
+                                        style={{
+                                            display: 'inline-flex', alignItems: 'center', gap: 8,
+                                            background: 'transparent',
+                                            border: '1.5px solid var(--color-gold)',
+                                            color: 'var(--color-gold)',
+                                            borderRadius: 99, padding: '8px 20px',
+                                            fontSize: 13, fontWeight: 700, cursor: 'pointer'
+                                        }}
+                                    >
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="23 4 23 10 17 10"/>
+                                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                                        </svg>
+                                        Retry
+                                    </button>
                                 </div>
                             )}
                             {palmpesaEnabled !== null && isTanzania && null}
