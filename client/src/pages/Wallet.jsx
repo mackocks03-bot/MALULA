@@ -272,7 +272,6 @@ export default function Wallet() {
                             </div>
                         ) : (
                         <>
-                        <>
 
                             {/* Payment Method Toggle — Auto only for TZ */}
                             {isTanzania && palmpesaEnabled && (
