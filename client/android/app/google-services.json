@@ -10,7 +10,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:728781241137:android:db08891d0422225e878e10",
         "android_client_info": {
-          "package_name": "com.forex.app"
+          "package_name": "org.newhope.chat"
         }
       },
       "oauth_client": [
