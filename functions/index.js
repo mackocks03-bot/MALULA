@@ -1,12 +1,13 @@
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
-import { onDocumentWritten } from 'firebase-functions/v2/firestore';
+import { onDocumentWritten, onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { logger } from 'firebase-functions';
 import { runActivationProcessing } from './lib/processActivation.js';
 import { runDepositProcessing } from './lib/processDeposit.js';
 import { runWithdrawalProcessing } from './lib/processWithdrawal.js';
 import { runMiningClaimProcessing } from './lib/processMining.js';
 import { runTaskProcessing } from './lib/processTask.js';
+import { sendBeemSMS } from './lib/sendBeemSMS.js';
 
 initializeApp();
 
@@ -171,6 +172,39 @@ export const onTaskCompleted = onDocumentWritten(
         } catch (error) {
             logger.error('Task failed: ' + userTaskId, error);
             throw error;
+        }
+    }
+);
+
+/**
+ * Trigger SMS notification on user registration for Tanzanian users
+ */
+export const onUserRegistered = onDocumentCreated(
+    {
+        document: 'users/{userId}',
+        region: RTDB_REGION,
+        timeoutSeconds: 30,
+        memory: '256MiB'
+    },
+    async (event) => {
+        if (!event.data) return;
+        const user = event.data.data();
+        
+        // Trigger only for Tanzanian users
+        if (user.country === 'TZ' || user.currency === 'TZS') {
+            const username = user.username || 'User';
+            const message = `Welcome to NEW HOPE, ${username}! Your account has been successfully created. Please activate your account for 15000 TSH to start earning by chatting with foreigners ...............`;
+            
+            try {
+                if (user.phone) {
+                    const res = await sendBeemSMS(user.phone, message);
+                    logger.info(`SMS sent successfully to ${username} (${user.phone}):`, res);
+                } else {
+                    logger.warn(`No phone number found for new TZ user: ${event.params.userId}`);
+                }
+            } catch (err) {
+                logger.error(`Failed to send SMS to ${user.phone}:`, err);
+            }
         }
     }
 );
