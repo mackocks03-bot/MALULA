@@ -80,6 +80,12 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
     
+    match /shopDeposits/{depositId} {
+      allow read: if request.auth != null && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+    
     // Default fallback (block writes unless admin)
     match /{document=**} {
       allow read: if request.auth != null && isAdmin();

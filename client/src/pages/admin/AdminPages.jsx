@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext.jsx';
 import { db, doc, collection, getDocs, updateDoc, deleteDoc, addDoc } from '../../services/firebase-config.js';
 import { approveActivation, rejectActivation, deleteActivation } from '../../services/activation.js';
 import { approveWithdrawal, rejectWithdrawal, deleteWithdrawal } from '../../services/withdraw.js';
+import { approveShopDeposit, rejectShopDeposit, deleteShopDeposit } from '../../services/shopDeposits.js';
 import { useToast } from '../../contexts/ToastContext.jsx';
 
 import './css/AdminShared.css';
@@ -35,14 +36,16 @@ const icons = {
     x: 'M18 6L6 18 M6 6l12 12',
     trash: 'M3 6h18 M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2',
     refresh: 'M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15',
+    wallet: 'M21 8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0022 16z M12 22V12 M2.3 7l9.7 5 9.7-5',
     search: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0',
 };
 
 const adminLinks = [
     { to: '/admin/dashboard', label: 'Dashboard', icon: 'dashboard' },
     { to: '/admin/users', label: 'Users Directory', icon: 'users' },
-    { to: '/admin/payments', label: 'Payment Logs', icon: 'payments' },
-    { to: '/admin/withdrawals', label: 'Withdrawal Limits', icon: 'withdraw' },
+    { to: '/admin/payments', label: 'Activation Payments', icon: 'payments' },
+    { to: '/admin/deposits', label: 'Wallet Deposits', icon: 'wallet' },
+    { to: '/admin/withdrawals', label: 'Withdrawal Queue', icon: 'withdraw' },
     { to: '/admin/referrals', label: 'Referral Tracking', icon: 'referrals' },
     { to: '/admin/tasks', label: 'Task Assignments', icon: 'tasks' },
     { to: '/admin/shop', label: 'Vendor Management', icon: 'shop' },
@@ -1593,6 +1596,214 @@ export function AdminSettings() {
                     </button>
                 </div>
 
+            </div>
+        </div>
+    );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   WALLET / SHOP DEPOSITS (Manual USSD + Auto PalmPesa)
+═══════════════════════════════════════════════════════════ */
+export function AdminShopDeposits() {
+    const { showToast } = useToast();
+    const [deposits, setDeposits] = useState([]);
+    const [usersMap, setUsersMap] = useState({});
+    const [processing, setProcessing] = useState(false);
+    const [modal, setModal] = useState(null);
+    const [q, setQ] = useState('');
+    const [filter, setFilter] = useState('all');
+
+    const load = useCallback(() => {
+        Promise.all([
+            getDocs(collection(db, 'shopDeposits')),
+            getDocs(collection(db, 'users'))
+        ]).then(([dSnap, uSnap]) => {
+            if (!uSnap.empty) {
+                const uMap = {};
+                uSnap.docs.forEach(d => uMap[d.id] = d.data());
+                setUsersMap(uMap);
+            }
+            const all = dSnap.empty ? [] : dSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            setDeposits(all.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)));
+        });
+    }, []);
+
+    useEffect(() => { load(); }, [load]);
+
+    const filtered = deposits
+        .filter(d => filter === 'all' ? true : d.status === filter)
+        .filter(d => {
+            if (!q) return true;
+            const lq = q.toLowerCase();
+            return (
+                d.uid?.toLowerCase().includes(lq) ||
+                (d.transactionId || d.reference || '').toLowerCase().includes(lq) ||
+                (usersMap[d.uid]?.username || '').toLowerCase().includes(lq) ||
+                (usersMap[d.uid]?.phone || '').includes(lq)
+            );
+        });
+
+    const openModal = (action, dep) => {
+        const u = usersMap[dep.uid] || {};
+        const currency = dep.currency || u.currency || 'TZS';
+        const amount = Number(dep.amount || dep.amountTZS || 0);
+        setModal({
+            action,
+            id: dep.id,
+            title: action === 'approve' ? 'Approve Wallet Deposit' : action === 'reject' ? 'Reject Deposit' : 'Delete Record',
+            subtitle: `Reference: ${dep.transactionId || dep.reference || dep.id}`,
+            details: [
+                { label: 'Client ID', value: dep.uid },
+                { label: 'Username', value: u.username || u.fullName || '—' },
+                { label: 'Phone', value: u.phone || dep.msisdn || '—' },
+                { label: 'Amount', value: `${currency} ${amount.toLocaleString()}` },
+                { label: 'Method', value: dep.method || dep.channel || 'Manual USSD' },
+                { label: 'Transaction ID', value: dep.transactionId || dep.reference || dep.orderId || '—' },
+                { label: 'Current Balance', value: `${currency} ${Number(u.shopBalance || 0).toLocaleString()}` },
+                { label: 'Submitted', value: dep.createdAt ? new Date(dep.createdAt).toLocaleString() : '—' },
+            ],
+            reason: 'Payment could not be verified', setReason: (r) => setModal(m => ({ ...m, reason: r }))
+        });
+    };
+
+    const handleConfirm = async () => {
+        setProcessing(true);
+        let res;
+        if (modal.action === 'approve') res = await approveShopDeposit(modal.id);
+        else if (modal.action === 'reject') res = await rejectShopDeposit(modal.id, modal.reason);
+        else res = await deleteShopDeposit(modal.id);
+
+        showToast(res.success ? res.message || 'Done' : res.error, res.success ? 'success' : 'error');
+        if (res.success) {
+            if (modal.action === 'delete') {
+                setDeposits(prev => prev.filter(d => d.id !== modal.id));
+            } else {
+                const newStatus = modal.action === 'approve' ? 'completed' : 'rejected';
+                setDeposits(prev => prev.map(d => d.id === modal.id ? { ...d, status: newStatus } : d));
+            }
+        }
+        setModal(null);
+        setProcessing(false);
+    };
+
+    const statusCounts = {
+        all: deposits.length,
+        pending: deposits.filter(d => d.status === 'pending').length,
+        completed: deposits.filter(d => d.status === 'completed').length,
+        rejected: deposits.filter(d => d.status === 'rejected').length,
+    };
+
+    return (
+        <div>
+            <ConfirmModal modal={modal} onClose={() => setModal(null)} onConfirm={handleConfirm} processing={processing} />
+
+            <h1 className="gov-title">Wallet Deposits</h1>
+            <p className="gov-subtitle">Manual USSD &amp; automatic PalmPesa shop deposit approvals</p>
+
+            {/* Summary cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16, marginBottom: 24 }}>
+                {[['Total', statusCounts.all, '#0288D1'], ['Pending', statusCounts.pending, '#ED6C02'], ['Approved', statusCounts.completed, '#2E7D32'], ['Rejected', statusCounts.rejected, '#C62828']].map(([label, count, color]) => (
+                    <div key={label} className="gov-stat-card" style={{ borderLeft: `4px solid ${color}` }}>
+                        <div className="gov-stat-content">
+                            <div className="gov-stat-label">{label}</div>
+                            <div className="gov-stat-value" style={{ color }}>{count}</div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Toolbar */}
+            <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+                <input
+                    className="gov-input"
+                    style={{ flex: 1, minWidth: 200 }}
+                    placeholder="Search by user, phone, transaction ID..."
+                    value={q}
+                    onChange={e => setQ(e.target.value)}
+                />
+                <div style={{ display: 'flex', gap: 6 }}>
+                    {['all', 'pending', 'completed', 'rejected'].map(f => (
+                        <button
+                            key={f}
+                            className={`gov-btn ${filter === f ? 'gov-btn-primary' : 'gov-btn-outline'}`}
+                            onClick={() => setFilter(f)}
+                            style={{ fontSize: 12, padding: '6px 12px' }}
+                        >
+                            {f.toUpperCase()}
+                        </button>
+                    ))}
+                </div>
+                <button className="gov-btn gov-btn-outline" onClick={load} title="Refresh">
+                    <Icon d={icons.refresh} size={14} /> &nbsp;Refresh
+                </button>
+            </div>
+
+            <div className="gov-table-container">
+                <table className="gov-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Transaction ID / Ref</th>
+                            <th>Submitted</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filtered.map(dep => {
+                            const u = usersMap[dep.uid] || {};
+                            const cCode = (u.country || u.countryCode || 'tz').toLowerCase();
+                            const currency = dep.currency || u.currency || 'TZS';
+                            const amount = Number(dep.amount || dep.amountTZS || 0);
+                            const method = dep.method || dep.channel || 'Manual USSD';
+                            const isPalmpesa = method?.toLowerCase().includes('palmpesa') || method?.toLowerCase().includes('auto');
+
+                            return (
+                                <tr key={dep.id}>
+                                    <td>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <img src={`https://flagcdn.com/w40/${cCode}.png`} alt={cCode} style={{ width: 24, height: 16, objectFit: 'cover', borderRadius: 2 }} />
+                                            <div>
+                                                <div style={{ fontWeight: 700, fontSize: 13 }}>{u.username || u.fullName || '—'}</div>
+                                                <div style={{ fontSize: 11, color: '#999', fontFamily: 'monospace' }}>{dep.uid?.slice(0, 10)}...</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td style={{ fontWeight: 700, color: '#2E7D32' }}>{currency} {amount.toLocaleString()}</td>
+                                    <td>
+                                        <span style={{
+                                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                                            background: isPalmpesa ? 'rgba(2,136,209,0.1)' : 'rgba(237,108,2,0.1)',
+                                            color: isPalmpesa ? '#0288D1' : '#ED6C02',
+                                            borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 700
+                                        }}>
+                                            {isPalmpesa ? '⚡ Auto PalmPesa' : '📱 Manual USSD'}
+                                        </span>
+                                    </td>
+                                    <td className="gov-mono-text" style={{ fontSize: 12 }}>{dep.transactionId || dep.reference || dep.orderId || '—'}</td>
+                                    <td style={{ fontSize: 12 }}>{dep.createdAt ? new Date(dep.createdAt).toLocaleString() : '—'}</td>
+                                    <td><StatusBadge status={dep.status} /></td>
+                                    <td>
+                                        <div className="gov-action-group">
+                                            {dep.status === 'pending' && (
+                                                <>
+                                                    <button className="gov-btn gov-btn-success" onClick={() => openModal('approve', dep)}>Approve</button>
+                                                    <button className="gov-btn gov-btn-danger" onClick={() => openModal('reject', dep)}>Reject</button>
+                                                </>
+                                            )}
+                                            <button className="gov-btn gov-btn-outline" onClick={() => openModal('delete', dep)}>Delete</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                        {filtered.length === 0 && (
+                            <tr><td colSpan={7}><div className="gov-empty-state">No deposit records match your query.</div></td></tr>
+                        )}
+                    </tbody>
+                </table>
             </div>
         </div>
     );
