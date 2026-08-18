@@ -272,14 +272,8 @@ export default function Wallet() {
                             </div>
                         ) : (
                         <>
-                            {palmpesaStatus === 'waiting' ? (
-                                <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                                    <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                                        {translate('wallet.palmpesaPrompt') || 'Please check your phone and enter your PIN to confirm the payment.'}
-                                    </p>
-                                </div>
-                            ) : (
-                            <>
+                        <>
+
                             {/* Payment Method Toggle — Auto only for TZ */}
                             {isTanzania && palmpesaEnabled && (
                             <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
@@ -406,8 +400,6 @@ export default function Wallet() {
                                 </>
                             )}
                             </>
-                            )}
-                        </>
                         )}
                     </div>
 
