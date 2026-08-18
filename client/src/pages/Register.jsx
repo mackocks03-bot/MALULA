@@ -55,6 +55,8 @@ export default function Register() {
     const [referralCode, setReferralCode] = useState('');
     const [loading, setLoading] = useState(false);
     const [referrerValid, setReferrerValid] = useState(null);
+    const [showPass, setShowPass] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -186,11 +188,17 @@ export default function Register() {
                         </div>
                         <div className="form-group">
                             <label className="form-label">{translate('auth.password')}</label>
-                            <input type="password" className="form-control" value={form.password} onChange={e => update('password', e.target.value)} required />
+                            <div className="input-wrapper">
+                                <input type={showPass ? 'text' : 'password'} className="form-control" value={form.password} onChange={e => update('password', e.target.value)} required />
+                                <button type="button" className="toggle-password" onClick={() => setShowPass(!showPass)}>{showPass ? '🙈' : '👁'}</button>
+                            </div>
                         </div>
                         <div className="form-group">
                             <label className="form-label">{translate('auth.confirmPassword')}</label>
-                            <input type="password" className="form-control" value={form.confirmPassword} onChange={e => update('confirmPassword', e.target.value)} required />
+                            <div className="input-wrapper">
+                                <input type={showConfirm ? 'text' : 'password'} className="form-control" value={form.confirmPassword} onChange={e => update('confirmPassword', e.target.value)} required />
+                                <button type="button" className="toggle-password" onClick={() => setShowConfirm(!showConfirm)}>{showConfirm ? '🙈' : '👁'}</button>
+                            </div>
                         </div>
                         <div className="form-group">
                             <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
