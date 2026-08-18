@@ -3,7 +3,7 @@ import DashboardLayout from '../components/DashboardLayout.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useToast } from '../contexts/ToastContext.jsx';
-import { formatCurrency, COUNTRIES } from '../utils/helpers.js';
+import { formatCurrency } from '../utils/helpers.js';
 import { updateUser } from '../services/database.js';
 import { db, doc, getDoc } from '../services/firebase-config.js';
 
@@ -22,7 +22,6 @@ export default function Profile() {
                 phone: userData.phone || '',
                 username: userData.username || ''
             });
-            // Fetch upliner info
             if (userData.referrer) {
                 fetchUpliner(userData.referrer);
             }
@@ -31,13 +30,8 @@ export default function Profile() {
 
     const fetchUpliner = async (referrerId) => {
         try {
-            // referrer can be a uid or a username — try uid first
             const byUid = await getDoc(doc(db, 'users', referrerId));
-            if (byUid.exists()) {
-                setUpliner(byUid.data());
-                return;
-            }
-            // fallback: look up via loginIndex (username → uid mapping)
+            if (byUid.exists()) { setUpliner(byUid.data()); return; }
             const indexSnap = await getDoc(doc(db, 'loginIndex', referrerId));
             if (indexSnap.exists()) {
                 const uid = indexSnap.data().uid;
@@ -50,7 +44,6 @@ export default function Profile() {
     };
 
     const currency = userData?.currency || 'TZS';
-
     const countryCode = (userData?.country || userData?.countryCode || 'TZ').toLowerCase();
     const uplinerCountryCode = (upliner?.country || upliner?.countryCode || 'TZ').toLowerCase();
 
@@ -80,22 +73,15 @@ export default function Profile() {
                         marginBottom: 20,
                         height: 160
                     }}>
-                        {/* Flag as full background */}
                         <img
                             src={`https://flagcdn.com/w640/${countryCode}.png`}
                             alt={userData?.countryName || ''}
-                            style={{
-                                width: '100%', height: '100%',
-                                objectFit: 'cover',
-                                filter: 'brightness(0.55) saturate(1.3)'
-                            }}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.55) saturate(1.3)' }}
                         />
-                        {/* Gradient overlay for readability */}
                         <div style={{
                             position: 'absolute', inset: 0,
-                            background: 'linear-gradient(to bottom, rgba(0,0,0,0.15), rgba(0,0,0,0.65))'
+                            background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.65))'
                         }} />
-                        {/* Avatar + Name */}
                         <div style={{
                             position: 'absolute', inset: 0,
                             display: 'flex', flexDirection: 'column',
@@ -116,7 +102,7 @@ export default function Profile() {
                                 {userData?.username}
                             </div>
                             <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12, textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>
-                                {userData?.countryName || ''} · {userData?.email}
+                                {userData?.countryName || ''}{userData?.countryName ? ' · ' : ''}{userData?.email}
                             </div>
                         </div>
                     </div>
@@ -133,116 +119,125 @@ export default function Profile() {
                         </div>
                     </div>
 
-                    {/* ── Upliner Card ── */}
-                    {userData?.referrer && (
+                    {/* ── Upliner Card — always visible ── */}
+                    <div style={{
+                        background: 'var(--color-surface)',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 14,
+                        padding: '14px 16px',
+                        marginBottom: 20,
+                        boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
+                    }}>
                         <div style={{
-                            background: 'var(--color-surface)',
-                            border: '1px solid var(--color-border)',
-                            borderRadius: 14,
-                            padding: '14px 16px',
-                            marginBottom: 20,
-                            boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
+                            fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+                            letterSpacing: 1, color: 'var(--text-muted)', marginBottom: 10
                         }}>
-                            <div style={{
-                                fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
-                                letterSpacing: 1, color: 'var(--text-muted)', marginBottom: 10
-                            }}>
-                                Your Upliner
+                            Your Upliner
+                        </div>
+
+                        {/* No referrer */}
+                        {!userData?.referrer && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 0', color: 'var(--text-muted)', fontSize: 13 }}>
+                                <div style={{
+                                    width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
+                                    background: 'var(--color-border)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20
+                                }}>🌐</div>
+                                <div>
+                                    <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2 }}>No Upliner</div>
+                                    <div style={{ fontSize: 12 }}>You joined as a top-level member</div>
+                                </div>
                             </div>
+                        )}
 
-                            {upliner ? (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                    {/* Flag avatar */}
-                                    <div style={{ position: 'relative', flexShrink: 0 }}>
-                                        <div style={{
-                                            width: 48, height: 48, borderRadius: '50%', overflow: 'hidden',
-                                            border: '2px solid var(--color-gold)',
-                                            boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
-                                        }}>
-                                            <img
-                                                src={`https://flagcdn.com/w80/${uplinerCountryCode}.png`}
-                                                alt={upliner.countryName}
-                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                            />
-                                        </div>
-                                        {/* Online/Active indicator */}
-                                        <div style={{
-                                            position: 'absolute', bottom: 0, right: 0,
-                                            width: 12, height: 12, borderRadius: '50%',
-                                            background: upliner.isActive ? '#22c55e' : '#f97316',
-                                            border: '2px solid var(--color-surface)'
-                                        }} />
+                        {/* Has referrer but upliner still loading */}
+                        {userData?.referrer && !upliner && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <div style={{
+                                    width: 48, height: 48, borderRadius: '50%',
+                                    background: 'var(--color-border)',
+                                    animation: 'pulse 1.5s ease-in-out infinite', flexShrink: 0
+                                }} />
+                                <div>
+                                    <div style={{ width: 110, height: 12, background: 'var(--color-border)', borderRadius: 4, marginBottom: 6, animation: 'pulse 1.5s ease-in-out infinite' }} />
+                                    <div style={{ width: 80, height: 10, background: 'var(--color-border)', borderRadius: 4, animation: 'pulse 1.5s ease-in-out infinite' }} />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Upliner loaded */}
+                        {upliner && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <div style={{ position: 'relative', flexShrink: 0 }}>
+                                    <div style={{
+                                        width: 48, height: 48, borderRadius: '50%', overflow: 'hidden',
+                                        border: '2px solid var(--color-gold)',
+                                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                                    }}>
+                                        <img
+                                            src={`https://flagcdn.com/w80/${uplinerCountryCode}.png`}
+                                            alt={upliner.countryName}
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                        />
                                     </div>
+                                    <div style={{
+                                        position: 'absolute', bottom: 0, right: 0,
+                                        width: 12, height: 12, borderRadius: '50%',
+                                        background: upliner.isActive ? '#22c55e' : '#f97316',
+                                        border: '2px solid var(--color-surface)'
+                                    }} />
+                                </div>
 
-                                    {/* Info */}
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)' }}>
-                                            {upliner.username || upliner.fullName}
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                                            <img
-                                                src={`https://flagcdn.com/w40/${uplinerCountryCode}.png`}
-                                                alt={upliner.countryName}
-                                                style={{ width: 16, height: 11, objectFit: 'cover', borderRadius: 2 }}
-                                            />
-                                            <span>{upliner.countryName || 'Tanzania'}</span>
-                                        </div>
-                                        {upliner.phone && (
-                                            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                                                +{upliner.phone}
-                                            </div>
-                                        )}
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)' }}>
+                                        {upliner.username || upliner.fullName}
                                     </div>
-
-                                    {/* Call Button */}
-                                    {upliner.phone ? (
-                                        <a
-                                            href={`tel:+${upliner.phone}`}
-                                            style={{
-                                                display: 'flex', alignItems: 'center', gap: 6,
-                                                background: 'linear-gradient(135deg, #22c55e, #16a34a)',
-                                                color: '#fff', textDecoration: 'none',
-                                                borderRadius: 99, padding: '8px 14px',
-                                                fontSize: 13, fontWeight: 600,
-                                                flexShrink: 0,
-                                                boxShadow: '0 2px 8px rgba(34,197,94,0.35)',
-                                                transition: 'all 0.2s'
-                                            }}
-                                            title={`Call ${upliner.username}`}
-                                        >
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.59 3.4 2 2 0 0 1 3.56 1.23h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.72a16 16 0 0 0 6 6l.9-.9a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-                                            </svg>
-                                            Call
-                                        </a>
-                                    ) : (
-                                        <div style={{
-                                            display: 'flex', alignItems: 'center', gap: 6,
-                                            background: 'var(--color-border)', color: 'var(--text-muted)',
-                                            borderRadius: 99, padding: '8px 14px', fontSize: 13
-                                        }}>
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.59 3.4 2 2 0 0 1 3.56 1.23h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.72a16 16 0 0 0 6 6l.9-.9a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-                                            </svg>
-                                            No phone
-                                        </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                                        <img
+                                            src={`https://flagcdn.com/w40/${uplinerCountryCode}.png`}
+                                            alt={upliner.countryName}
+                                            style={{ width: 16, height: 11, objectFit: 'cover', borderRadius: 2 }}
+                                        />
+                                        <span>{upliner.countryName || 'Tanzania'}</span>
+                                    </div>
+                                    {upliner.phone && (
+                                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>+{upliner.phone}</div>
                                     )}
                                 </div>
-                            ) : (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+
+                                {upliner.phone ? (
+                                    <a
+                                        href={`tel:+${upliner.phone}`}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: 6,
+                                            background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                                            color: '#fff', textDecoration: 'none',
+                                            borderRadius: 99, padding: '8px 14px',
+                                            fontSize: 13, fontWeight: 600, flexShrink: 0,
+                                            boxShadow: '0 2px 8px rgba(34,197,94,0.35)'
+                                        }}
+                                        title={`Call ${upliner.username}`}
+                                    >
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.59 3.4 2 2 0 0 1 3.56 1.23h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.72a16 16 0 0 0 6 6l.9-.9a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+                                        </svg>
+                                        Call
+                                    </a>
+                                ) : (
                                     <div style={{
-                                        width: 48, height: 48, borderRadius: '50%',
-                                        background: 'var(--color-border)',
-                                        animation: 'pulse 1.5s ease-in-out infinite'
-                                    }} />
-                                    <div>
-                                        <div style={{ width: 100, height: 12, background: 'var(--color-border)', borderRadius: 4, marginBottom: 6, animation: 'pulse 1.5s ease-in-out infinite' }} />
-                                        <div style={{ width: 70, height: 10, background: 'var(--color-border)', borderRadius: 4, animation: 'pulse 1.5s ease-in-out infinite' }} />
+                                        display: 'flex', alignItems: 'center', gap: 6,
+                                        background: 'var(--color-border)', color: 'var(--text-muted)',
+                                        borderRadius: 99, padding: '8px 14px', fontSize: 13
+                                    }}>
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.59 3.4 2 2 0 0 1 3.56 1.23h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.72a16 16 0 0 0 6 6l.9-.9a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+                                        </svg>
+                                        No phone
                                     </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
+                                )}
+                            </div>
+                        )}
+                    </div>
 
                     {/* ── Edit Form ── */}
                     <form onSubmit={handleSave}>
