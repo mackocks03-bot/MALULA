@@ -3,7 +3,7 @@ import DashboardLayout from '../components/DashboardLayout.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useToast } from '../contexts/ToastContext.jsx';
-import { formatCurrency } from '../utils/helpers.js';
+import { formatCurrency, COUNTRIES, CURRENCY_SYMBOLS } from '../utils/helpers.js';
 import { getReferralTree } from '../services/referrals.js';
 import { db, doc, onSnapshot, getDoc } from '../services/firebase-config.js';
 import dataStore from '../utils/dataStore.js';
@@ -30,6 +30,7 @@ export default function Affiliate() {
     const [userData, setUserData] = useState(initialData);
     const [tree, setTree] = useState({ level1: [], level2: [], level3: [] });
     const [bonuses, setBonuses] = useState({ level1: 0, level2: 0, level3: 0 });
+    const [activationFees, setActivationFees] = useState({});
     const [activeTab, setActiveTab] = useState('all');
     const [loading, setLoading] = useState(true);
 
@@ -66,6 +67,10 @@ export default function Affiliate() {
                 const l1Base = parseFloat(general.referralLevel1) || 3.6;
                 const l2Base = parseFloat(general.referralLevel2) || 1.2;
                 const l3Base = parseFloat(general.referralLevel3) || 0.4;
+
+                // Fetch activation fees per currency
+                const fees = general.activationFees || {};
+                setActivationFees(fees);
 
                 // Fetch the exchange rate for the user's currency
                 const userCurrency = userData?.currency || 'TZS';
@@ -218,68 +223,103 @@ export default function Affiliate() {
                         ) : referrals.length === 0 ? (
                             <p className="empty-state">{translate('affiliate.noReferrals') || 'Network is Empty'}</p>
                         ) : (
-                            referrals.map((r, i) => (
-                                <div
-                                    key={r.uid || i}
-                                    className="earning-item compact-row"
-                                    style={{
-                                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                        padding: '10px 12px',
-                                        animationDelay: `${i * 0.03}s`
-                                    }}
-                                >
-                                    {/* Left: Avatar + Name + Level */}
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
-                                        <div style={{
-                                            width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-                                            background: `linear-gradient(135deg, hsl(${(r.username || '').charCodeAt(0) * 17 % 360}, 65%, 55%), hsl(${(r.username || '').charCodeAt(0) * 23 % 360}, 65%, 45%))`,
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            color: '#fff', fontSize: 14, fontWeight: 700
-                                        }}>
-                                            {(r.username || r.fullName || '?').charAt(0).toUpperCase()}
-                                        </div>
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 600 }}>
-                                                {r.username || r.fullName || 'User'}
-                                            </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text-muted)' }}>
-                                                <span>{r.createdAt ? new Date(r.createdAt).toLocaleDateString() : ''}</span>
-                                                {activeTab === 'all' && (
-                                                    <span style={{
-                                                        background: ['', 'rgba(99,102,241,0.1)', 'rgba(168,85,247,0.1)', 'rgba(236,72,153,0.1)'][r._level || 1],
-                                                        color: ['', '#6366f1', '#a855f7', '#ec4899'][r._level || 1],
-                                                        padding: '1px 6px', borderRadius: 4, fontWeight: 600, fontSize: 10
-                                                    }}>
-                                                        L{r._level}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
+                            referrals.map((r, i) => {
+                                const rCountryCode = (r.country || r.countryCode || 'TZ').toLowerCase();
+                                const rCurrency = r.currency || 'TZS';
+                                const rSymbol = CURRENCY_SYMBOLS[rCurrency] || rCurrency;
+                                // Activation fee for this referral's currency
+                                const rActivationFee = activationFees[rCurrency];
 
-                                    {/* Right: Status + Call */}
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                        <span style={{
-                                            display: 'inline-flex', alignItems: 'center', gap: 4,
-                                            background: r.isActive ? 'rgba(34,197,94,0.1)' : 'rgba(249,115,22,0.1)',
-                                            color: r.isActive ? 'var(--color-green)' : 'var(--color-orange)',
-                                            borderRadius: 99, fontSize: 10, padding: '3px 8px', fontWeight: 600
-                                        }}>
-                                            {r.isActive ? 'Active' : 'Pending'}
-                                        </span>
-                                        
-                                        {r.phone ? (
-                                            <a href={`tel:+${r.phone}`} className="btn-call-compact" title={`Call ${r.username}`}>
-                                                <PhoneIcon />
-                                            </a>
-                                        ) : (
-                                            <div style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.1, color: 'var(--text-muted)' }}>
-                                                <PhoneIcon />
+                                return (
+                                    <div
+                                        key={r.uid || i}
+                                        className="earning-item compact-row"
+                                        style={{
+                                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                            padding: '10px 12px',
+                                            animationDelay: `${i * 0.03}s`
+                                        }}
+                                    >
+                                        {/* Left: Flag + Name + Level */}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+                                            {/* Country flag circle avatar */}
+                                            <div style={{
+                                                width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                                                overflow: 'hidden',
+                                                border: '2px solid var(--color-border)',
+                                                boxShadow: '0 1px 4px rgba(0,0,0,0.1)'
+                                            }}>
+                                                <img
+                                                    src={`https://flagcdn.com/w80/${rCountryCode}.png`}
+                                                    alt={r.countryName || rCountryCode}
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                    onError={e => {
+                                                        e.target.style.display = 'none';
+                                                        e.target.parentNode.textContent = (r.username || '?').charAt(0).toUpperCase();
+                                                    }}
+                                                />
                                             </div>
-                                        )}
+
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                    <span style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        {r.username || r.fullName || 'User'}
+                                                    </span>
+                                                    {activeTab === 'all' && (
+                                                        <span style={{
+                                                            background: ['', 'rgba(99,102,241,0.12)', 'rgba(168,85,247,0.12)', 'rgba(236,72,153,0.12)'][r._level || 1],
+                                                            color: ['', '#6366f1', '#a855f7', '#ec4899'][r._level || 1],
+                                                            padding: '1px 5px', borderRadius: 4, fontWeight: 700, fontSize: 10,
+                                                            flexShrink: 0
+                                                        }}>
+                                                            L{r._level}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                                                    <img
+                                                        src={`https://flagcdn.com/w40/${rCountryCode}.png`}
+                                                        alt={rCountryCode}
+                                                        style={{ width: 14, height: 10, objectFit: 'cover', borderRadius: 1 }}
+                                                    />
+                                                    <span>{r.countryName || rCountryCode.toUpperCase()}</span>
+                                                    {rActivationFee != null && (
+                                                        <span style={{
+                                                            background: r.isActive ? 'rgba(34,197,94,0.1)' : 'rgba(249,115,22,0.08)',
+                                                            color: r.isActive ? '#16a34a' : '#ca8a04',
+                                                            padding: '0 5px', borderRadius: 4, fontWeight: 600
+                                                        }}>
+                                                            Fee: {rSymbol} {Number(rActivationFee).toLocaleString()}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Right: Status + Call */}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                                            <span style={{
+                                                display: 'inline-flex', alignItems: 'center', gap: 4,
+                                                background: r.isActive ? 'rgba(34,197,94,0.1)' : 'rgba(249,115,22,0.1)',
+                                                color: r.isActive ? 'var(--color-green)' : 'var(--color-orange)',
+                                                borderRadius: 99, fontSize: 10, padding: '3px 8px', fontWeight: 600
+                                            }}>
+                                                {r.isActive ? 'Active' : 'Pending'}
+                                            </span>
+
+                                            {r.phone ? (
+                                                <a href={`tel:+${r.phone}`} className="btn-call-compact" title={`Call ${r.username}`}>
+                                                    <PhoneIcon />
+                                                </a>
+                                            ) : (
+                                                <div style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.15, color: 'var(--text-muted)' }}>
+                                                    <PhoneIcon />
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            ))
+                                );
+                            })
                         )}
                     </div>
 
