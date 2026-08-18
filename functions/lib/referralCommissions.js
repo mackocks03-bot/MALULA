@@ -1,3 +1,6 @@
+import { FieldValue } from 'firebase-admin/firestore';
+import { sendPushNotification } from './sendPushNotification.js';
+
 /**
  * Resolve referrer username → UID via loginIndex (exact then lowercase)
  */
@@ -157,6 +160,15 @@ export async function processReferralBonus(db, {
 
     await commissionLogRef.set(result);
     console.log(`✅ L${level} commission ${localBonusAmount} ${currency} → ${referrerUsername}`);
+
+    // Send push notification instantly to the upliner!
+    await sendPushNotification(
+        db, 
+        referrerUid, 
+        'New Commission Received! 💸', 
+        `You just earned ${localBonusAmount} ${currency} from ${newUsername} (Level ${level})!`,
+        { type: 'commission', amount: localBonusAmount, currency, level }
+    );
 
     return result;
 }
