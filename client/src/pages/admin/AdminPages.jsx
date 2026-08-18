@@ -23,42 +23,42 @@ const Icon = ({ d, size = 18 }) => (
 
 const icons = {
     dashboard: 'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z M9 22V12h6v10',
-    users:     'M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2 M23 21v-2a4 4 0 00-3-3.87 M16 3.13a4 4 0 010 7.75',
-    payments:  'M2 5h20v14H2z M2 10h20',
-    withdraw:  'M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6',
+    users: 'M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2 M23 21v-2a4 4 0 00-3-3.87 M16 3.13a4 4 0 010 7.75',
+    payments: 'M2 5h20v14H2z M2 10h20',
+    withdraw: 'M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6',
     referrals: 'M16 3.13a4 4 0 010 7.75 M11 7a4 4 0 100 8 4 4 0 000-8z',
-    tasks:     'M9 11l3 3L22 4 M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11',
-    settings:  'M12 15a3 3 0 100-6 3 3 0 000 6z',
-    shop:      'M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z M3 6h18 M16 10a4 4 0 01-8 0',
-    back:      'M19 12H5 M12 19l-7-7 7-7',
-    check:     'M20 6L9 17l-5-5',
-    x:         'M18 6L6 18 M6 6l12 12',
-    trash:     'M3 6h18 M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2',
-    refresh:   'M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15',
-    search:    'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0',
+    tasks: 'M9 11l3 3L22 4 M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11',
+    settings: 'M12 15a3 3 0 100-6 3 3 0 000 6z',
+    shop: 'M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z M3 6h18 M16 10a4 4 0 01-8 0',
+    back: 'M19 12H5 M12 19l-7-7 7-7',
+    check: 'M20 6L9 17l-5-5',
+    x: 'M18 6L6 18 M6 6l12 12',
+    trash: 'M3 6h18 M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2',
+    refresh: 'M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15',
+    search: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0',
 };
 
 const adminLinks = [
     { to: '/admin/dashboard', label: 'Dashboard', icon: 'dashboard' },
-    { to: '/admin/users',     label: 'Users Directory', icon: 'users' },
-    { to: '/admin/payments',  label: 'Payment Logs', icon: 'payments' },
-    { to: '/admin/withdrawals',label: 'Withdrawal Limits', icon: 'withdraw' },
+    { to: '/admin/users', label: 'Users Directory', icon: 'users' },
+    { to: '/admin/payments', label: 'Payment Logs', icon: 'payments' },
+    { to: '/admin/withdrawals', label: 'Withdrawal Limits', icon: 'withdraw' },
     { to: '/admin/referrals', label: 'Referral Tracking', icon: 'referrals' },
-    { to: '/admin/tasks',     label: 'Task Assignments', icon: 'tasks' },
-    { to: '/admin/shop',      label: 'Vendor Management', icon: 'shop' },
-    { to: '/admin/settings',  label: 'System Parameters', icon: 'settings' },
+    { to: '/admin/tasks', label: 'Task Assignments', icon: 'tasks' },
+    { to: '/admin/shop', label: 'Vendor Management', icon: 'shop' },
+    { to: '/admin/settings', label: 'System Parameters', icon: 'settings' },
 ];
 
 /* ─────────────────────── Shared components ─────────────────────── */
 function StatusBadge({ status }) {
     const map = {
         approved: ['success', 'APPROVED'],
-        active:   ['success', 'ACTIVE'],
-        pending:  ['warning', 'PENDING'],
-        rejected: ['danger',  'REJECTED'],
-        completed:['success', 'COMPLETED'],
-        COMPLETED:['success', 'COMPLETED'],
-        failed:   ['danger',  'FAILED'],
+        active: ['success', 'ACTIVE'],
+        pending: ['warning', 'PENDING'],
+        rejected: ['danger', 'REJECTED'],
+        completed: ['success', 'COMPLETED'],
+        COMPLETED: ['success', 'COMPLETED'],
+        failed: ['danger', 'FAILED'],
     };
     const [cls, label] = map[status] || ['muted', (status || 'UNKNOWN').toUpperCase()];
     return <span className={`gov-badge gov-badge-${cls}`}>{label}</span>;
@@ -68,17 +68,17 @@ function ConfirmModal({ modal, onClose, onConfirm, processing }) {
     if (!modal) return null;
     const isDelete = modal.action === 'delete';
     const isReject = modal.action === 'reject';
-    
+
     return (
         <div className="gov-modal-overlay open" onClick={e => e.target === e.currentTarget && onClose()}>
-            <div className={`gov-modal ${isDelete || isReject ? 'danger-border' : ''}`} style={isDelete || isReject ? { borderTopColor: 'var(--gov-danger)'} : {}}>
+            <div className={`gov-modal ${isDelete || isReject ? 'danger-border' : ''}`} style={isDelete || isReject ? { borderTopColor: 'var(--gov-danger)' } : {}}>
                 <div className="gov-modal-header">
                     <h3>{modal.title}</h3>
                     <button className="gov-modal-close" onClick={onClose}>✕</button>
                 </div>
                 <div className="gov-modal-body">
-                    <p className="gov-subtitle" style={{marginBottom: 16}}>{modal.subtitle}</p>
-                    
+                    <p className="gov-subtitle" style={{ marginBottom: 16 }}>{modal.subtitle}</p>
+
                     <div style={{ background: '#F5F5F5', padding: 12, borderRadius: 4, marginBottom: 16 }}>
                         <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
                             <tbody>
@@ -139,7 +139,7 @@ export default function AdminLayout() {
         if (userData?.role === 'admin') { setVerified(true); return; }
         const stored = sessionStorage.getItem('adminAuth');
         if (stored) {
-            try { if (JSON.parse(stored).role === 'admin') { setVerified(true); return; } } catch {}
+            try { if (JSON.parse(stored).role === 'admin') { setVerified(true); return; } } catch { }
         }
         navigate('/admin/login');
     }, [user, userData, loading, navigate]);
@@ -154,7 +154,7 @@ export default function AdminLayout() {
                     <div className="gov-sidebar-brand">NEWHOPE <span className="hl">GOV</span></div>
                     <div className="gov-sidebar-badge">AUTHORIZED ACCESS ONLY</div>
                 </div>
-                
+
                 <nav className="gov-sidebar-nav">
                     {adminLinks.map(link => (
                         <Link key={link.to} to={link.to} className={`gov-sidebar-link ${location.pathname.startsWith(link.to) ? 'active' : ''}`} onClick={() => setMobileOpen(false)}>
@@ -163,7 +163,7 @@ export default function AdminLayout() {
                         </Link>
                     ))}
                 </nav>
-                
+
                 <div className="gov-sidebar-footer">
                     <div className="gov-user-card">
                         <div className="label">Operator ID</div>
@@ -172,14 +172,14 @@ export default function AdminLayout() {
                     </div>
                 </div>
             </aside>
-            
+
             <main className="gov-main">
                 <header className="gov-topbar">
                     <button className="gov-mobile-btn" onClick={() => setMobileOpen(!mobileOpen)}>☰ Menu</button>
                     <div style={{ flex: 1 }}></div>
                     <Link to="/" className="gov-btn gov-btn-outline" style={{ padding: '6px 12px', fontSize: 12 }}>Client Portal ➔</Link>
                 </header>
-                
+
                 <div className="gov-content">
                     <Outlet />
                 </div>
@@ -204,13 +204,13 @@ export function AdminDashboard() {
         ]).then(([usersSnap, paymentsSnap, withdrawalsSnap]) => {
             let active = 0, pendingP = 0, totalW = 0, pendingW = 0;
             const acts = [];
-            
+
             if (!usersSnap.empty) {
                 const uVals = usersSnap.docs.map(d => ({ uid: d.id, ...d.data() }));
                 setStats(s => ({ ...s, users: uVals.length }));
                 uVals.forEach(u => {
                     if (u.isActive) active++;
-                    if (u.createdAt) acts.push({ type: 'user', title: `System Registration`, sub: `User: ${u.uid?.slice(0,8)}`, time: u.createdAt });
+                    if (u.createdAt) acts.push({ type: 'user', title: `System Registration`, sub: `User: ${u.uid?.slice(0, 8)}`, time: u.createdAt });
                 });
             }
             if (!paymentsSnap.empty) {
@@ -229,9 +229,9 @@ export function AdminDashboard() {
                     if (w.createdAt) acts.push({ type: 'withdraw', title: `Withdrawal Req`, sub: `$${(w.amountUSD || w.amount || 0).toFixed(2)}`, time: w.createdAt });
                 });
             }
-            
+
             setStats(s => ({ ...s, active, pendingPayments: pendingP, withdrawals: totalW, pendingWithdrawals: pendingW }));
-            setActivity(acts.sort((a,b) => b.time - a.time).slice(0, 10));
+            setActivity(acts.sort((a, b) => b.time - a.time).slice(0, 10));
             setBusy(false);
         });
     }, []);
@@ -249,7 +249,7 @@ export function AdminDashboard() {
         <div>
             <h1 className="gov-title">System Overview</h1>
             <p className="gov-subtitle">Executive summary of platform metrics</p>
-            
+
             <div className="gov-dash-grid">
                 {cards.map((c, i) => (
                     <div key={i} className="gov-stat-card">
@@ -261,14 +261,14 @@ export function AdminDashboard() {
                     </div>
                 ))}
             </div>
-            
+
             <div className="gov-panel" style={{ maxWidth: 600 }}>
                 <div className="gov-panel-header"><div className="gov-panel-title">System Activity Log</div></div>
                 <div className="gov-panel-body">
                     {busy ? <div style={{ padding: 24, textAlign: 'center', color: '#666' }}>Querying logs...</div> : (
                         activity.map((a, i) => (
                             <div className="gov-activity-item" key={i}>
-                                <div style={{ width: 10, height: 10, borderRadius: '50%', background: a.type==='user'?'#0288D1':a.type==='payment'?'#2E7D32':'#ED6C02' }}></div>
+                                <div style={{ width: 10, height: 10, borderRadius: '50%', background: a.type === 'user' ? '#0288D1' : a.type === 'payment' ? '#2E7D32' : '#ED6C02' }}></div>
                                 <div className="gov-activity-text">
                                     <div className="gov-activity-title">{a.title}</div>
                                     <div className="gov-activity-sub">{a.sub}</div>
@@ -319,7 +319,7 @@ function UserProfileModal({ user, onClose, onUpdateStatus, onSave }) {
     if (!user) return null;
     const cCode = (editData.countryCode || user.countryCode || 'TZ').toLowerCase();
     const curr = editData.currency || user.currency || 'TZS';
-    
+
     return (
         <div className="gov-modal-overlay open" onClick={e => e.target === e.currentTarget && onClose()}>
             <div className="gov-modal" style={{ maxWidth: 650 }}>
@@ -328,7 +328,7 @@ function UserProfileModal({ user, onClose, onUpdateStatus, onSave }) {
                         <h3 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                             <img src={`https://flagcdn.com/w40/${cCode}.png`} alt={cCode} style={{ width: 24, height: 16, borderRadius: 2 }} />
                             {isEditing ? (
-                                <input className="gov-input" value={editData.username} onChange={e => setEditData({...editData, username: e.target.value})} placeholder="Username" style={{ padding: '4px 8px' }} />
+                                <input className="gov-input" value={editData.username} onChange={e => setEditData({ ...editData, username: e.target.value })} placeholder="Username" style={{ padding: '4px 8px' }} />
                             ) : (
                                 `Personnel Profile: ${user.username || 'N/A'}`
                             )}
@@ -342,12 +342,12 @@ function UserProfileModal({ user, onClose, onUpdateStatus, onSave }) {
                         <h4 style={{ fontSize: 13, textTransform: 'uppercase', color: '#999', marginBottom: 12, borderBottom: '1px solid #eee', paddingBottom: 4 }}>Identity & Contact</h4>
                         {isEditing ? (
                             <>
-                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Full Name:</b> <input className="gov-input" style={{ width: '100%', padding: 4 }} value={editData.fullName} onChange={e => setEditData({...editData, fullName: e.target.value})} /></div>
-                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Email:</b> <input className="gov-input" style={{ width: '100%', padding: 4 }} value={editData.email} onChange={e => setEditData({...editData, email: e.target.value})} /></div>
-                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Phone:</b> <input className="gov-input" style={{ width: '100%', padding: 4 }} value={editData.phone} onChange={e => setEditData({...editData, phone: e.target.value})} /></div>
-                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Country Code (Flag):</b> <input className="gov-input" style={{ width: '100%', padding: 4 }} value={editData.countryCode} onChange={e => setEditData({...editData, countryCode: e.target.value})} placeholder="e.g. TZ, KE, NG" /></div>
-                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Country Name:</b> <input className="gov-input" style={{ width: '100%', padding: 4 }} value={editData.countryName} onChange={e => setEditData({...editData, countryName: e.target.value})} /></div>
-                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Currency:</b> <input className="gov-input" style={{ width: '100%', padding: 4 }} value={editData.currency} onChange={e => setEditData({...editData, currency: e.target.value})} /></div>
+                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Full Name:</b> <input className="gov-input" style={{ width: '100%', padding: 4 }} value={editData.fullName} onChange={e => setEditData({ ...editData, fullName: e.target.value })} /></div>
+                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Email:</b> <input className="gov-input" style={{ width: '100%', padding: 4 }} value={editData.email} onChange={e => setEditData({ ...editData, email: e.target.value })} /></div>
+                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Phone:</b> <input className="gov-input" style={{ width: '100%', padding: 4 }} value={editData.phone} onChange={e => setEditData({ ...editData, phone: e.target.value })} /></div>
+                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Country Code (Flag):</b> <input className="gov-input" style={{ width: '100%', padding: 4 }} value={editData.countryCode} onChange={e => setEditData({ ...editData, countryCode: e.target.value })} placeholder="e.g. TZ, KE, NG" /></div>
+                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Country Name:</b> <input className="gov-input" style={{ width: '100%', padding: 4 }} value={editData.countryName} onChange={e => setEditData({ ...editData, countryName: e.target.value })} /></div>
+                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Currency:</b> <input className="gov-input" style={{ width: '100%', padding: 4 }} value={editData.currency} onChange={e => setEditData({ ...editData, currency: e.target.value })} /></div>
                             </>
                         ) : (
                             <>
@@ -362,15 +362,15 @@ function UserProfileModal({ user, onClose, onUpdateStatus, onSave }) {
                         {isEditing ? (
                             <>
                                 <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                    <b>Access Status (isActive):</b> 
-                                    <select className="gov-input" style={{ padding: 4 }} value={editData.isActive} onChange={e => setEditData({...editData, isActive: e.target.value === 'true'})}>
+                                    <b>Access Status (isActive):</b>
+                                    <select className="gov-input" style={{ padding: 4 }} value={editData.isActive} onChange={e => setEditData({ ...editData, isActive: e.target.value === 'true' })}>
                                         <option value="true">Active</option>
                                         <option value="false">Suspended</option>
                                     </select>
                                 </div>
                                 <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                    <b>Activation Step:</b> 
-                                    <select className="gov-input" style={{ padding: 4 }} value={editData.activationStatus} onChange={e => setEditData({...editData, activationStatus: e.target.value})}>
+                                    <b>Activation Step:</b>
+                                    <select className="gov-input" style={{ padding: 4 }} value={editData.activationStatus} onChange={e => setEditData({ ...editData, activationStatus: e.target.value })}>
                                         <option value="pending">Pending</option>
                                         <option value="approved">Approved</option>
                                         <option value="rejected">Rejected</option>
@@ -385,30 +385,30 @@ function UserProfileModal({ user, onClose, onUpdateStatus, onSave }) {
                         <h4 style={{ fontSize: 13, textTransform: 'uppercase', color: '#999', marginBottom: 12, borderBottom: '1px solid #eee', paddingBottom: 4 }}>Financial & Network</h4>
                         {isEditing ? (
                             <>
-                                <div style={{ marginBottom: 8, color: '#2E7D32', fontWeight: 700, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Ledger Balance ({curr}):</b> <input className="gov-input" type="number" step="0.01" style={{ width: '100%', padding: 4 }} value={editData.balance} onChange={e => setEditData({...editData, balance: e.target.value})} /></div>
-                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Total Withdrawn ({curr}):</b> <input className="gov-input" type="number" step="0.01" style={{ width: '100%', padding: 4 }} value={editData.totalWithdrawn} onChange={e => setEditData({...editData, totalWithdrawn: e.target.value})} /></div>
-                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Referrer ID:</b> <input className="gov-input" style={{ width: '100%', padding: 4 }} value={editData.referrer} onChange={e => setEditData({...editData, referrer: e.target.value})} /></div>
+                                <div style={{ marginBottom: 8, color: '#2E7D32', fontWeight: 700, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Ledger Balance ({curr}):</b> <input className="gov-input" type="number" step="0.01" style={{ width: '100%', padding: 4 }} value={editData.balance} onChange={e => setEditData({ ...editData, balance: e.target.value })} /></div>
+                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Total Withdrawn ({curr}):</b> <input className="gov-input" type="number" step="0.01" style={{ width: '100%', padding: 4 }} value={editData.totalWithdrawn} onChange={e => setEditData({ ...editData, totalWithdrawn: e.target.value })} /></div>
+                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Referrer ID:</b> <input className="gov-input" style={{ width: '100%', padding: 4 }} value={editData.referrer} onChange={e => setEditData({ ...editData, referrer: e.target.value })} /></div>
                                 <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                    <b>Downlines (Lv1/Lv2/Lv3):</b> 
+                                    <b>Downlines (Lv1/Lv2/Lv3):</b>
                                     <div style={{ display: 'flex', gap: 4 }}>
-                                        <input className="gov-input" type="number" style={{ width: 50, padding: 4 }} value={editData.downlinesLevel1} onChange={e => setEditData({...editData, downlinesLevel1: e.target.value})} />/
-                                        <input className="gov-input" type="number" style={{ width: 50, padding: 4 }} value={editData.downlinesLevel2} onChange={e => setEditData({...editData, downlinesLevel2: e.target.value})} />/
-                                        <input className="gov-input" type="number" style={{ width: 50, padding: 4 }} value={editData.downlinesLevel3} onChange={e => setEditData({...editData, downlinesLevel3: e.target.value})} />
+                                        <input className="gov-input" type="number" style={{ width: 50, padding: 4 }} value={editData.downlinesLevel1} onChange={e => setEditData({ ...editData, downlinesLevel1: e.target.value })} />/
+                                        <input className="gov-input" type="number" style={{ width: 50, padding: 4 }} value={editData.downlinesLevel2} onChange={e => setEditData({ ...editData, downlinesLevel2: e.target.value })} />/
+                                        <input className="gov-input" type="number" style={{ width: 50, padding: 4 }} value={editData.downlinesLevel3} onChange={e => setEditData({ ...editData, downlinesLevel3: e.target.value })} />
                                     </div>
                                 </div>
-                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Mining Rate (/hr):</b> <input className="gov-input" type="number" step="0.01" style={{ width: '100%', padding: 4 }} value={editData.miningRate} onChange={e => setEditData({...editData, miningRate: e.target.value})} /></div>
-                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Referral Link:</b> <input className="gov-input" style={{ width: '100%', padding: 4 }} value={editData.referralLink} onChange={e => setEditData({...editData, referralLink: e.target.value})} /></div>
+                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Mining Rate (/hr):</b> <input className="gov-input" type="number" step="0.01" style={{ width: '100%', padding: 4 }} value={editData.miningRate} onChange={e => setEditData({ ...editData, miningRate: e.target.value })} /></div>
+                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Referral Link:</b> <input className="gov-input" style={{ width: '100%', padding: 4 }} value={editData.referralLink} onChange={e => setEditData({ ...editData, referralLink: e.target.value })} /></div>
                             </>
                         ) : (
                             <>
                                 <div style={{ marginBottom: 8, color: '#2E7D32', fontWeight: 700 }}><b>Ledger Balance:</b> {curr} {(user.balance || 0).toFixed(2)}</div>
                                 <div style={{ marginBottom: 8 }}><b>Total Withdrawn:</b> {curr} {(user.totalWithdrawn || 0).toFixed(2)}</div>
-                                <div style={{ marginBottom: 8 }}><b>Referrer ID:</b> <span style={{fontFamily: 'monospace'}}>{user.referrer || 'None'}</span></div>
+                                <div style={{ marginBottom: 8 }}><b>Referrer ID:</b> <span style={{ fontFamily: 'monospace' }}>{user.referrer || 'None'}</span></div>
                                 <div style={{ marginBottom: 8 }}>
                                     <b>Downlines (Lv1/Lv2/Lv3):</b> {user.referrals?.level1?.length ?? user.downlines?.level1 ?? 0} / {user.referrals?.level2?.length ?? user.downlines?.level2 ?? 0} / {user.referrals?.level3?.length ?? user.downlines?.level3 ?? 0}
                                 </div>
                                 <div style={{ marginBottom: 8 }}><b>Mining Rate:</b> {user.miningRate || 0} / hr</div>
-                                <div style={{ marginBottom: 8, fontSize: 11, wordBreak: 'break-all', marginTop: 12 }}><b>Referral Link:</b> <br/><a href={user.referralLink} target="_blank" rel="noreferrer" style={{color: 'var(--gov-blue)'}}>{user.referralLink || 'N/A'}</a></div>
+                                <div style={{ marginBottom: 8, fontSize: 11, wordBreak: 'break-all', marginTop: 12 }}><b>Referral Link:</b> <br /><a href={user.referralLink} target="_blank" rel="noreferrer" style={{ color: 'var(--gov-blue)' }}>{user.referralLink || 'N/A'}</a></div>
                             </>
                         )}
                     </div>
@@ -458,7 +458,7 @@ export function AdminUsers() {
             showToast(`User status updated to ${newStatus ? 'Active' : 'Suspended'}.`, 'success');
             setSelectedUser(null);
             loadUsers();
-        } catch(e) {
+        } catch (e) {
             showToast('Failed to update user', 'error');
         }
     };
@@ -488,7 +488,7 @@ export function AdminUsers() {
             showToast('User details updated successfully', 'success');
             setSelectedUser(null);
             loadUsers();
-        } catch(e) {
+        } catch (e) {
             showToast('Failed to save details', 'error');
         }
     };
@@ -506,7 +506,7 @@ export function AdminUsers() {
             <UserProfileModal user={selectedUser} onClose={() => setSelectedUser(null)} onUpdateStatus={handleUpdateStatus} onSave={handleSaveUser} />
             <h1 className="gov-title">User Directory</h1>
             <p className="gov-subtitle">Comprehensive registry of all platform personnel</p>
-            
+
             <div className="gov-users-toolbar">
                 <input className="gov-input gov-users-search" placeholder="Query by ID, Name, Phone..." value={q} onChange={e => setQ(e.target.value)} />
                 <div className="gov-users-filters">
@@ -517,7 +517,7 @@ export function AdminUsers() {
                     ))}
                 </div>
             </div>
-            
+
             <div className="gov-table-container">
                 <table className="gov-table">
                     <thead><tr><th>Personnel</th><th>Contact Data</th><th>Region</th><th>Ledger Balance</th><th>System Status</th></tr></thead>
@@ -528,7 +528,7 @@ export function AdminUsers() {
                                 <tr key={u.uid} onClick={() => setSelectedUser(u)} style={{ cursor: 'pointer' }} title="Click to view full records">
                                     <td>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                            <div className="gov-user-avatar">{(u.username || '?').slice(0,2).toUpperCase()}</div>
+                                            <div className="gov-user-avatar">{(u.username || '?').slice(0, 2).toUpperCase()}</div>
                                             <div>
                                                 <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--gov-blue)' }}>{u.username || 'Unregistered'}</div>
                                                 <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#666' }}>ID: {u.uid.slice(0, 12)}...</div>
@@ -570,13 +570,13 @@ export function AdminPayments() {
     const [q, setQ] = useState('');
 
     const load = useCallback(() => {
-        Promise.all([ getDocs(collection(db, 'activationPayments')), getDocs(collection(db, 'users')) ]).then(([pSnap, uSnap]) => {
+        Promise.all([getDocs(collection(db, 'activationPayments')), getDocs(collection(db, 'users'))]).then(([pSnap, uSnap]) => {
             if (!uSnap.empty) {
                 const uMap = {};
                 uSnap.docs.forEach(d => uMap[d.id] = d.data());
                 setUsersMap(uMap);
             }
-            setPayments(!pSnap.empty ? pSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)) : []);
+            setPayments(!pSnap.empty ? pSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)) : []);
         });
     }, []);
 
@@ -601,14 +601,14 @@ export function AdminPayments() {
                 { label: 'Phone', value: p.phone || p.phoneNumber || '—' },
                 { label: 'Dated', value: p.createdAt ? new Date(p.createdAt).toLocaleString() : '—' }
             ],
-            reason: 'Verification failed', setReason: (r) => setModal(m => ({...m, reason: r}))
+            reason: 'Verification failed', setReason: (r) => setModal(m => ({ ...m, reason: r }))
         });
     };
 
     const handleConfirm = async () => {
         setProcessing(true);
         const res = modal.action === 'approve' ? await approveActivation(modal.id) :
-                    modal.action === 'reject'  ? await rejectActivation(modal.id, modal.reason) : await deleteActivation(modal.id);
+            modal.action === 'reject' ? await rejectActivation(modal.id, modal.reason) : await deleteActivation(modal.id);
         showToast(res.success ? res.message || 'Operation successful' : res.error, res.success ? 'success' : 'error');
         if (res.success) {
             setPayments(prev => Object.values(prev).map(p => {
@@ -624,11 +624,11 @@ export function AdminPayments() {
             <ConfirmModal modal={modal} onClose={() => setModal(null)} onConfirm={handleConfirm} processing={processing} />
             <h1 className="gov-title">Payment Logs</h1>
             <p className="gov-subtitle">Official treasury incoming logs & verification queue</p>
-            
+
             <div className="gov-payments-toolbar">
                 <input className="gov-input gov-payments-search" placeholder="Search invoices..." value={q} onChange={e => setQ(e.target.value)} />
             </div>
-            
+
             <div className="gov-table-container">
                 <table className="gov-table">
                     <thead><tr><th>Invoice ID</th><th>Gateway</th><th>Transfer Amount</th><th>Timestamp</th><th>Status</th><th>Audit Actions</th></tr></thead>
@@ -644,8 +644,8 @@ export function AdminPayments() {
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                             <img src={`https://flagcdn.com/w40/${cCode}.png`} alt={cCode} style={{ width: 24, height: 16, objectFit: 'cover', borderRadius: 2 }} />
                                             <div>
-                                                <div className="gov-mono-text">{p.reference || p.transactionId || p.id.slice(0,8)}</div>
-                                                <div style={{ fontSize: 11, color: '#999' }}>UID: {p.uid.slice(0,10)}...</div>
+                                                <div className="gov-mono-text">{p.reference || p.transactionId || p.id.slice(0, 8)}</div>
+                                                <div style={{ fontSize: 11, color: '#999' }}>UID: {p.uid.slice(0, 10)}...</div>
                                             </div>
                                         </div>
                                     </td>
@@ -662,10 +662,10 @@ export function AdminPayments() {
                                     <td>
                                         <div className="gov-action-group">
                                             {p.status !== 'completed' && p.status !== 'approved' && p.status !== 'rejected' && <>
-                                                <button className="gov-btn gov-btn-success" onClick={()=>openModal('approve', p)}>Approve</button>
-                                                <button className="gov-btn gov-btn-danger" onClick={()=>openModal('reject', p)}>Reject</button>
+                                                <button className="gov-btn gov-btn-success" onClick={() => openModal('approve', p)}>Approve</button>
+                                                <button className="gov-btn gov-btn-danger" onClick={() => openModal('reject', p)}>Reject</button>
                                             </>}
-                                            <button className="gov-btn gov-btn-outline" onClick={()=>openModal('delete', p)}>Delete</button>
+                                            <button className="gov-btn gov-btn-outline" onClick={() => openModal('delete', p)}>Delete</button>
                                         </div>
                                     </td>
                                 </tr>
@@ -698,7 +698,7 @@ export function AdminWithdrawals() {
     const [q, setQ] = useState('');
 
     const load = useCallback(() => {
-        Promise.all([ getDocs(collection(db, 'withdrawals')), getDocs(collection(db, 'users')) ]).then(([wSnap, uSnap]) => {
+        Promise.all([getDocs(collection(db, 'withdrawals')), getDocs(collection(db, 'users'))]).then(([wSnap, uSnap]) => {
             if (!uSnap.empty) {
                 const uMap = {};
                 uSnap.docs.forEach(d => uMap[d.id] = d.data());
@@ -745,14 +745,14 @@ export function AdminWithdrawals() {
             title: action === 'approve' ? 'Authenticate Payout' : action === 'reject' ? 'Deny Payout' : 'Strike Record',
             subtitle: `Requisition ${w.referenceCode || w.id}`,
             details,
-            reason: 'Compliance Failure', setReason: (r) => setModal(m => ({...m, reason: r}))
+            reason: 'Compliance Failure', setReason: (r) => setModal(m => ({ ...m, reason: r }))
         });
     };
 
     const handleConfirm = async () => {
         setProcessing(true);
         const res = modal.action === 'approve' ? await approveWithdrawal(modal.uid, modal.id) :
-                    modal.action === 'reject'  ? await rejectWithdrawal(modal.uid, modal.id, modal.reason) : await deleteWithdrawal(modal.uid, modal.id);
+            modal.action === 'reject' ? await rejectWithdrawal(modal.uid, modal.id, modal.reason) : await deleteWithdrawal(modal.uid, modal.id);
         showToast(res.success ? res.message || 'Complete' : res.error, res.success ? 'success' : 'error');
         if (res.success) {
             setItems(prev => Object.values(prev).map(w => {
@@ -768,11 +768,11 @@ export function AdminWithdrawals() {
             <ConfirmModal modal={modal} onClose={() => setModal(null)} onConfirm={handleConfirm} processing={processing} />
             <h1 className="gov-title">Disbursement Queue</h1>
             <p className="gov-subtitle">Treasury payout requisitions monitoring</p>
-            
+
             <div className="gov-withdrawals-toolbar">
                 <input className="gov-input gov-withdrawals-search" placeholder="Search requistions..." value={q} onChange={e => setQ(e.target.value)} />
             </div>
-            
+
             <div className="gov-table-container">
                 <table className="gov-table">
                     <thead><tr>
@@ -804,7 +804,7 @@ export function AdminWithdrawals() {
                                     </td>
                                     <td>
                                         <div style={{ fontWeight: 800, color: 'var(--gov-blue)', fontSize: 14 }}>
-                                            {currency} {Number(w.amount || 0).toLocaleString()} <span style={{fontSize: 10, fontWeight: 500, color: '#666'}}>(Requested)</span>
+                                            {currency} {Number(w.amount || 0).toLocaleString()} <span style={{ fontSize: 10, fontWeight: 500, color: '#666' }}>(Requested)</span>
                                         </div>
                                         {w.fee > 0 && <div style={{ fontSize: 11, color: '#ca8a04' }}>+ Fee: {currency} {Number(w.fee).toLocaleString()}</div>}
                                         <div style={{ fontSize: 12, fontWeight: 700, color: '#16a34a', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -829,17 +829,17 @@ export function AdminWithdrawals() {
                                         <span className="gov-method-badge">{w.method || 'Unknown'}</span>
                                     </td>
                                     <td>
-                                        <div style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--text-muted)' }}>{w.referenceCode || w.id?.slice(0,10)}</div>
+                                        <div style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--text-muted)' }}>{w.referenceCode || w.id?.slice(0, 10)}</div>
                                         <div style={{ fontSize: 10, color: '#bbb' }}>{w.createdAt ? new Date(w.createdAt).toLocaleDateString() : ''}</div>
                                     </td>
                                     <td><StatusBadge status={w.status} /></td>
                                     <td>
                                         <div className="gov-action-group">
                                             {w.status === 'pending' && <>
-                                                <button className="gov-btn gov-btn-success" onClick={()=>openModal('approve', w)}>Authorize</button>
-                                                <button className="gov-btn gov-btn-danger" onClick={()=>openModal('reject', w)}>Deny</button>
+                                                <button className="gov-btn gov-btn-success" onClick={() => openModal('approve', w)}>Authorize</button>
+                                                <button className="gov-btn gov-btn-danger" onClick={() => openModal('reject', w)}>Deny</button>
                                             </>}
-                                            <button className="gov-btn gov-btn-outline" onClick={()=>openModal('delete', w)}>Delete</button>
+                                            <button className="gov-btn gov-btn-outline" onClick={() => openModal('delete', w)}>Delete</button>
                                         </div>
                                     </td>
                                 </tr>
@@ -864,7 +864,7 @@ function ReferralDetailModal({ promoter, usersMap, onClose }) {
     let lv3Uids = promoter.referrals?.level3 || [];
 
     const allUsers = Object.values(usersMap);
-    
+
     // Level 1 Legacy
     const pId = promoter.username; // Legacy referrals recorded the referrer username
     const legacyLv1 = allUsers.filter(u => u.referrer && (u.referrer === pId || u.referrer === promoter.uid)).map(u => u.uid);
@@ -972,20 +972,20 @@ export function AdminReferrals() {
                 const all = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
                 const map = {};
                 const referrerCounts = {};
-                
-                all.forEach(u => { 
-                    map[u.uid] = u; 
+
+                all.forEach(u => {
+                    map[u.uid] = u;
                     if (u.referrer) {
                         referrerCounts[u.referrer] = (referrerCounts[u.referrer] || 0) + 1;
                     }
                 });
                 setUsersMap(map);
-                
+
                 const getLv1 = u => {
                     const dynamicLegacyLv1 = (referrerCounts[u.username] || 0) + (referrerCounts[u.uid] || 0);
                     return Math.max(u.referrals?.level1?.length || 0, u.downlines?.level1 || 0, u.referralCount || 0, dynamicLegacyLv1);
                 };
-                
+
                 setUsers(all.filter(u => getLv1(u) > 0).sort((a, b) => getLv1(b) - getLv1(a)));
                 setLoading(false);
             })
@@ -1060,19 +1060,19 @@ export function AdminReferrals() {
                             const lv1 = countLevel(lv1Uids);
                             const lv2 = countLevel(lv2Uids);
                             const lv3 = countLevel(lv3Uids);
-                            
+
                             // Optional fallback if dynamic calculation somehow misses something
                             const lv1T = Math.max(lv1.total, u.downlines?.level1 || 0, u.referralCount || 0);
                             const lv2T = Math.max(lv2.total, u.downlines?.level2 || 0);
                             const lv3T = Math.max(lv3.total, u.downlines?.level3 || 0);
-                            
+
                             const lv1Missing = Math.max(0, lv1T - lv1.total);
                             const lv2Missing = Math.max(0, lv2T - lv2.total);
                             const lv3Missing = Math.max(0, lv3T - lv3.total);
 
                             const grand = lv1T + lv2T + lv3T;
                             const cCode = (u.countryCode || u.country || 'TZ').toLowerCase();
-                            
+
                             return (
                                 <tr key={u.uid} style={{ cursor: 'pointer' }} onClick={() => setSelected(u)}>
                                     <td>
@@ -1132,12 +1132,12 @@ export function AdminReferrals() {
    TASKS ADMIN
 ═══════════════════════════════════════════════════════════ */
 const TASK_CATEGORY_OPTIONS = [
-    { value: 'youtube',   label: 'YouTube Watch & Earn' },
-    { value: 'facebook',  label: 'Facebook Watch & Earn' },
-    { value: 'whatsapp',  label: 'WhatsApp Status Task' },
-    { value: 'ads',       label: 'Ad Posting Task' },
-    { value: 'tiktok',    label: 'TikTok Watch & Earn' },
-    { value: 'chat',      label: 'Chat & Earn' },
+    { value: 'youtube', label: 'YouTube Watch & Earn' },
+    { value: 'facebook', label: 'Facebook Watch & Earn' },
+    { value: 'whatsapp', label: 'WhatsApp Status Task' },
+    { value: 'ads', label: 'Ad Posting Task' },
+    { value: 'tiktok', label: 'TikTok Watch & Earn' },
+    { value: 'chat', label: 'Chat & Earn' },
     { value: 'challenge', label: 'Weekly Challenge' },
 ];
 
@@ -1146,13 +1146,13 @@ const TASK_CURRENCIES = ['TZS', 'KES', 'UGX', 'MWK', 'ZMW', 'RWF', 'BIF', 'CDF']
 const WEEK_DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
 const DEFAULT_SCHEDULE = {
-    monday:    { category: 'youtube',   title: 'YouTube Watch & Earn',   totalItems: 10, active: true, description: 'Watch 10 YouTube videos.',   videoUrl: '', countryRewards: { TZS: 1000, KES: 50, UGX: 3000, MWK: 800, ZMW: 10, RWF: 500, BIF: 1000, CDF: 1000 } },
-    tuesday:   { category: 'facebook',  title: 'Facebook Watch & Earn',  totalItems: 10, active: true, description: 'Watch 10 Facebook videos.',  videoUrl: '', countryRewards: { TZS: 1000, KES: 50, UGX: 3000, MWK: 800, ZMW: 10, RWF: 500, BIF: 1000, CDF: 1000 } },
-    wednesday: { category: 'whatsapp',  title: 'WhatsApp Status Task',   totalItems: 5,  active: true, description: 'Post 5 WhatsApp statuses.', videoUrl: '', countryRewards: { TZS: 2000, KES: 100, UGX: 6000, MWK: 1600, ZMW: 20, RWF: 1000, BIF: 2000, CDF: 2000 } },
-    thursday:  { category: 'ads',       title: 'Ad Posting Task',        totalItems: 10, active: true, description: 'Post 10 ads.',              videoUrl: '', countryRewards: { TZS: 1000, KES: 50, UGX: 3000, MWK: 800, ZMW: 10, RWF: 500, BIF: 1000, CDF: 1000 } },
-    friday:    { category: 'tiktok',    title: 'TikTok Watch & Earn',    totalItems: 10, active: true, description: 'Watch 10 TikTok videos.',   videoUrl: '', countryRewards: { TZS: 1000, KES: 50, UGX: 3000, MWK: 800, ZMW: 10, RWF: 500, BIF: 1000, CDF: 1000 } },
-    saturday:  { category: 'chat',      title: 'Chat & Earn',            totalItems: 10, active: true, description: 'Send 10 chat messages.',    videoUrl: '', countryRewards: { TZS: 1000, KES: 50, UGX: 3000, MWK: 800, ZMW: 10, RWF: 500, BIF: 1000, CDF: 1000 } },
-    sunday:    { category: 'challenge', title: 'Weekly Challenge',        totalItems: 1,  active: true, description: 'Complete weekly challenge.',videoUrl: '', countryRewards: { TZS: 5000, KES: 250, UGX: 15000, MWK: 4000, ZMW: 50, RWF: 2500, BIF: 5000, CDF: 5000 } },
+    monday: { category: 'youtube', title: 'YouTube Watch & Earn', totalItems: 10, active: true, description: 'Watch 10 YouTube videos.', videoUrl: '', countryRewards: { TZS: 1000, KES: 50, UGX: 3000, MWK: 800, ZMW: 10, RWF: 500, BIF: 1000, CDF: 1000 } },
+    tuesday: { category: 'facebook', title: 'Facebook Watch & Earn', totalItems: 10, active: true, description: 'Watch 10 Facebook videos.', videoUrl: '', countryRewards: { TZS: 1000, KES: 50, UGX: 3000, MWK: 800, ZMW: 10, RWF: 500, BIF: 1000, CDF: 1000 } },
+    wednesday: { category: 'whatsapp', title: 'WhatsApp Status Task', totalItems: 5, active: true, description: 'Post 5 WhatsApp statuses.', videoUrl: '', countryRewards: { TZS: 2000, KES: 100, UGX: 6000, MWK: 1600, ZMW: 20, RWF: 1000, BIF: 2000, CDF: 2000 } },
+    thursday: { category: 'ads', title: 'Ad Posting Task', totalItems: 10, active: true, description: 'Post 10 ads.', videoUrl: '', countryRewards: { TZS: 1000, KES: 50, UGX: 3000, MWK: 800, ZMW: 10, RWF: 500, BIF: 1000, CDF: 1000 } },
+    friday: { category: 'tiktok', title: 'TikTok Watch & Earn', totalItems: 10, active: true, description: 'Watch 10 TikTok videos.', videoUrl: '', countryRewards: { TZS: 1000, KES: 50, UGX: 3000, MWK: 800, ZMW: 10, RWF: 500, BIF: 1000, CDF: 1000 } },
+    saturday: { category: 'chat', title: 'Chat & Earn', totalItems: 10, active: true, description: 'Send 10 chat messages.', videoUrl: '', countryRewards: { TZS: 1000, KES: 50, UGX: 3000, MWK: 800, ZMW: 10, RWF: 500, BIF: 1000, CDF: 1000 } },
+    sunday: { category: 'challenge', title: 'Weekly Challenge', totalItems: 1, active: true, description: 'Complete weekly challenge.', videoUrl: '', countryRewards: { TZS: 5000, KES: 250, UGX: 15000, MWK: 4000, ZMW: 50, RWF: 2500, BIF: 5000, CDF: 5000 } },
 };
 
 export function AdminTasks() {
@@ -1254,7 +1254,7 @@ export function AdminTasks() {
                             ) : (
                                 <div>
                                     <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--gov-blue)', marginBottom: 16 }}>Editing: {dayLabel(day)}</div>
-                                    
+
                                     {/* Basic Settings */}
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
                                         <div>
@@ -1346,12 +1346,12 @@ export function AdminShop() {
             showToast('Item recorded', 'success');
             setAdding(false); setNewProduct({ title: '', price: '10.00', image: '' });
             loadProducts();
-        } catch(e) {}
+        } catch (e) { }
     };
 
     const handleDelete = async (id) => {
         if (!window.confirm('Delete vendor item?')) return;
-        try { await deleteDoc(doc(db, 'products', id)); loadProducts(); } catch(e) {}
+        try { await deleteDoc(doc(db, 'products', id)); loadProducts(); } catch (e) { }
     };
 
     return (
@@ -1359,16 +1359,16 @@ export function AdminShop() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                 <div>
                     <h1 className="gov-title">Vendor Management</h1>
-                    <p className="gov-subtitle" style={{margin:0}}>Platform marketplace items and inventory</p>
+                    <p className="gov-subtitle" style={{ margin: 0 }}>Platform marketplace items and inventory</p>
                 </div>
                 <button className="gov-btn gov-btn-primary" onClick={() => setAdding(!adding)}>+ Add Product</button>
             </div>
 
             {adding && (
                 <div className="gov-panel" style={{ padding: 20, marginBottom: 24, maxWidth: 600 }}>
-                    <div style={{marginBottom: 12}}><input className="gov-input" placeholder="Item Name" value={newProduct.title} onChange={e=>setNewProduct({...newProduct, title: e.target.value})} /></div>
-                    <div style={{marginBottom: 12}}><input className="gov-input" placeholder="Price (USD)" type="number" step="0.01" value={newProduct.price} onChange={e=>setNewProduct({...newProduct, price: e.target.value})} /></div>
-                    <div style={{marginBottom: 12}}><input className="gov-input" placeholder="Image URL (optional)" value={newProduct.image} onChange={e=>setNewProduct({...newProduct, image: e.target.value})} /></div>
+                    <div style={{ marginBottom: 12 }}><input className="gov-input" placeholder="Item Name" value={newProduct.title} onChange={e => setNewProduct({ ...newProduct, title: e.target.value })} /></div>
+                    <div style={{ marginBottom: 12 }}><input className="gov-input" placeholder="Price (USD)" type="number" step="0.01" value={newProduct.price} onChange={e => setNewProduct({ ...newProduct, price: e.target.value })} /></div>
+                    <div style={{ marginBottom: 12 }}><input className="gov-input" placeholder="Image URL (optional)" value={newProduct.image} onChange={e => setNewProduct({ ...newProduct, image: e.target.value })} /></div>
                     <button className="gov-btn gov-btn-success" onClick={handleCreate}>Stock Item</button>
                 </div>
             )}
@@ -1377,11 +1377,11 @@ export function AdminShop() {
                 <table className="gov-table">
                     <thead><tr><th>Item Code</th><th>Description</th><th>Cost Basis</th><th>Audit Action</th></tr></thead>
                     <tbody>
-                        {products.map((p,i) => (
+                        {products.map((p, i) => (
                             <tr key={i}>
-                                <td style={{fontFamily: 'monospace'}}>{p.id.slice(0,8)}...</td>
+                                <td style={{ fontFamily: 'monospace' }}>{p.id.slice(0, 8)}...</td>
                                 <td>{p.title || p.name}</td>
-                                <td><b>${(p.price||0).toFixed(2)}</b></td>
+                                <td><b>${(p.price || 0).toFixed(2)}</b></td>
                                 <td><button className="gov-btn gov-btn-danger" onClick={() => handleDelete(p.id)}>De-list</button></td>
                             </tr>
                         ))}
@@ -1444,7 +1444,7 @@ export function AdminSettings() {
             fields.forEach(f => { payload[f] = settings[f]; });
             await setDoc(doc(db, 'settings', 'general'), payload, { merge: true });
             showToast(`${label} saved successfully.`, 'success');
-        } catch(e) { showToast('Failed to save. Try again.', 'error'); }
+        } catch (e) { showToast('Failed to save. Try again.', 'error'); }
         setLoading(prev => ({ ...prev, [key]: false }));
     };
 
@@ -1458,15 +1458,15 @@ export function AdminSettings() {
         <div>
             <h1 className="gov-title">System Parameters</h1>
             <p className="gov-subtitle">Native per-country platform configuration</p>
-            
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, paddingBottom: 40 }}>
-                
+
                 <div className="gov-panel" style={{ padding: 24 }}>
-                    <h3 style={{marginTop: 0, marginBottom: 20}}>Activation Fees (Native)</h3>
+                    <h3 style={{ marginTop: 0, marginBottom: 20 }}>Activation Fees (Native)</h3>
                     {Currencies.map(c => (
-                        <div key={c} style={{display: 'flex', alignItems: 'center', marginBottom: 12}}>
-                            <div style={{width: 60, fontWeight: 700}}>{c}</div>
-                            <input className="gov-input" type="number" value={settings.activationFees[c] ?? ''} onChange={e => handleChange('activationFees', c, parseFloat(e.target.value))} style={{margin:0, flex: 1}} />
+                        <div key={c} style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+                            <div style={{ width: 60, fontWeight: 700 }}>{c}</div>
+                            <input className="gov-input" type="number" value={settings.activationFees[c] ?? ''} onChange={e => handleChange('activationFees', c, parseFloat(e.target.value))} style={{ margin: 0, flex: 1 }} />
                         </div>
                     ))}
                     <button className="gov-btn gov-btn-primary" onClick={saveFees} disabled={loading.fees} style={{ marginTop: 16, width: '100%' }}>
@@ -1475,25 +1475,25 @@ export function AdminSettings() {
                 </div>
 
                 <div className="gov-panel" style={{ padding: 24 }}>
-                    <h3 style={{marginTop: 0, marginBottom: 20}}>Withdrawal Parameters</h3>
-                    
+                    <h3 style={{ marginTop: 0, marginBottom: 20 }}>Withdrawal Parameters</h3>
+
                     <div style={{ marginBottom: 20, padding: 12, background: 'rgba(99,102,241,0.05)', borderRadius: 8, border: '1px solid rgba(99,102,241,0.2)' }}>
                         <div style={{ fontWeight: 700, marginBottom: 6, color: 'var(--gov-blue)' }}>Universal Withdrawal Fee (%)</div>
-                        <input 
-                            className="gov-input" 
-                            type="number" 
-                            step="0.1" 
-                            value={settings.withdrawFeePercent ?? ''} 
-                            onChange={e => setSettings(prev => ({ ...prev, withdrawFeePercent: parseFloat(e.target.value) || 0 }))} 
-                            style={{ margin: 0, width: '100%' }} 
+                        <input
+                            className="gov-input"
+                            type="number"
+                            step="0.1"
+                            value={settings.withdrawFeePercent ?? ''}
+                            onChange={e => setSettings(prev => ({ ...prev, withdrawFeePercent: parseFloat(e.target.value) || 0 }))}
+                            style={{ margin: 0, width: '100%' }}
                         />
                     </div>
-                    
+
                     <div style={{ fontWeight: 700, marginBottom: 12 }}>Minimum Withdrawal Amounts</div>
                     {Currencies.map(c => (
-                        <div key={c} style={{display: 'flex', alignItems: 'center', marginBottom: 12}}>
-                            <div style={{width: 60, fontWeight: 700}}>{c}</div>
-                            <input className="gov-input" type="number" value={settings.minWithdrawals[c] ?? ''} onChange={e => handleChange('minWithdrawals', c, parseFloat(e.target.value))} style={{margin:0, flex: 1}} />
+                        <div key={c} style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+                            <div style={{ width: 60, fontWeight: 700 }}>{c}</div>
+                            <input className="gov-input" type="number" value={settings.minWithdrawals[c] ?? ''} onChange={e => handleChange('minWithdrawals', c, parseFloat(e.target.value))} style={{ margin: 0, flex: 1 }} />
                         </div>
                     ))}
                     <button className="gov-btn gov-btn-primary" onClick={saveWithdrawals} disabled={loading.withdrawals} style={{ marginTop: 16, width: '100%' }}>
@@ -1502,11 +1502,11 @@ export function AdminSettings() {
                 </div>
 
                 <div className="gov-panel" style={{ padding: 24 }}>
-                    <h3 style={{marginTop: 0, marginBottom: 20}}>Task Wallets Minimum (Base TZS)</h3>
+                    <h3 style={{ marginTop: 0, marginBottom: 20 }}>Task Wallets Minimum (Base TZS)</h3>
                     {['tiktok', 'chat', 'welcomeBonus', 'youtube', 'facebook', 'whatsapp', 'ads'].map(w => (
-                        <div key={w} style={{display: 'flex', alignItems: 'center', marginBottom: 12}}>
-                            <div style={{width: 100, fontWeight: 700, fontSize: 12, textTransform: 'capitalize'}}>{w === 'welcomeBonus' ? 'Welcome' : w.charAt(0).toUpperCase() + w.slice(1)}</div>
-                            <input className="gov-input" type="number" value={settings.taskMinWithdrawalsBase[w] ?? ''} onChange={e => handleChange('taskMinWithdrawalsBase', w, parseFloat(e.target.value))} style={{margin:0, flex: 1}} />
+                        <div key={w} style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+                            <div style={{ width: 100, fontWeight: 700, fontSize: 12, textTransform: 'capitalize' }}>{w === 'welcomeBonus' ? 'Welcome' : w.charAt(0).toUpperCase() + w.slice(1)}</div>
+                            <input className="gov-input" type="number" value={settings.taskMinWithdrawalsBase[w] ?? ''} onChange={e => handleChange('taskMinWithdrawalsBase', w, parseFloat(e.target.value))} style={{ margin: 0, flex: 1 }} />
                         </div>
                     ))}
                     <button className="gov-btn gov-btn-primary" onClick={saveTaskLimits} disabled={loading.taskLimits} style={{ marginTop: 16, width: '100%' }}>

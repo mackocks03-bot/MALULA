@@ -57,11 +57,11 @@ export async function processReferralBonus(db, {
     if (!referrerSnap.exists) return null;
 
     const referrer = referrerSnap.data();
-    
+
     // NATIVE CONVERSION LOGIC
     const currency = referrer.currency || 'TZS';
     let rate = 2500;
-    
+
     // Fetch rate
     const ratesSnap = await db.collection('settings').doc('rates').get();
     if (ratesSnap.exists) {
@@ -88,7 +88,7 @@ export async function processReferralBonus(db, {
         else if (currency === 'CDF') rate = 2800;
         else if (currency === 'MZN') rate = 65;
     }
-    
+
     const localBonusAmount = Math.round(bonusAmount * rate);
 
     const balance = parseFloat(referrer.balance) || 0;
