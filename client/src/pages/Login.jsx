@@ -97,7 +97,14 @@ export default function Login() {
                             <Link to="/forgot-password">{translate('auth.forgotPassword')}</Link>
                         </div>
                         <button type="submit" className="btn-primary-auth" disabled={loading}>
-                            <span>{loading ? translate('login.loggingIn') : translate('login.button')}</span>
+                            {loading ? (
+                                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                    <span className="spinner" style={{ width: 14, height: 14, border: '2px solid transparent', borderTopColor: 'currentColor', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                                    {translate('login.loggingIn') || 'Authenticating...'}
+                                </span>
+                            ) : (
+                                <span>{translate('login.button')}</span>
+                            )}
                         </button>
                     </form>
                     <div className="auth-footer">

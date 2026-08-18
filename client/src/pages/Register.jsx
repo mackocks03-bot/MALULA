@@ -199,7 +199,14 @@ export default function Register() {
                             </label>
                         </div>
                         <button type="submit" className="btn-primary-auth" disabled={loading}>
-                            {loading ? translate('app.processing') : translate('auth.register')}
+                            {loading ? (
+                                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                    <span className="spinner" style={{ width: 14, height: 14, border: '2px solid transparent', borderTopColor: 'currentColor', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                                    {translate('app.processing') || 'Processing...'}
+                                </span>
+                            ) : (
+                                translate('auth.register')
+                            )}
                         </button>
                     </form>
                     <div className="auth-footer">

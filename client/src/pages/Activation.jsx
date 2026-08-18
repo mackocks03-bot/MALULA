@@ -360,12 +360,28 @@ export default function Activation() {
                                             </div>
                                         )}
 
+                                        {palmpesaStatus === 'waiting' && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: 'rgba(212,175,55,0.05)', border: '1px solid var(--color-gold)', borderRadius: 12, marginBottom: 16 }}>
+                                                <span className="spinner" style={{ flexShrink: 0, display: 'inline-block', width: 22, height: 22, border: '2.5px solid var(--color-gold)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1.2s linear infinite' }} />
+                                                <p style={{ margin: 0, fontSize: 13, color: 'var(--color-gold)', fontWeight: 600, lineHeight: 1.4 }}>
+                                                    {translate('activation.palmpesaPrompt') || 'Prompt has been sent to your phone. Please enter pin to complete payment.'}
+                                                </p>
+                                            </div>
+                                        )}
+
                                         <button
                                             type="submit"
                                             className="btn-primary-auth"
                                             disabled={loading || palmpesaStatus === 'waiting' || palmpesaStatus === 'pushing'}
                                         >
-                                            {translate('activation.palmpesaPay') || 'Pay & Activate with PalmPesa'}
+                                            {(loading || palmpesaStatus === 'pushing' || palmpesaStatus === 'waiting') ? (
+                                                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                                    <span className="spinner" style={{ width: 14, height: 14, border: '2px solid transparent', borderTopColor: 'currentColor', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                                                    {palmpesaStatus === 'pushing' ? 'Sending...' : 'Waiting for PIN...'}
+                                                </span>
+                                            ) : (
+                                                translate('activation.palmpesaPay') || 'Pay & Activate with PalmPesa'
+                                            )}
                                         </button>
                                     </form>
                                 </>
@@ -420,7 +436,14 @@ export default function Activation() {
                                             <input className="form-control" value={transactionId} onChange={e => setTransactionId(e.target.value)} placeholder="Enter transaction ID" required />
                                         </div>
                                         <button type="submit" className="btn-primary-auth" disabled={loading}>
-                                            {translate('activation.confirm') || 'Confirm Payment'}
+                                            {loading ? (
+                                                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                                    <span className="spinner" style={{ width: 14, height: 14, border: '2px solid transparent', borderTopColor: 'currentColor', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                                                    {translate('app.processing') || 'Processing...'}
+                                                </span>
+                                            ) : (
+                                                translate('activation.confirm') || 'Confirm Payment'
+                                            )}
                                         </button>
                                     </form>
                                     {status === 'pending' && (
