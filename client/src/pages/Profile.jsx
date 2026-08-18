@@ -68,10 +68,11 @@ export default function Profile() {
                     {/* ── Country Flag Hero Banner ── */}
                     <div style={{
                         position: 'relative',
-                        borderRadius: '0 0 24px 24px',
-                        overflow: 'hidden',
                         marginBottom: 20,
-                        height: 160
+                        height: 180,
+                        WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)',
+                        maskImage: 'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)',
+                        margin: '-20px -20px 20px -20px' // Pull it to edges if there is padding on dashboard-content
                     }}>
                         <img
                             src={`https://flagcdn.com/w640/${countryCode}.png`}
@@ -80,7 +81,7 @@ export default function Profile() {
                         />
                         <div style={{
                             position: 'absolute', inset: 0,
-                            background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.65))'
+                            background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.85))'
                         }} />
                         <div style={{
                             position: 'absolute', inset: 0,
