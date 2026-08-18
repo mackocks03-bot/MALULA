@@ -131,7 +131,7 @@ export default function Register() {
             <TopBar />
             <div className="auth-container">
                 <div className="auth-card animate-in fade-in slide-up">
-                    {loading && <CinematicLoader text="Creating account..." />}
+
                     <Logo />
                     <h1 className="auth-title">{translate('register.title') || translate('home.title')}</h1>
                     <p className="auth-subtitle">{translate('register.subtitle') || translate('home.subtitle')}</p>
@@ -237,7 +237,7 @@ export function ForgotPassword() {
             <TopBar />
             <div className="auth-container">
                 <div className="auth-card">
-                    {loading && <CinematicLoader text="Validating..." />}
+
                     <Logo />
                     <h1 className="auth-title">{translate('auth.resetPassword')}</h1>
                     {sent ? (

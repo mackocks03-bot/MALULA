@@ -239,7 +239,7 @@ export default function Wallet() {
 
     return (
         <DashboardLayout>
-            {globalLoading && <CinematicLoader text={palmpesaStatus === 'waiting' ? (translate('wallet.palmpesaWaiting') || 'Waiting for payment...') : (translate('app.processing') || 'Processing...')} />}
+
             <div className="dashboard-container">
                 <div className="dashboard-content">
                     <h2 className="page-title">{translate('wallet.title')}</h2>

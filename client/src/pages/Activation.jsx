@@ -230,11 +230,6 @@ export default function Activation() {
     return (
         <>
             <TopBar />
-            {globalLoading && <CinematicLoader text={
-                (palmpesaStatus === 'waiting' || palmpesaStatus === 'pushing') ? palmpesaMessage : 
-                (isTanzania && palmpesaEnabled === null) ? 'Loading Payment Systems...' : 
-                translate('app.processing') || 'Processing...'
-            } />}
             <div className="auth-container">
                 <div className="auth-card" style={{ maxWidth: 520 }}>
                     <Logo />

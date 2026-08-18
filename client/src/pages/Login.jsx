@@ -70,7 +70,7 @@ export default function Login() {
             <TopBar />
             <div className="auth-container">
                 <div className="auth-card animate-in fade-in slide-up">
-                    {loading && <CinematicLoader text={translate('login.loggingIn') || "Authenticating..."} />}
+
                     <Logo />
                     <h1 className="auth-title">{translate('login.title')} <span className="gold">Back</span></h1>
                     <p className="auth-subtitle">{translate('login.subtitle')}</p>
