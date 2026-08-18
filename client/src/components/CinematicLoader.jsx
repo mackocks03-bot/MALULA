@@ -105,6 +105,11 @@ export default function CinematicLoader({ text = "Processing..." }) {
                     text-transform: uppercase;
                     text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
                     animation: pulseText 1.5s ease-in-out infinite alternate;
+                    text-align: center;
+                    max-width: 90%;
+                    word-wrap: break-word;
+                    line-height: 1.4;
+                    margin-top: -4px;
                 }
 
                 @keyframes fadeInLoader {
