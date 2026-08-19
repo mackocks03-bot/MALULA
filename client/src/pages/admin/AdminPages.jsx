@@ -14,7 +14,7 @@ import './css/AdminUsers.css';
 import './css/AdminPayments.css';
 import './css/AdminWithdrawals.css';
 
-/* ─────────────────────── Icon helper ─────────────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Icon helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const Icon = ({ d, size = 18 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
         stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -54,7 +54,7 @@ const adminLinks = [
     { to: '/admin/settings', label: 'System Parameters', icon: 'settings' },
 ];
 
-/* ─────────────────────── Shared components ─────────────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Shared components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function StatusBadge({ status }) {
     const map = {
         approved: ['success', 'APPROVED'],
@@ -79,7 +79,7 @@ function ConfirmModal({ modal, onClose, onConfirm, processing }) {
             <div className={`gov-modal ${isDelete || isReject ? 'danger-border' : ''}`} style={isDelete || isReject ? { borderTopColor: 'var(--gov-danger)' } : {}}>
                 <div className="gov-modal-header">
                     <h3>{modal.title}</h3>
-                    <button className="gov-modal-close" onClick={onClose}>✕</button>
+                    <button className="gov-modal-close" onClick={onClose}>âœ•</button>
                 </div>
                 <div className="gov-modal-body">
                     <p className="gov-subtitle" style={{ marginBottom: 16 }}>{modal.subtitle}</p>
@@ -90,7 +90,7 @@ function ConfirmModal({ modal, onClose, onConfirm, processing }) {
                                 {modal.details.map(({ label, value }) => (
                                     <tr key={label} style={{ borderBottom: '1px solid #E0E0E0' }}>
                                         <td style={{ padding: '8px 4px', fontWeight: 700, color: '#666', textTransform: 'uppercase', fontSize: 11 }}>{label}</td>
-                                        <td style={{ padding: '8px 4px', textAlign: 'right', fontWeight: 500 }}>{value || '—'}</td>
+                                        <td style={{ padding: '8px 4px', textAlign: 'right', fontWeight: 500 }}>{value || 'â€”'}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -123,9 +123,9 @@ function ConfirmModal({ modal, onClose, onConfirm, processing }) {
     );
 }
 
-/* ═══════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    ADMIN LAYOUT
-═══════════════════════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 export default function AdminLayout() {
     const { user, userData, loading } = useAuth();
     const navigate = useNavigate();
@@ -180,9 +180,9 @@ export default function AdminLayout() {
 
             <main className="gov-main">
                 <header className="gov-topbar">
-                    <button className="gov-mobile-btn" onClick={() => setMobileOpen(!mobileOpen)}>☰ Menu</button>
+                    <button className="gov-mobile-btn" onClick={() => setMobileOpen(!mobileOpen)}>â˜° Menu</button>
                     <div style={{ flex: 1 }}></div>
-                    <Link to="/" className="gov-btn gov-btn-outline" style={{ padding: '6px 12px', fontSize: 12 }}>Client Portal ➔</Link>
+                    <Link to="/" className="gov-btn gov-btn-outline" style={{ padding: '6px 12px', fontSize: 12 }}>Client Portal âž”</Link>
                 </header>
 
                 <div className="gov-content">
@@ -193,9 +193,9 @@ export default function AdminLayout() {
     );
 }
 
-/* ═══════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    DASHBOARD
-═══════════════════════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 export function AdminDashboard() {
     const [stats, setStats] = useState({ users: 0, active: 0, payments: 0, pendingPayments: 0, withdrawals: 0, pendingWithdrawals: 0 });
     const [activity, setActivity] = useState([]);
@@ -242,12 +242,12 @@ export function AdminDashboard() {
     }, []);
 
     const cards = [
-        { label: 'Registered Citizens', value: stats.users, icon: '📋' },
-        { label: 'Active Personnel', value: stats.active, icon: '☑️' },
-        { label: 'Total Invoices', value: stats.payments, icon: '📨' },
-        { label: 'Pending Deposits', value: stats.pendingPayments, icon: '⏳' },
-        { label: 'Total Disbursements', value: stats.withdrawals, icon: '📑' },
-        { label: 'Pending Payouts', value: stats.pendingWithdrawals, icon: '⚠️' },
+        { label: 'Registered Citizens', value: stats.users, icon: 'ðŸ“‹' },
+        { label: 'Active Personnel', value: stats.active, icon: 'â˜‘ï¸' },
+        { label: 'Total Invoices', value: stats.payments, icon: 'ðŸ“¨' },
+        { label: 'Pending Deposits', value: stats.pendingPayments, icon: 'â³' },
+        { label: 'Total Disbursements', value: stats.withdrawals, icon: 'ðŸ“‘' },
+        { label: 'Pending Payouts', value: stats.pendingWithdrawals, icon: 'âš ï¸' },
     ];
 
     return (
@@ -261,7 +261,7 @@ export function AdminDashboard() {
                         <div className="gov-stat-icon">{c.icon}</div>
                         <div className="gov-stat-content">
                             <div className="gov-stat-label">{c.label}</div>
-                            <div className="gov-stat-value">{busy ? '—' : c.value}</div>
+                            <div className="gov-stat-value">{busy ? 'â€”' : c.value}</div>
                         </div>
                     </div>
                 ))}
@@ -288,9 +288,9 @@ export function AdminDashboard() {
     );
 }
 
-/* ═══════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    USER PROFILE MODAL
-═══════════════════════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 function UserProfileModal({ user, onClose, onUpdateStatus, onSave }) {
     const [isEditing, setIsEditing] = useState(false);
     const [editData, setEditData] = useState({});
@@ -340,7 +340,7 @@ function UserProfileModal({ user, onClose, onUpdateStatus, onSave }) {
                         </h3>
                         <div style={{ fontSize: 12, color: '#666', marginTop: 4, fontFamily: 'monospace' }}>UID: {user.uid}</div>
                     </div>
-                    <button className="gov-modal-close" onClick={onClose}>✕</button>
+                    <button className="gov-modal-close" onClick={onClose}>âœ•</button>
                 </div>
                 <div className="gov-modal-body" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, maxHeight: '70vh', overflowY: 'auto' }}>
                     <div>
@@ -356,14 +356,14 @@ function UserProfileModal({ user, onClose, onUpdateStatus, onSave }) {
                             </>
                         ) : (
                             <>
-                                <div style={{ marginBottom: 8 }}><b>Name:</b> {user.fullName || '—'}</div>
-                                <div style={{ marginBottom: 8 }}><b>Email:</b> {user.email || '—'}</div>
-                                <div style={{ marginBottom: 8 }}><b>Phone:</b> {user.phone || '—'}</div>
-                                <div style={{ marginBottom: 8 }}><b>Country:</b> {user.countryName || user.country || '—'} ({cCode.toUpperCase()})</div>
+                                <div style={{ marginBottom: 8 }}><b>Name:</b> {user.fullName || 'â€”'}</div>
+                                <div style={{ marginBottom: 8 }}><b>Email:</b> {user.email || 'â€”'}</div>
+                                <div style={{ marginBottom: 8 }}><b>Phone:</b> {user.phone || 'â€”'}</div>
+                                <div style={{ marginBottom: 8 }}><b>Country:</b> {user.countryName || user.country || 'â€”'} ({cCode.toUpperCase()})</div>
                                 <div style={{ marginBottom: 8 }}><b>Currency:</b> {curr}</div>
                             </>
                         )}
-                        <div style={{ marginBottom: 8 }}><b>Joined:</b> {user.createdAt ? new Date(user.createdAt).toLocaleString() : '—'}</div>
+                        <div style={{ marginBottom: 8 }}><b>Joined:</b> {user.createdAt ? new Date(user.createdAt).toLocaleString() : 'â€”'}</div>
                         {isEditing ? (
                             <>
                                 <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -439,9 +439,9 @@ function UserProfileModal({ user, onClose, onUpdateStatus, onSave }) {
     );
 }
 
-/* ═══════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    USERS
-═══════════════════════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 export function AdminUsers() {
     const { showToast } = useToast();
     const [users, setUsers] = useState([]);
@@ -563,9 +563,9 @@ export function AdminUsers() {
     );
 }
 
-/* ═══════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    PAYMENTS
-═══════════════════════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 export function AdminPayments() {
     const { showToast } = useToast();
     const [payments, setPayments] = useState([]);
@@ -600,11 +600,11 @@ export function AdminPayments() {
             subtitle: `Action required for invoice ${p.reference || p.transactionId || p.id}`,
             details: [
                 { label: 'Client ID', value: p.uid },
-                { label: 'Username', value: u.username || u.fullName || '—' },
+                { label: 'Username', value: u.username || u.fullName || 'â€”' },
                 { label: 'Amount', value: amountDisplay },
                 { label: 'Method', value: p.method || p.channel || 'PalmPesa' },
-                { label: 'Phone', value: p.phone || p.phoneNumber || '—' },
-                { label: 'Dated', value: p.createdAt ? new Date(p.createdAt).toLocaleString() : '—' }
+                { label: 'Phone', value: p.phone || p.phoneNumber || 'â€”' },
+                { label: 'Dated', value: p.createdAt ? new Date(p.createdAt).toLocaleString() : 'â€”' }
             ],
             reason: 'Verification failed', setReason: (r) => setModal(m => ({ ...m, reason: r }))
         });
@@ -683,9 +683,9 @@ export function AdminPayments() {
     );
 }
 
-/* ═══════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    WITHDRAWALS
-═══════════════════════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 const CopyIcon = () => (
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -736,14 +736,14 @@ export function AdminWithdrawals() {
         const details = [
             { label: 'Reference', value: w.referenceCode || w.id },
             { label: 'Client ID', value: w.uid },
-            { label: 'Username', value: u.username || u.fullName || '—' },
-            { label: 'Account Name', value: w.accountName || '—' },
+            { label: 'Username', value: u.username || u.fullName || 'â€”' },
+            { label: 'Account Name', value: w.accountName || 'â€”' },
             { label: 'Wallet', value: w.wallet || 'balance' },
             { label: 'Amount', value: `${currency} ${Number(nativeAmt).toLocaleString()}` },
             { label: 'Fee', value: w.fee ? `${currency} ${Number(w.fee).toLocaleString()}` : 'None' },
-            { label: 'Phone', value: w.phone || w.phoneNumber || w.address || '—' },
-            { label: 'Gateway', value: w.method || '—' },
-            { label: 'Date', value: w.createdAt ? new Date(w.createdAt).toLocaleString() : '—' },
+            { label: 'Phone', value: w.phone || w.phoneNumber || w.address || 'â€”' },
+            { label: 'Gateway', value: w.method || 'â€”' },
+            { label: 'Date', value: w.createdAt ? new Date(w.createdAt).toLocaleString() : 'â€”' },
         ];
         setModal({
             action, id: w.id, uid: w.uid,
@@ -795,14 +795,14 @@ export function AdminWithdrawals() {
                             const cCode = (u.country || 'tz').toLowerCase();
                             const currency = w.currency || u.currency || 'TZS';
                             const phone = w.phone || w.phoneNumber || w.address || '';
-                            const name = w.accountName || u.fullName || '—';
+                            const name = w.accountName || u.fullName || 'â€”';
                             return (
                                 <tr key={w.id}>
                                     <td>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                             <img src={`https://flagcdn.com/w40/${cCode}.png`} alt={cCode} style={{ width: 24, height: 16, objectFit: 'cover', borderRadius: 2 }} />
                                             <div>
-                                                <div style={{ fontWeight: 700, fontSize: 13 }}>{u.username || u.fullName || '—'}</div>
+                                                <div style={{ fontWeight: 700, fontSize: 13 }}>{u.username || u.fullName || 'â€”'}</div>
                                                 <div style={{ fontFamily: 'monospace', fontSize: 10, color: '#999' }}>{w.uid?.slice(0, 12)}...</div>
                                             </div>
                                         </div>
@@ -820,11 +820,11 @@ export function AdminWithdrawals() {
                                     <td>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                <span style={{ fontSize: 12, fontWeight: 600 }}>👤 {name}</span>
+                                                <span style={{ fontSize: 12, fontWeight: 600 }}>ðŸ‘¤ {name}</span>
                                                 <button onClick={() => copyToClipboard(name)} title="Copy name" style={{ border: 'none', background: 'rgba(99,102,241,0.1)', color: '#6366f1', borderRadius: 4, padding: '2px 6px', display: 'flex', alignItems: 'center', cursor: 'pointer' }}><CopyIcon /></button>
                                             </div>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>📞 {phone || 'N/A'}</span>
+                                                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>ðŸ“ž {phone || 'N/A'}</span>
                                                 {phone && <button onClick={() => copyToClipboard(phone)} title="Copy phone" style={{ border: 'none', background: 'rgba(99,102,241,0.1)', color: '#6366f1', borderRadius: 4, padding: '2px 6px', display: 'flex', alignItems: 'center', cursor: 'pointer' }}><CopyIcon /></button>}
                                             </div>
                                         </div>
@@ -857,9 +857,9 @@ export function AdminWithdrawals() {
     );
 }
 
-/* ═══════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    REFERRALS
-═══════════════════════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 function ReferralDetailModal({ promoter, usersMap, onClose }) {
     if (!promoter) return null;
     const cCode = (promoter.countryCode || promoter.country || 'TZ').toLowerCase();
@@ -890,9 +890,9 @@ function ReferralDetailModal({ promoter, usersMap, onClose }) {
     }
 
     const levels = [
-        { label: 'Level 1 — Direct Recruits', uids: lv1Uids },
-        { label: 'Level 2 — Indirect Recruits', uids: lv2Uids },
-        { label: 'Level 3 — Extended Network', uids: lv3Uids },
+        { label: 'Level 1 â€” Direct Recruits', uids: lv1Uids },
+        { label: 'Level 2 â€” Indirect Recruits', uids: lv2Uids },
+        { label: 'Level 3 â€” Extended Network', uids: lv3Uids },
     ];
     return (
         <div className="gov-modal-overlay open" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -901,11 +901,11 @@ function ReferralDetailModal({ promoter, usersMap, onClose }) {
                     <div>
                         <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <img src={`https://flagcdn.com/w40/${cCode}.png`} alt={cCode} style={{ width: 22, height: 15, borderRadius: 2 }} />
-                            {promoter.username || 'N/A'} — Referral Tree
+                            {promoter.username || 'N/A'} â€” Referral Tree
                         </h3>
                         <div style={{ fontSize: 11, color: '#888', fontFamily: 'monospace', marginTop: 2 }}>{promoter.uid}</div>
                     </div>
-                    <button className="gov-modal-close" onClick={onClose}>✕</button>
+                    <button className="gov-modal-close" onClick={onClose}>âœ•</button>
                 </div>
                 <div className="gov-modal-body" style={{ maxHeight: '65vh', overflowY: 'auto' }}>
                     {levels.map(({ label, uids }) => {
@@ -927,13 +927,13 @@ function ReferralDetailModal({ promoter, usersMap, onClose }) {
                                         <tbody>
                                             {uids.map(uid => {
                                                 const ref = usersMap[uid];
-                                                if (!ref) return (<tr key={uid}><td colSpan={5} style={{ color: '#ccc', fontFamily: 'monospace', fontSize: 11 }}>{uid} — not found</td></tr>);
+                                                if (!ref) return (<tr key={uid}><td colSpan={5} style={{ color: '#ccc', fontFamily: 'monospace', fontSize: 11 }}>{uid} â€” not found</td></tr>);
                                                 const rc = (ref.countryCode || ref.country || 'TZ').toLowerCase();
                                                 return (
                                                     <tr key={uid}>
                                                         <td>
-                                                            <div style={{ fontWeight: 600 }}>{ref.username || '—'}</div>
-                                                            <div style={{ fontSize: 10, color: '#aaa' }}>{ref.email || '—'}</div>
+                                                            <div style={{ fontWeight: 600 }}>{ref.username || 'â€”'}</div>
+                                                            <div style={{ fontSize: 10, color: '#aaa' }}>{ref.email || 'â€”'}</div>
                                                         </td>
                                                         <td>
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -941,8 +941,8 @@ function ReferralDetailModal({ promoter, usersMap, onClose }) {
                                                                 <span>{ref.countryName || rc.toUpperCase()}</span>
                                                             </div>
                                                         </td>
-                                                        <td style={{ fontFamily: 'monospace' }}>{ref.phone || '—'}</td>
-                                                        <td style={{ color: '#888' }}>{ref.createdAt ? new Date(ref.createdAt).toLocaleDateString() : '—'}</td>
+                                                        <td style={{ fontFamily: 'monospace' }}>{ref.phone || 'â€”'}</td>
+                                                        <td style={{ color: '#888' }}>{ref.createdAt ? new Date(ref.createdAt).toLocaleDateString() : 'â€”'}</td>
                                                         <td><StatusBadge status={ref.isActive ? 'active' : 'pending'} /></td>
                                                     </tr>
                                                 );
@@ -1019,7 +1019,7 @@ export function AdminReferrals() {
             {loading && <p style={{ color: '#888', padding: 16 }}>Loading referral data...</p>}
             {error && (
                 <div style={{ background: '#fff3cd', border: '1px solid #ffc107', borderRadius: 8, padding: '12px 16px', marginBottom: 16, color: '#856404' }}>
-                    <b>⚠ Access Error:</b> {error}
+                    <b>âš  Access Error:</b> {error}
                 </div>
             )}
             <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'center' }}>
@@ -1133,9 +1133,9 @@ export function AdminReferrals() {
 }
 
 
-/* ═══════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    TASKS ADMIN
-═══════════════════════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 const TASK_CATEGORY_OPTIONS = [
     { value: 'youtube', label: 'YouTube Watch & Earn' },
     { value: 'facebook', label: 'Facebook Watch & Earn' },
@@ -1243,11 +1243,11 @@ export function AdminTasks() {
                                     <div style={{ flex: 1 }}>
                                         <div style={{ fontWeight: 600 }}>{catOption?.label || cfg.category}</div>
                                         <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{cfg.description}</div>
-                                        {cfg.videoUrl && <div style={{ fontSize: 11, color: 'var(--gov-blue)', marginTop: 4 }}>🎬 Video: {cfg.videoUrl.slice(0, 50)}...</div>}
+                                        {cfg.videoUrl && <div style={{ fontSize: 11, color: 'var(--gov-blue)', marginTop: 4 }}>ðŸŽ¬ Video: {cfg.videoUrl.slice(0, 50)}...</div>}
                                     </div>
                                     <div style={{ textAlign: 'right', minWidth: 140 }}>
                                         <div style={{ fontWeight: 700, color: '#2E7D32', fontSize: 14 }}>TZS {tzReward.toLocaleString()}</div>
-                                        <div style={{ fontSize: 11, color: '#aaa' }}>{cfg.totalItems} items · {Object.keys(cfg.countryRewards || {}).length} countries</div>
+                                        <div style={{ fontSize: 11, color: '#aaa' }}>{cfg.totalItems} items Â· {Object.keys(cfg.countryRewards || {}).length} countries</div>
                                     </div>
                                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                                         <span style={{ padding: '2px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, background: cfg.active !== false ? '#e8f5e9' : '#fafafa', color: cfg.active !== false ? '#2E7D32' : '#aaa', border: `1px solid ${cfg.active !== false ? '#c8e6c9' : '#eee'}` }}>
@@ -1519,7 +1519,7 @@ export function AdminSettings() {
                     </button>
                 </div>
 
-                {/* ── Exchange Rates Panel ── */}
+                {/* â”€â”€ Exchange Rates Panel â”€â”€ */}
                 <div className="gov-panel" style={{ padding: 24 }}>
                     <h3 style={{ marginTop: 0, marginBottom: 6 }}>Exchange Rates (per USD)</h3>
                     <p style={{ fontSize: 12, color: 'var(--gov-text-muted)', marginBottom: 20 }}>
@@ -1555,7 +1555,7 @@ export function AdminSettings() {
                     </button>
                 </div>
 
-                {/* ── Referral Commissions Panel ── */}
+                {/* â”€â”€ Referral Commissions Panel â”€â”€ */}
                 <div className="gov-panel" style={{ padding: 24 }}>
                     <h3 style={{ marginTop: 0, marginBottom: 6 }}>Referral Commissions (TZS)</h3>
                     <p style={{ fontSize: 12, color: 'var(--gov-text-muted)', marginBottom: 20 }}>
@@ -1603,9 +1603,9 @@ export function AdminSettings() {
     );
 }
 
-/* ═══════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    WALLET / SHOP DEPOSITS (Manual USSD + Auto PalmPesa)
-═══════════════════════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 export function AdminShopDeposits() {
     const { showToast } = useToast();
     const [deposits, setDeposits] = useState([]);
@@ -1687,13 +1687,13 @@ export function AdminShopDeposits() {
             subtitle: `Reference: ${dep.transactionId || dep.reference || dep.id}`,
             details: [
                 { label: 'Client ID', value: dep.uid },
-                { label: 'Username', value: u.username || u.fullName || '—' },
-                { label: 'Phone', value: u.phone || dep.msisdn || '—' },
+                { label: 'Username', value: u.username || u.fullName || 'â€”' },
+                { label: 'Phone', value: u.phone || dep.msisdn || 'â€”' },
                 { label: 'Amount', value: `${currency} ${amount.toLocaleString()}` },
                 { label: 'Method', value: dep.method || dep.channel || 'Manual USSD' },
-                { label: 'Transaction ID', value: dep.transactionId || dep.reference || dep.orderId || '—' },
+                { label: 'Transaction ID', value: dep.transactionId || dep.reference || dep.orderId || 'â€”' },
                 { label: 'Current Shop Balance', value: `${currency} ${Number(u.shopBalance || 0).toLocaleString()}` },
-                { label: 'Submitted', value: dep.createdAt ? new Date(dep.createdAt).toLocaleString() : '—' },
+                { label: 'Submitted', value: dep.createdAt ? new Date(dep.createdAt).toLocaleString() : 'â€”' },
             ],
             reason: 'Payment could not be verified', setReason: (r) => setModal(m => ({ ...m, reason: r }))
         });
@@ -1804,7 +1804,7 @@ export function AdminShopDeposits() {
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                             <img src={`https://flagcdn.com/w40/${cCode}.png`} alt={cCode} style={{ width: 24, height: 16, objectFit: 'cover', borderRadius: 2 }} />
                                             <div>
-                                                <div style={{ fontWeight: 700, fontSize: 13 }}>{u.username || u.fullName || '—'}</div>
+                                                <div style={{ fontWeight: 700, fontSize: 13 }}>{u.username || u.fullName || 'â€”'}</div>
                                                 <div style={{ fontSize: 11, color: '#999', fontFamily: 'monospace' }}>{dep.uid?.slice(0, 10)}...</div>
                                             </div>
                                         </div>
@@ -1817,11 +1817,11 @@ export function AdminShopDeposits() {
                                             color: isPalmpesa ? '#0288D1' : '#ED6C02',
                                             borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 700
                                         }}>
-                                            {isPalmpesa ? '⚡ Auto PalmPesa' : '📱 Manual USSD'}
+                                            {isPalmpesa ? 'âš¡ Auto PalmPesa' : 'ðŸ“± Manual USSD'}
                                         </span>
                                     </td>
-                                    <td className="gov-mono-text" style={{ fontSize: 12 }}>{dep.transactionId || dep.reference || dep.orderId || '—'}</td>
-                                    <td style={{ fontSize: 12 }}>{dep.createdAt ? new Date(dep.createdAt).toLocaleString() : '—'}</td>
+                                    <td className="gov-mono-text" style={{ fontSize: 12 }}>{dep.transactionId || dep.reference || dep.orderId || 'â€”'}</td>
+                                    <td style={{ fontSize: 12 }}>{dep.createdAt ? new Date(dep.createdAt).toLocaleString() : 'â€”'}</td>
                                     <td><StatusBadge status={dep.status} /></td>
                                     <td>
                                         <div className="gov-action-group">
@@ -1862,7 +1862,8 @@ export function AdminPalmpesaLedger() {
         setFetchError(null);
         try {
             const idToken = await user.getIdToken();
-            const res = await fetch('/api/deposits/palmpesa/transactions', {
+            const API_URL = import.meta.env.VITE_API_BASE_URL || '';
+            const res = await fetch(`${API_URL}/api/deposits/palmpesa/transactions`, {
                 headers: { Authorization: `Bearer ${idToken}` }
             });
             const data = await res.json();
@@ -1993,15 +1994,15 @@ export function AdminPalmpesaLedger() {
                                 return (
                                     <tr key={t.id || t.order_id || i}>
                                         <td style={{ color: '#888', fontSize: 12 }}>{t.id || i + 1}</td>
-                                        <td className="gov-mono-text" style={{ fontSize: 12 }}>{t.order_id || '�'}</td>
+                                        <td className="gov-mono-text" style={{ fontSize: 12 }}>{t.order_id || '—'}</td>
                                         <td style={{ fontWeight: 700 }}>
                                             <span style={{ color: amt < 0 ? '#D32F2F' : '#2E7D32' }}>
                                                 TZS {Math.abs(amt).toLocaleString()}
                                                 {amt < 0 && <span style={{ fontSize: 10, marginLeft: 4 }}>(debit)</span>}
                                             </span>
                                         </td>
-                                        <td className="gov-mono-text" style={{ fontSize: 12 }}>{t.msisdn || t.phone || '�'}</td>
-                                        <td style={{ fontSize: 13 }}>{t.name || '�'}</td>
+                                        <td className="gov-mono-text" style={{ fontSize: 12 }}>{t.msisdn || t.phone || '—'}</td>
+                                        <td style={{ fontSize: 13 }}>{t.name || '—'}</td>
                                         <td>
                                             <span style={{ background: 'rgba(2,136,209,0.1)', color: '#0288D1', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 700 }}>
                                                 {t.channel || t.network || 'palmpesa'}
@@ -2009,10 +2010,10 @@ export function AdminPalmpesaLedger() {
                                         </td>
                                         <td className="gov-mono-text" style={{ fontSize: 11, maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                                             title={t.transid || t.reference || ''}>
-                                            {t.transid || t.reference || '�'}
+                                            {t.transid || t.reference || '—'}
                                         </td>
                                         <td style={{ fontSize: 12 }}>
-                                            {date ? new Date(date).toLocaleString() : '�'}
+                                            {date ? new Date(date).toLocaleString() : '—'}
                                         </td>
                                         <td>
                                             <span style={{ background: bg, color, borderRadius: 6, padding: '3px 10px', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>
