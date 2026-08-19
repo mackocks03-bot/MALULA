@@ -133,10 +133,10 @@ const DEFAULT_SCHEDULED_TASKS = {
         day: 'Monday'
     },
     'Tuesday': {
-        title: 'Click & Like Ad',
-        description: 'View and like the ad to earn your reward.',
-        icon: '👁️',
-        category: 'ads',
+        title: 'Facebook Watch & Earn',
+        description: 'View and like the post to earn your reward.',
+        icon: '📘',
+        category: 'facebook',
         reward: 800,
         isScheduled: true,
         day: 'Tuesday'
@@ -151,10 +151,10 @@ const DEFAULT_SCHEDULED_TASKS = {
         day: 'Wednesday'
     },
     'Thursday': {
-        title: 'Facebook Post Share',
-        description: 'Share our post on your Facebook timeline.',
-        icon: '📘',
-        category: 'facebook',
+        title: 'Ad Posting Task',
+        description: 'Post and watch the ad to earn your reward.',
+        icon: '📢',
+        category: 'ads',
         reward: 700,
         isScheduled: true,
         day: 'Thursday'
