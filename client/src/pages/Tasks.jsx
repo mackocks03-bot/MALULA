@@ -109,15 +109,22 @@ export default function Tasks() {
         setCompleting(true);
         try {
             const newCompleted = completed + 1;
-            const updates = { ...taskProgress, completed: newCompleted, lastUpdated: Date.now(), status: 'in-progress' };
+            // Always include category/taskTitle/taskId so they are never lost
+            // when spreading taskProgress back from Firestore snapshot
+            const updates = {
+                ...taskProgress,
+                completed: newCompleted,
+                lastUpdated: Date.now(),
+                status: 'in-progress',
+                category: todayTask.category,
+                taskTitle: todayTask.title,
+                taskId: taskKey,
+            };
 
             if (newCompleted >= total) {
                 updates.status = 'pending_verification';
                 updates.reward = taskReward;
                 updates.rewardCurrency = currency;
-                updates.category = todayTask.category;
-                updates.taskTitle = todayTask.title;
-                updates.taskId = taskKey;
                 showToast(translate('tasks.completed') || 'Task submitted! Your reward is being processed.', 'success');
             } else {
                 showToast(`+1 ${translate('tasks.progress') || 'progress'} (${newCompleted}/${total})`, 'info');
