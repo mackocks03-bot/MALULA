@@ -1609,24 +1609,54 @@ export function AdminShopDeposits() {
     const [deposits, setDeposits] = useState([]);
     const [usersMap, setUsersMap] = useState({});
     const [processing, setProcessing] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [modal, setModal] = useState(null);
     const [q, setQ] = useState('');
     const [filter, setFilter] = useState('all');
 
-    const load = useCallback(() => {
-        Promise.all([
-            getDocs(collection(db, 'shopDeposits')),
-            getDocs(collection(db, 'users'))
-        ]).then(([dSnap, uSnap]) => {
+    const load = useCallback(async () => {
+        setLoading(true);
+        try {
+            const [dSnap, pSnap, uSnap] = await Promise.all([
+                getDocs(collection(db, 'shopDeposits')),
+                getDocs(collection(db, 'palmpesaPending')),
+                getDocs(collection(db, 'users'))
+            ]);
+
+            const uMap = {};
             if (!uSnap.empty) {
-                const uMap = {};
                 uSnap.docs.forEach(d => uMap[d.id] = d.data());
-                setUsersMap(uMap);
             }
-            const all = dSnap.empty ? [] : dSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            setUsersMap(uMap);
+
+            let all = [];
+            if (!dSnap.empty) {
+                all = [...all, ...dSnap.docs.map(d => ({ id: d.id, ...d.data(), source: 'shopDeposits' }))];
+            }
+            if (!pSnap.empty) {
+                // Find pending palmpesa ones that aren't already in shopDeposits
+                pSnap.docs.forEach(p => {
+                    const data = p.data();
+                    if (!all.find(x => x.orderId === data.orderId || x.orderId === p.id)) {
+                        all.push({ 
+                            id: p.id, 
+                            ...data, 
+                            method: data.channel || 'palmpesa',
+                            status: data.depositProcessed ? 'completed' : data.status || 'pending',
+                            source: 'palmpesaPending'
+                        });
+                    }
+                });
+            }
+            
             setDeposits(all.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)));
-        });
-    }, []);
+        } catch (err) {
+            console.error('Error loading deposits:', err);
+            showToast('Failed to load deposits: ' + err.message, 'error');
+        } finally {
+            setLoading(false);
+        }
+    }, [showToast]);
 
     useEffect(() => { load(); }, [load]);
 
@@ -1752,7 +1782,12 @@ export function AdminShopDeposits() {
                         </tr>
                     </thead>
                     <tbody>
-                        {filtered.map(dep => {
+                        {loading ? (
+                            <tr><td colSpan={7}><div style={{ textAlign: 'center', padding: 40 }}><span className="gov-spinner" /> Loading deposits...</div></td></tr>
+                        ) : filtered.length === 0 ? (
+                            <tr><td colSpan={7}><div className="gov-empty-state">No deposit records match your query.</div></td></tr>
+                        ) : (
+                            filtered.map(dep => {
                             const u = usersMap[dep.uid] || {};
                             const cCode = (u.country || u.countryCode || 'tz').toLowerCase();
                             const currency = dep.currency || u.currency || 'TZS';
@@ -1798,10 +1833,7 @@ export function AdminShopDeposits() {
                                     </td>
                                 </tr>
                             );
-                        })}
-                        {filtered.length === 0 && (
-                            <tr><td colSpan={7}><div className="gov-empty-state">No deposit records match your query.</div></td></tr>
-                        )}
+                        }))}
                     </tbody>
                 </table>
             </div>
