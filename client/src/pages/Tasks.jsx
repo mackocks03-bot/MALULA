@@ -72,10 +72,10 @@ export default function Tasks() {
     const scheduledId = `scheduled_${todayKey}`;
 
     // Compute progress variables early — used by useEffects below
-    const completed = taskProgress.completed || 0;
+    const completed = taskProgress?.completed || 0;
     const total = todayTask?.totalItems || 1;
     const progress = Math.min((completed / total) * 100, 100);
-    const isDone = taskProgress.status === 'completed' || taskProgress.status === 'pending_verification' || completed >= total;
+    const isDone = taskProgress?.status === 'completed' || taskProgress?.status === 'pending_verification' || completed >= total;
 
     useEffect(() => {
         getScheduledTaskSettings().then(r => {
