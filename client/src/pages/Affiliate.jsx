@@ -30,7 +30,6 @@ export default function Affiliate() {
     const [userData, setUserData] = useState(initialData);
     const [tree, setTree] = useState({ level1: [], level2: [], level3: [] });
     const [bonuses, setBonuses] = useState({ level1: 0, level2: 0, level3: 0 });
-    const [activationFees, setActivationFees] = useState({});
     const [activeTab, setActiveTab] = useState('all');
     const [loading, setLoading] = useState(true);
 
@@ -208,8 +207,9 @@ export default function Affiliate() {
                                 const rCountryCode = (r.country || r.countryCode || 'TZ').toLowerCase();
                                 const rCurrency = r.currency || 'TZS';
                                 const rSymbol = CURRENCY_SYMBOLS[rCurrency] || rCurrency;
-                                // Activation fee for this referral's currency
-                                const rActivationFee = activationFees[rCurrency];
+                                
+                                const FEES_MATRIX = { TZS: 14500, KES: 650, UGX: 18500, MWK: 15000, ZMW: 150, RWF: 6000, BIF: 15000, CDF: 15000 };
+                                const rActivationFee = FEES_MATRIX[rCurrency] || FEES_MATRIX.TZS;
 
                                 return (
                                     <div
