@@ -61,38 +61,25 @@ export async function processReferralBonus(db, {
 
     const referrer = referrerSnap.data();
 
-    // NATIVE CONVERSION LOGIC
+    // NATIVE CONVERSION LOGIC (Hardcoded Server Matrix)
     const currency = referrer.currency || 'TZS';
-    let rate = 2500;
+    
+    const COMMISSIONS = {
+        TZS: { 1: 9000, 2: 3000, 3: 1000 },
+        KES: { 1: 500,  2: 150,  3: 50 },
+        UGX: { 1: 13500,2: 4500, 3: 1500 },
+        MWK: { 1: 6300, 2: 2100, 3: 700 },
+        RWF: { 1: 5000, 2: 1500, 3: 500 },
+        ZMW: { 1: 100,  2: 30,   3: 10 },
+        BIF: { 1: 10500,2: 3500, 3: 1100 },
+        CDF: { 1: 10500,2: 3500, 3: 1100 },
+        MZN: { 1: 250,  2: 80,   3: 25 },
+    };
 
-    // Fetch rate
-    const ratesSnap = await db.collection('settings').doc('rates').get();
-    if (ratesSnap.exists) {
-        const rates = ratesSnap.data();
-        if (rates[currency] && rates[currency] > 0) {
-            rate = rates[currency];
-        } else if (currency === 'KES') rate = 130;
-        else if (currency === 'TZS') rate = 2500;
-        else if (currency === 'UGX') rate = 3700;
-        else if (currency === 'MWK') rate = 1750;
-        else if (currency === 'ZMW') rate = 27;
-        else if (currency === 'RWF') rate = 1350;
-        else if (currency === 'BIF') rate = 2900;
-        else if (currency === 'CDF') rate = 2800;
-        else if (currency === 'MZN') rate = 65;
-    } else {
-        if (currency === 'KES') rate = 130;
-        else if (currency === 'TZS') rate = 2500;
-        else if (currency === 'UGX') rate = 3700;
-        else if (currency === 'MWK') rate = 1750;
-        else if (currency === 'ZMW') rate = 27;
-        else if (currency === 'RWF') rate = 1350;
-        else if (currency === 'BIF') rate = 2900;
-        else if (currency === 'CDF') rate = 2800;
-        else if (currency === 'MZN') rate = 65;
-    }
+    const currencyMatrix = COMMISSIONS[currency] || COMMISSIONS.TZS;
+    const localBonusAmount = currencyMatrix[level];
 
-    const localBonusAmount = Math.round(bonusAmount * rate);
+    if (!localBonusAmount || localBonusAmount <= 0) return null;
 
     const balance = parseFloat(referrer.balance) || 0;
     const newBalance = balance + localBonusAmount;
