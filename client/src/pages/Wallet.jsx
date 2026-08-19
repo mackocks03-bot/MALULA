@@ -13,6 +13,7 @@ import {
     pollPalmpesaStatus
 } from '../services/deposits.js';
 import { getWithdrawalStats } from '../services/withdraw.js';
+import PaymentStepper from '../components/PaymentStepper.jsx';
 
 // SVG task category icons for wallet task balance cards
 const TaskCatIcon = ({ cat, size = 16 }) => {
@@ -381,14 +382,11 @@ export default function Wallet() {
                                             </div>
                                         </div>
 
-                                        {palmpesaStatus === 'waiting' && (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: 'rgba(212,175,55,0.05)', border: '1px solid var(--color-gold)', borderRadius: 12, marginBottom: 16 }}>
-                                                <span className="spinner" style={{ flexShrink: 0, display: 'inline-block', width: 22, height: 22, border: '2.5px solid var(--color-gold)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1.2s linear infinite' }} />
-                                                <p style={{ margin: 0, fontSize: 13, color: 'var(--color-gold)', fontWeight: 600, lineHeight: 1.4 }}>
-                                                    Prompt has been sent to your phone. Please enter your PIN to complete payment.
-                                                </p>
-                                            </div>
+                                        {/* Animated stepped progress: Initiating → Prompt Sent → Complete */}
+                                        {(palmpesaStatus === 'pushing' || palmpesaStatus === 'waiting' || palmpesaStatus === 'success' || palmpesaStatus === 'failed') && (
+                                            <PaymentStepper status={palmpesaStatus} />
                                         )}
+
                                         <button
                                             type="submit"
                                             className="btn btn-primary btn-block"
