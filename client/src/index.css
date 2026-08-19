@@ -141,6 +141,7 @@ body {
 a { color: var(--color-gold); text-decoration: none; transition: var(--transition-fast); }
 a:hover { text-decoration: underline; }
 img { max-width: 100%; display: block; }
+svg { flex-shrink: 0; display: inline-block; }
 button { font-family: var(--font-family); cursor: pointer; }
 input, textarea, select { 
     font-family: var(--font-family); 

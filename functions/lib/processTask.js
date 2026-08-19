@@ -84,7 +84,6 @@ export async function runTaskProcessing(db, userTaskId, claim) {
         // ── Credit balance ─────────────────────────────────────────────────
         const currentBalance = parseFloat(user.balance) || 0;
         const currentProfit = parseFloat(user.totalProfit) || 0;
-        const newBalance = currentBalance + reward;
         
         const earnings = user.earnings || {};
         const categoryEarnings = parseFloat(earnings[category]) || 0;
@@ -97,7 +96,6 @@ export async function runTaskProcessing(db, userTaskId, claim) {
         const txRef = db.collection('transactions').doc();
 
         batch.update(userRef, {
-            balance: newBalance,
             totalProfit: currentProfit + reward,
             earnings: earnings,
             taskBalances: taskBalances
@@ -111,7 +109,7 @@ export async function runTaskProcessing(db, userTaskId, claim) {
             currency,
             taskId,
             category,
-            balanceAfter: newBalance,
+            balanceAfter: currentBalance,
             createdAt: now
         });
 
@@ -138,7 +136,7 @@ export async function runTaskProcessing(db, userTaskId, claim) {
 
         await batch.commit();
 
-        console.log(`✅ Task reward ${reward} ${currency} credited to user ${uid} (balance: ${newBalance})`);
+        console.log(`✅ Task reward ${reward} ${currency} credited to user ${uid} (kept separate from main balance ${currentBalance})`);
     } catch (error) {
         // Release lock on error
         await claimRef.update({
