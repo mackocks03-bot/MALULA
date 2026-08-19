@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { onDocumentWritten, onDocumentCreated } from 'firebase-functions/v2/firestore';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { logger } from 'firebase-functions';
 import { runActivationProcessing } from './lib/processActivation.js';
 import { runDepositProcessing } from './lib/processDeposit.js';
@@ -172,6 +173,38 @@ export const onTaskCompleted = onDocumentWritten(
         } catch (error) {
             logger.error('Task failed: ' + userTaskId, error);
             throw error;
+        }
+    }
+);
+
+/**
+ * Scheduled Cron Job: Force process stuck tasks
+ * Runs every 30 minutes to sweep for any 'pending_verification' tasks that
+ * were interrupted by user network drops or incomplete writes.
+ */
+export const sweepStuckTasks = onSchedule(
+    { schedule: 'every 30 minutes', region: RTDB_REGION, timeoutSeconds: 300, memory: '256MiB' },
+    async (event) => {
+        const db = getFirestore();
+        logger.info('Starting stuck task sweeper...');
+        try {
+            const snapshot = await db.collection('userTasks')
+                .where('status', '==', 'pending_verification')
+                .get();
+
+            let processedCount = 0;
+            for (const doc of snapshot.docs) {
+                const data = doc.data();
+                // Skip if already processed to avoid double spend
+                if (data.taskProcessed === true || data.taskProcessed === 'processing') continue;
+                
+                logger.info(`Sweeper retrying stuck task: ${doc.id}`);
+                await runTaskProcessing(db, doc.id, data);
+                processedCount++;
+            }
+            logger.info(`Sweeper finished. Processed ${processedCount} stuck tasks.`);
+        } catch (error) {
+            logger.error('Stuck task sweeper failed', error);
         }
     }
 );
