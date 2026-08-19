@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TopBar from '../components/TopBar.jsx';
 import Logo from '../components/Logo.jsx';
@@ -136,7 +136,7 @@ export default function Activation() {
 
         setLoading(true);
         setPalmpesaStatus('pushing');
-        setPalmpesaMessage(translate('wallet.palmpesaSending') || 'Sending payment request to your phone…');
+        setPalmpesaMessage(translate('wallet.palmpesaSending') || 'Sending payment request to your phoneâ€¦');
 
         try {
             const init = await initiatePalmpesaActivation({
@@ -158,7 +158,7 @@ export default function Activation() {
                 onUpdate: () => {
                     setPalmpesaMessage(
                         translate('activation.palmpesaWaiting') ||
-                        'Waiting for payment confirmation…'
+                        'Waiting for payment confirmationâ€¦'
                     );
                 }
             });
@@ -287,11 +287,11 @@ export default function Activation() {
                                 <>
                                     <div className="deposit-payment-info" style={{ marginBottom: 16 }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                            <span style={{ fontSize: 24 }}>📱</span>
+                                            <span style={{ fontSize: 24 }}>ðŸ“±</span>
                                             <div>
                                                 <strong style={{ color: 'var(--color-gold)' }}>PalmPesa</strong>
                                                 <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                                                    {translate('activation.palmpesaHint') || 'Instant activation — M-Pesa, Airtel, Halopesa & more'}
+                                                    {translate('activation.palmpesaHint') || 'Instant activation â€” M-Pesa, Airtel, Halopesa & more'}
                                                 </div>
                                             </div>
                                         </div>
@@ -341,7 +341,7 @@ export default function Activation() {
                                         {(palmpesaStatus === 'pushing' || palmpesaStatus === 'waiting' || palmpesaStatus === 'success' || palmpesaStatus === 'failed') && (
                                             <PaymentStepper
                                                 status={palmpesaStatus}
-                                                message={palmpesaStatus === 'success' ? 'Payment Verified! Activating your account…' : undefined}
+                                                message={palmpesaStatus === 'success' ? 'Payment Verified! Activating your accountâ€¦' : undefined}
                                             />
                                         )}
 
@@ -363,7 +363,7 @@ export default function Activation() {
                                 </>
                             ) : (
                                 <div style={{ textAlign: 'center', padding: '24px 16px' }}>
-                                    <div style={{ fontSize: 36, marginBottom: 10 }}>📵</div>
+                                    <div style={{ fontSize: 36, marginBottom: 10 }}>ðŸ“µ</div>
                                     <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 16 }}>
                                         Automatic M-Pesa payment is temporarily unavailable.
                                     </p>
