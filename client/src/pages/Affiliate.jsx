@@ -5,7 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useToast } from '../contexts/ToastContext.jsx';
 import { formatCurrency, COUNTRIES, CURRENCY_SYMBOLS } from '../utils/helpers.js';
 import { getReferralTree } from '../services/referrals.js';
-import { db, doc, onSnapshot, getDoc } from '../services/firebase-config.js';
+import { db, doc, onSnapshot } from '../services/firebase-config.js';
 import dataStore from '../utils/dataStore.js';
 
 const TABS = [
@@ -59,39 +59,20 @@ export default function Affiliate() {
     }, [user]);
 
     useEffect(() => {
-        const fetchCommissions = async () => {
-            try {
-                // Read raw base multipliers from settings/general
-                const generalSnap = await getDoc(doc(db, 'settings', 'general'));
-                const general = generalSnap.exists() ? generalSnap.data() : {};
-                const l1Base = parseFloat(general.referralLevel1) || 3.6;
-                const l2Base = parseFloat(general.referralLevel2) || 1.2;
-                const l3Base = parseFloat(general.referralLevel3) || 0.4;
-
-                // Fetch activation fees per currency
-                const fees = general.activationFees || {};
-                setActivationFees(fees);
-
-                // Fetch the exchange rate for the user's currency
-                const userCurrency = userData?.currency || 'TZS';
-                let rate = 2500;
-                const ratesSnap = await getDoc(doc(db, 'settings', 'rates'));
-                if (ratesSnap.exists()) {
-                    const rates = ratesSnap.data();
-                    if (rates[userCurrency] && rates[userCurrency] > 0) rate = rates[userCurrency];
-                }
-
-                // Convert to native amounts
-                setBonuses({
-                    level1: Math.round(l1Base * rate),
-                    level2: Math.round(l2Base * rate),
-                    level3: Math.round(l3Base * rate)
-                });
-            } catch (e) {
-                console.error('Failed to load commission rates:', e);
-            }
+        // Hardcoded commission matrix — mirrors functions/lib/referralCommissions.js exactly
+        const COMMISSIONS = {
+            TZS: { level1: 9000,  level2: 3000, level3: 1000 },
+            KES: { level1: 500,   level2: 150,  level3: 50 },
+            UGX: { level1: 13500, level2: 4500, level3: 1500 },
+            MWK: { level1: 6300,  level2: 2100, level3: 700 },
+            RWF: { level1: 5000,  level2: 1500, level3: 500 },
+            ZMW: { level1: 100,   level2: 30,   level3: 10 },
+            BIF: { level1: 10500, level2: 3500, level3: 1100 },
+            CDF: { level1: 10500, level2: 3500, level3: 1100 },
+            MZN: { level1: 250,   level2: 80,   level3: 25 },
         };
-        fetchCommissions();
+        const userCurrency = userData?.currency || 'TZS';
+        setBonuses(COMMISSIONS[userCurrency] || COMMISSIONS.TZS);
     }, [userData?.currency]);
 
     const allReferrals = [
