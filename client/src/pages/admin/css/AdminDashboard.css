@@ -21,12 +21,14 @@
 .gov-stat-icon {
     width: 48px;
     height: 48px;
-    background: var(--gov-grey-bg);
+    background: var(--gov-blue);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
+    font-size: 20px;
+    color: #fff;
+    flex-shrink: 0;
 }
 .gov-stat-content {
     flex: 1;

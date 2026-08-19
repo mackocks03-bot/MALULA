@@ -79,7 +79,7 @@ function ConfirmModal({ modal, onClose, onConfirm, processing }) {
             <div className={`gov-modal ${isDelete || isReject ? 'danger-border' : ''}`} style={isDelete || isReject ? { borderTopColor: 'var(--gov-danger)' } : {}}>
                 <div className="gov-modal-header">
                     <h3>{modal.title}</h3>
-                    <button className="gov-modal-close" onClick={onClose}>✕</button>
+                    <button className="gov-modal-close" onClick={onClose}><i className="fas fa-times" /></button>
                 </div>
                 <div className="gov-modal-body">
                     <p className="gov-subtitle" style={{ marginBottom: 16 }}>{modal.subtitle}</p>
@@ -180,9 +180,9 @@ export default function AdminLayout() {
 
             <main className="gov-main">
                 <header className="gov-topbar">
-                    <button className="gov-mobile-btn" onClick={() => setMobileOpen(!mobileOpen)}>☰ Menu</button>
+                    <button className="gov-mobile-btn" onClick={() => setMobileOpen(!mobileOpen)}><i className="fas fa-bars" /> Menu</button>
                     <div style={{ flex: 1 }}></div>
-                    <Link to="/" className="gov-btn gov-btn-outline" style={{ padding: '6px 12px', fontSize: 12 }}>Client Portal ➔</Link>
+                    <Link to="/" className="gov-btn gov-btn-outline" style={{ padding: '6px 12px', fontSize: 12 }}><i className="fas fa-arrow-right-to-bracket" /> Client Portal</Link>
                 </header>
 
                 <div className="gov-content">
@@ -242,12 +242,12 @@ export function AdminDashboard() {
     }, []);
 
     const cards = [
-        { label: 'Registered Citizens', value: stats.users, icon: '📋' },
-        { label: 'Active Personnel', value: stats.active, icon: '☑️' },
-        { label: 'Total Invoices', value: stats.payments, icon: '📥' },
-        { label: 'Pending Deposits', value: stats.pendingPayments, icon: '⏳' },
-        { label: 'Total Disbursements', value: stats.withdrawals, icon: '📄' },
-        { label: 'Pending Payouts', value: stats.pendingWithdrawals, icon: '⚠️' },
+        { label: 'Registered Citizens', value: stats.users, icon: <i className="fas fa-users" /> },
+        { label: 'Active Personnel', value: stats.active, icon: <i className="fas fa-user-check" /> },
+        { label: 'Total Invoices', value: stats.payments, icon: <i className="fas fa-file-invoice" /> },
+        { label: 'Pending Deposits', value: stats.pendingPayments, icon: <i className="fas fa-clock" /> },
+        { label: 'Total Disbursements', value: stats.withdrawals, icon: <i className="fas fa-money-bill-transfer" /> },
+        { label: 'Pending Payouts', value: stats.pendingWithdrawals, icon: <i className="fas fa-triangle-exclamation" /> },
     ];
 
     return (
@@ -340,7 +340,7 @@ function UserProfileModal({ user, onClose, onUpdateStatus, onSave }) {
                         </h3>
                         <div style={{ fontSize: 12, color: '#666', marginTop: 4, fontFamily: 'monospace' }}>UID: {user.uid}</div>
                     </div>
-                    <button className="gov-modal-close" onClick={onClose}>✕</button>
+                    <button className="gov-modal-close" onClick={onClose}><i className="fas fa-times" /></button>
                 </div>
                 <div className="gov-modal-body" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, maxHeight: '70vh', overflowY: 'auto' }}>
                     <div>
@@ -905,7 +905,7 @@ function ReferralDetailModal({ promoter, usersMap, onClose }) {
                         </h3>
                         <div style={{ fontSize: 11, color: '#888', fontFamily: 'monospace', marginTop: 2 }}>{promoter.uid}</div>
                     </div>
-                    <button className="gov-modal-close" onClick={onClose}>✕</button>
+                    <button className="gov-modal-close" onClick={onClose}><i className="fas fa-times" /></button>
                 </div>
                 <div className="gov-modal-body" style={{ maxHeight: '65vh', overflowY: 'auto' }}>
                     {levels.map(({ label, uids }) => {
@@ -1817,7 +1817,7 @@ export function AdminShopDeposits() {
                                             color: isPalmpesa ? '#0288D1' : '#ED6C02',
                                             borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 700
                                         }}>
-                                            {isPalmpesa ? 'âš¡ Auto PalmPesa' : 'ðŸ“± Manual USSD'}
+                                            {isPalmpesa ? <><i className="fas fa-bolt" /> Auto PalmPesa</> : <><i className="fas fa-mobile-screen-button" /> Manual USSD</>}
                                         </span>
                                     </td>
                                     <td className="gov-mono-text" style={{ fontSize: 12 }}>{dep.transactionId || dep.reference || dep.orderId || '—'}</td>
