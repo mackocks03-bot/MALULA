@@ -189,12 +189,12 @@ export const onUserRegistered = onDocumentCreated(
     async (event) => {
         if (!event.data) return;
         const user = event.data.data();
-        
+
         // Trigger only for Tanzanian users
         if (user.country === 'TZ' || user.currency === 'TZS') {
             const username = user.username || 'User';
-            const message = `Welcome to NEW HOPE, ${username}! Your account has been successfully created. Please activate your account for 15000 TSH to start earning by chatting with foreigners ...............`;
-            
+            const message = `Welcome to NEW HOPE, ${username}! Your account has been successfully created. Please activate your account for 14500 TSH to start earning by chatting with foreigners.`;
+
             try {
                 if (user.phone) {
                     const res = await sendBeemSMS(user.phone, message);
