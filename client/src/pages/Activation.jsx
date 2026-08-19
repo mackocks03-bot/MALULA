@@ -13,6 +13,7 @@ import {
     initiatePalmpesaActivation,
     pollPalmpesaActivationStatus
 } from '../services/deposits.js';
+import PaymentStepper from '../components/PaymentStepper.jsx';
 import dataStore from '../utils/dataStore.js';
 import { db, doc, onSnapshot, updateDoc } from '../services/firebase-config.js';
 import { getActivationFee } from '../services/settings.js';
@@ -336,42 +337,12 @@ export default function Activation() {
                                             </div>
                                         </div>
 
-                                        {palmpesaStatus === 'failed' && (
-                                            <div style={{
-                                                padding: 12, borderRadius: 10, marginBottom: 12,
-                                                background: 'var(--color-red-bg)', color: 'var(--color-red)', fontSize: 13
-                                            }}>
-                                                {palmpesaMessage}
-                                            </div>
-                                        )}
-
-                                        {palmpesaStatus === 'success' && (
-                                            <div style={{
-                                                padding: '16px 12px', borderRadius: 12, marginBottom: 16,
-                                                background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)',
-                                                display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center'
-                                            }}>
-                                                <div style={{
-                                                    width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg, #10B981, #059669)',
-                                                    display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12,
-                                                    animation: 'pulse 1s var(--transition-base) infinite', boxShadow: '0 0 20px rgba(16, 185, 129, 0.2)'
-                                                }}>
-                                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'modalPopIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)' }}>
-                                                        <polyline points="20 6 9 17 4 12"></polyline>
-                                                    </svg>
-                                                </div>
-                                                <div style={{ color: '#10B981', fontWeight: 600, fontSize: 16, animation: 'fadeInUp 0.5s ease' }}>Payment Verified!</div>
-                                                <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 4, animation: 'fadeInUp 0.6s ease' }}>Activating account...</div>
-                                            </div>
-                                        )}
-
-                                        {palmpesaStatus === 'waiting' && (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: 'rgba(212,175,55,0.05)', border: '1px solid var(--color-gold)', borderRadius: 12, marginBottom: 16 }}>
-                                                <span className="spinner" style={{ flexShrink: 0, display: 'inline-block', width: 22, height: 22, border: '2.5px solid var(--color-gold)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1.2s linear infinite' }} />
-                                                <p style={{ margin: 0, fontSize: 13, color: 'var(--color-gold)', fontWeight: 600, lineHeight: 1.4 }}>
-                                                    {translate('activation.palmpesaPrompt') || 'Prompt has been sent to your phone. Please enter pin to complete payment.'}
-                                                </p>
-                                            </div>
+                                        {/* Animated 3-step progress stepper */}
+                                        {(palmpesaStatus === 'pushing' || palmpesaStatus === 'waiting' || palmpesaStatus === 'success' || palmpesaStatus === 'failed') && (
+                                            <PaymentStepper
+                                                status={palmpesaStatus}
+                                                message={palmpesaStatus === 'success' ? 'Payment Verified! Activating your account…' : undefined}
+                                            />
                                         )}
 
                                         <button
