@@ -9,9 +9,9 @@ import { db, doc, getDoc, getDocs, collection, deleteDoc, writeBatch } from './f
 // ============================================================
 // APPROVE SHOP DEPOSIT
 // ============================================================
-export async function approveShopDeposit(depositId) {
+export async function approveShopDeposit(depositId, source = 'shopDeposits') {
     try {
-        const depositRef = doc(db, 'shopDeposits', depositId);
+        const depositRef = doc(db, source, depositId);
         const depositSnap = await getDoc(depositRef);
         if (!depositSnap.exists()) {
             return { success: false, error: 'Deposit record not found' };
@@ -96,9 +96,9 @@ export async function approveShopDeposit(depositId) {
 // ============================================================
 // REJECT SHOP DEPOSIT
 // ============================================================
-export async function rejectShopDeposit(depositId, reason = 'Payment details not verified') {
+export async function rejectShopDeposit(depositId, reason = 'Payment details not verified', source = 'shopDeposits') {
     try {
-        const depositRef = doc(db, 'shopDeposits', depositId);
+        const depositRef = doc(db, source, depositId);
         const depositSnap = await getDoc(depositRef);
         if (!depositSnap.exists()) {
             return { success: false, error: 'Deposit record not found' };
@@ -142,9 +142,9 @@ export async function rejectShopDeposit(depositId, reason = 'Payment details not
 // ============================================================
 // DELETE SHOP DEPOSIT
 // ============================================================
-export async function deleteShopDeposit(depositId) {
+export async function deleteShopDeposit(depositId, source = 'shopDeposits') {
     try {
-        await deleteDoc(doc(db, 'shopDeposits', depositId));
+        await deleteDoc(doc(db, source, depositId));
         return { success: true, message: 'Deposit receipt deleted forever' };
     } catch (error) {
         console.error('❌ Error deleting shop deposit:', error);

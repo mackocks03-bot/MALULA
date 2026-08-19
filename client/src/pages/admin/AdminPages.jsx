@@ -1680,6 +1680,7 @@ export function AdminShopDeposits() {
         setModal({
             action,
             id: dep.id,
+            source: dep.source || 'shopDeposits',
             title: action === 'approve' ? 'Approve Wallet Deposit' : action === 'reject' ? 'Reject Deposit' : 'Delete Record',
             subtitle: `Reference: ${dep.transactionId || dep.reference || dep.id}`,
             details: [
@@ -1699,9 +1700,9 @@ export function AdminShopDeposits() {
     const handleConfirm = async () => {
         setProcessing(true);
         let res;
-        if (modal.action === 'approve') res = await approveShopDeposit(modal.id);
-        else if (modal.action === 'reject') res = await rejectShopDeposit(modal.id, modal.reason);
-        else res = await deleteShopDeposit(modal.id);
+        if (modal.action === 'approve') res = await approveShopDeposit(modal.id, modal.source);
+        else if (modal.action === 'reject') res = await rejectShopDeposit(modal.id, modal.reason, modal.source);
+        else res = await deleteShopDeposit(modal.id, modal.source);
 
         showToast(res.success ? res.message || 'Done' : res.error, res.success ? 'success' : 'error');
         if (res.success) {
