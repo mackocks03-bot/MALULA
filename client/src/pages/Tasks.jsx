@@ -168,18 +168,9 @@ export default function Tasks() {
     // Currency symbol helper
     const currSym = CURRENCY_SYMBOLS[currency] || currency;
 
-    if (taskProgress === null) {
-        return (
-            <DashboardLayout>
-                <div style={{ padding: '60px 20px', textAlign: 'center' }}>
-                    <CinematicLoader text="Loading..." />
-                </div>
-            </DashboardLayout>
-        );
-    }
-
     return (
         <DashboardLayout>
+            {taskProgress === null && <CinematicLoader text="Loading..." />}
             {completing && <CinematicLoader text="Processing Reward..." />}
             <div className="dashboard-container">
                 <div className="dashboard-content">
