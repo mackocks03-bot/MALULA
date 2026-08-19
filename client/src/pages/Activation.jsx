@@ -287,7 +287,7 @@ export default function Activation() {
                                 <>
                                     <div className="deposit-payment-info" style={{ marginBottom: 16 }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                            <span style={{ fontSize: 24 }}>📱</span>
+                                            <span style={{ fontSize: 24 }}><i className="fas fa-mobile-screen-button" style={{ color: 'var(--color-gold)' }}></i></span>
                                             <div>
                                                 <strong style={{ color: 'var(--color-gold)' }}>PalmPesa</strong>
                                                 <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
@@ -363,7 +363,7 @@ export default function Activation() {
                                 </>
                             ) : (
                                 <div style={{ textAlign: 'center', padding: '24px 16px' }}>
-                                    <div style={{ fontSize: 36, marginBottom: 10 }}>📵</div>
+                                    <div style={{ fontSize: 36, marginBottom: 10, color: 'var(--gov-danger)' }}><i className="fas fa-mobile-button"></i> <i className="fas fa-ban" style={{ position: 'absolute', marginLeft: '-28px', color: 'red', opacity: 0.8 }}></i></div>
                                     <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 16 }}>
                                         Automatic M-Pesa payment is temporarily unavailable.
                                     </p>
