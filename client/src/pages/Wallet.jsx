@@ -6,7 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useToast } from '../contexts/ToastContext.jsx';
 import { formatCurrency, getCountry, CURRENCY_SYMBOLS } from '../utils/helpers.js';
 import { listenToTransactions } from '../services/database.js';
-import { db, doc, collection, onSnapshot, addDoc, updateDoc } from '../services/firebase-config.js';
+import { db, doc, collection, onSnapshot, addDoc, updateDoc, query, where, getDocs, writeBatch } from '../services/firebase-config.js';
 import {
     getPalmpesaConfig,
     initiatePalmpesaDeposit,
@@ -157,6 +157,34 @@ export default function Wallet() {
         setPalmpesaMessage(translate('wallet.palmpesaSending') || 'Sending payment request to your phone…');
 
         try {
+            const qPendingPalm = query(
+                collection(db, 'palmpesaPending'),
+                where('uid', '==', user.uid),
+                where('status', '==', 'pending'),
+                where('type', '==', 'deposit')
+            );
+            const pSnapPalm = await getDocs(qPendingPalm);
+            if (!pSnapPalm.empty) {
+                const batch = writeBatch(db);
+                let hasActive = false;
+                pSnapPalm.docs.forEach(d => {
+                    const age = Date.now() - (d.data().createdAt || 0);
+                    if (age > 15 * 60 * 1000) {
+                        batch.delete(d.ref); // Auto-delete PalmPesa pushes older than 15 mins
+                    } else {
+                        hasActive = true;
+                    }
+                });
+                await batch.commit();
+
+                if (hasActive) {
+                    showToast(translate('wallet.depositPendingLimit') || 'You already have a pending deposit. Please wait 15 minutes before submitting a new one.', 'warning');
+                    setPalmpesaStatus('');
+                    setPalmpesaMessage('');
+                    return;
+                }
+            }
+
             const init = await initiatePalmpesaDeposit({
                 phone: palmpesaPhone.trim(),
                 amount,
@@ -212,6 +240,28 @@ export default function Wallet() {
         }
         setDepositing(true);
         try {
+            const qPending = query(collection(db, 'shopDeposits'), where('uid', '==', user.uid), where('status', '==', 'pending'));
+            const pSnap = await getDocs(qPending);
+            if (!pSnap.empty) {
+                const batch = writeBatch(db);
+                let hasActive = false;
+                pSnap.docs.forEach(d => {
+                    const age = Date.now() - (d.data().createdAt || 0);
+                    if (age > 15 * 60 * 1000) {
+                        batch.delete(d.ref); // Auto-delete manual deposits older than 15 mins
+                    } else {
+                        hasActive = true;
+                    }
+                });
+                await batch.commit();
+
+                if (hasActive) {
+                    showToast(translate('wallet.depositPendingLimit') || 'You already have a pending deposit. Please wait 15 minutes before submitting a new one.', 'warning');
+                    setDepositing(false);
+                    return;
+                }
+            }
+            
             await addDoc(collection(db, 'shopDeposits'), {
                 uid: user.uid,
                 amount: amt,
