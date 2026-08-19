@@ -79,7 +79,7 @@ function ConfirmModal({ modal, onClose, onConfirm, processing }) {
             <div className={`gov-modal ${isDelete || isReject ? 'danger-border' : ''}`} style={isDelete || isReject ? { borderTopColor: 'var(--gov-danger)' } : {}}>
                 <div className="gov-modal-header">
                     <h3>{modal.title}</h3>
-                    <button className="gov-modal-close" onClick={onClose}>âœ•</button>
+                    <button className="gov-modal-close" onClick={onClose}>✕</button>
                 </div>
                 <div className="gov-modal-body">
                     <p className="gov-subtitle" style={{ marginBottom: 16 }}>{modal.subtitle}</p>
@@ -90,7 +90,7 @@ function ConfirmModal({ modal, onClose, onConfirm, processing }) {
                                 {modal.details.map(({ label, value }) => (
                                     <tr key={label} style={{ borderBottom: '1px solid #E0E0E0' }}>
                                         <td style={{ padding: '8px 4px', fontWeight: 700, color: '#666', textTransform: 'uppercase', fontSize: 11 }}>{label}</td>
-                                        <td style={{ padding: '8px 4px', textAlign: 'right', fontWeight: 500 }}>{value || 'â€”'}</td>
+                                        <td style={{ padding: '8px 4px', textAlign: 'right', fontWeight: 500 }}>{value || '—'}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -180,9 +180,9 @@ export default function AdminLayout() {
 
             <main className="gov-main">
                 <header className="gov-topbar">
-                    <button className="gov-mobile-btn" onClick={() => setMobileOpen(!mobileOpen)}>â˜° Menu</button>
+                    <button className="gov-mobile-btn" onClick={() => setMobileOpen(!mobileOpen)}>☰ Menu</button>
                     <div style={{ flex: 1 }}></div>
-                    <Link to="/" className="gov-btn gov-btn-outline" style={{ padding: '6px 12px', fontSize: 12 }}>Client Portal âž”</Link>
+                    <Link to="/" className="gov-btn gov-btn-outline" style={{ padding: '6px 12px', fontSize: 12 }}>Client Portal ➔</Link>
                 </header>
 
                 <div className="gov-content">
@@ -242,12 +242,12 @@ export function AdminDashboard() {
     }, []);
 
     const cards = [
-        { label: 'Registered Citizens', value: stats.users, icon: 'ðŸ“‹' },
-        { label: 'Active Personnel', value: stats.active, icon: 'â˜‘ï¸' },
-        { label: 'Total Invoices', value: stats.payments, icon: 'ðŸ“¨' },
-        { label: 'Pending Deposits', value: stats.pendingPayments, icon: 'â³' },
-        { label: 'Total Disbursements', value: stats.withdrawals, icon: 'ðŸ“‘' },
-        { label: 'Pending Payouts', value: stats.pendingWithdrawals, icon: 'âš ï¸' },
+        { label: 'Registered Citizens', value: stats.users, icon: '📋' },
+        { label: 'Active Personnel', value: stats.active, icon: '☑️' },
+        { label: 'Total Invoices', value: stats.payments, icon: '📥' },
+        { label: 'Pending Deposits', value: stats.pendingPayments, icon: '⏳' },
+        { label: 'Total Disbursements', value: stats.withdrawals, icon: '📄' },
+        { label: 'Pending Payouts', value: stats.pendingWithdrawals, icon: '⚠️' },
     ];
 
     return (
@@ -261,7 +261,7 @@ export function AdminDashboard() {
                         <div className="gov-stat-icon">{c.icon}</div>
                         <div className="gov-stat-content">
                             <div className="gov-stat-label">{c.label}</div>
-                            <div className="gov-stat-value">{busy ? 'â€”' : c.value}</div>
+                            <div className="gov-stat-value">{busy ? '—' : c.value}</div>
                         </div>
                     </div>
                 ))}
@@ -340,7 +340,7 @@ function UserProfileModal({ user, onClose, onUpdateStatus, onSave }) {
                         </h3>
                         <div style={{ fontSize: 12, color: '#666', marginTop: 4, fontFamily: 'monospace' }}>UID: {user.uid}</div>
                     </div>
-                    <button className="gov-modal-close" onClick={onClose}>âœ•</button>
+                    <button className="gov-modal-close" onClick={onClose}>✕</button>
                 </div>
                 <div className="gov-modal-body" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, maxHeight: '70vh', overflowY: 'auto' }}>
                     <div>
@@ -356,14 +356,14 @@ function UserProfileModal({ user, onClose, onUpdateStatus, onSave }) {
                             </>
                         ) : (
                             <>
-                                <div style={{ marginBottom: 8 }}><b>Name:</b> {user.fullName || 'â€”'}</div>
-                                <div style={{ marginBottom: 8 }}><b>Email:</b> {user.email || 'â€”'}</div>
-                                <div style={{ marginBottom: 8 }}><b>Phone:</b> {user.phone || 'â€”'}</div>
-                                <div style={{ marginBottom: 8 }}><b>Country:</b> {user.countryName || user.country || 'â€”'} ({cCode.toUpperCase()})</div>
+                                <div style={{ marginBottom: 8 }}><b>Name:</b> {user.fullName || '—'}</div>
+                                <div style={{ marginBottom: 8 }}><b>Email:</b> {user.email || '—'}</div>
+                                <div style={{ marginBottom: 8 }}><b>Phone:</b> {user.phone || '—'}</div>
+                                <div style={{ marginBottom: 8 }}><b>Country:</b> {user.countryName || user.country || '—'} ({cCode.toUpperCase()})</div>
                                 <div style={{ marginBottom: 8 }}><b>Currency:</b> {curr}</div>
                             </>
                         )}
-                        <div style={{ marginBottom: 8 }}><b>Joined:</b> {user.createdAt ? new Date(user.createdAt).toLocaleString() : 'â€”'}</div>
+                        <div style={{ marginBottom: 8 }}><b>Joined:</b> {user.createdAt ? new Date(user.createdAt).toLocaleString() : '—'}</div>
                         {isEditing ? (
                             <>
                                 <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -600,11 +600,11 @@ export function AdminPayments() {
             subtitle: `Action required for invoice ${p.reference || p.transactionId || p.id}`,
             details: [
                 { label: 'Client ID', value: p.uid },
-                { label: 'Username', value: u.username || u.fullName || 'â€”' },
+                { label: 'Username', value: u.username || u.fullName || '—' },
                 { label: 'Amount', value: amountDisplay },
                 { label: 'Method', value: p.method || p.channel || 'PalmPesa' },
-                { label: 'Phone', value: p.phone || p.phoneNumber || 'â€”' },
-                { label: 'Dated', value: p.createdAt ? new Date(p.createdAt).toLocaleString() : 'â€”' }
+                { label: 'Phone', value: p.phone || p.phoneNumber || '—' },
+                { label: 'Dated', value: p.createdAt ? new Date(p.createdAt).toLocaleString() : '—' }
             ],
             reason: 'Verification failed', setReason: (r) => setModal(m => ({ ...m, reason: r }))
         });
@@ -736,14 +736,14 @@ export function AdminWithdrawals() {
         const details = [
             { label: 'Reference', value: w.referenceCode || w.id },
             { label: 'Client ID', value: w.uid },
-            { label: 'Username', value: u.username || u.fullName || 'â€”' },
-            { label: 'Account Name', value: w.accountName || 'â€”' },
+            { label: 'Username', value: u.username || u.fullName || '—' },
+            { label: 'Account Name', value: w.accountName || '—' },
             { label: 'Wallet', value: w.wallet || 'balance' },
             { label: 'Amount', value: `${currency} ${Number(nativeAmt).toLocaleString()}` },
             { label: 'Fee', value: w.fee ? `${currency} ${Number(w.fee).toLocaleString()}` : 'None' },
-            { label: 'Phone', value: w.phone || w.phoneNumber || w.address || 'â€”' },
-            { label: 'Gateway', value: w.method || 'â€”' },
-            { label: 'Date', value: w.createdAt ? new Date(w.createdAt).toLocaleString() : 'â€”' },
+            { label: 'Phone', value: w.phone || w.phoneNumber || w.address || '—' },
+            { label: 'Gateway', value: w.method || '—' },
+            { label: 'Date', value: w.createdAt ? new Date(w.createdAt).toLocaleString() : '—' },
         ];
         setModal({
             action, id: w.id, uid: w.uid,
@@ -795,14 +795,14 @@ export function AdminWithdrawals() {
                             const cCode = (u.country || 'tz').toLowerCase();
                             const currency = w.currency || u.currency || 'TZS';
                             const phone = w.phone || w.phoneNumber || w.address || '';
-                            const name = w.accountName || u.fullName || 'â€”';
+                            const name = w.accountName || u.fullName || '—';
                             return (
                                 <tr key={w.id}>
                                     <td>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                             <img src={`https://flagcdn.com/w40/${cCode}.png`} alt={cCode} style={{ width: 24, height: 16, objectFit: 'cover', borderRadius: 2 }} />
                                             <div>
-                                                <div style={{ fontWeight: 700, fontSize: 13 }}>{u.username || u.fullName || 'â€”'}</div>
+                                                <div style={{ fontWeight: 700, fontSize: 13 }}>{u.username || u.fullName || '—'}</div>
                                                 <div style={{ fontFamily: 'monospace', fontSize: 10, color: '#999' }}>{w.uid?.slice(0, 12)}...</div>
                                             </div>
                                         </div>
@@ -890,9 +890,9 @@ function ReferralDetailModal({ promoter, usersMap, onClose }) {
     }
 
     const levels = [
-        { label: 'Level 1 â€” Direct Recruits', uids: lv1Uids },
-        { label: 'Level 2 â€” Indirect Recruits', uids: lv2Uids },
-        { label: 'Level 3 â€” Extended Network', uids: lv3Uids },
+        { label: 'Level 1 — Direct Recruits', uids: lv1Uids },
+        { label: 'Level 2 — Indirect Recruits', uids: lv2Uids },
+        { label: 'Level 3 — Extended Network', uids: lv3Uids },
     ];
     return (
         <div className="gov-modal-overlay open" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -901,11 +901,11 @@ function ReferralDetailModal({ promoter, usersMap, onClose }) {
                     <div>
                         <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <img src={`https://flagcdn.com/w40/${cCode}.png`} alt={cCode} style={{ width: 22, height: 15, borderRadius: 2 }} />
-                            {promoter.username || 'N/A'} â€” Referral Tree
+                            {promoter.username || 'N/A'} — Referral Tree
                         </h3>
                         <div style={{ fontSize: 11, color: '#888', fontFamily: 'monospace', marginTop: 2 }}>{promoter.uid}</div>
                     </div>
-                    <button className="gov-modal-close" onClick={onClose}>âœ•</button>
+                    <button className="gov-modal-close" onClick={onClose}>✕</button>
                 </div>
                 <div className="gov-modal-body" style={{ maxHeight: '65vh', overflowY: 'auto' }}>
                     {levels.map(({ label, uids }) => {
@@ -927,13 +927,13 @@ function ReferralDetailModal({ promoter, usersMap, onClose }) {
                                         <tbody>
                                             {uids.map(uid => {
                                                 const ref = usersMap[uid];
-                                                if (!ref) return (<tr key={uid}><td colSpan={5} style={{ color: '#ccc', fontFamily: 'monospace', fontSize: 11 }}>{uid} â€” not found</td></tr>);
+                                                if (!ref) return (<tr key={uid}><td colSpan={5} style={{ color: '#ccc', fontFamily: 'monospace', fontSize: 11 }}>{uid} — not found</td></tr>);
                                                 const rc = (ref.countryCode || ref.country || 'TZ').toLowerCase();
                                                 return (
                                                     <tr key={uid}>
                                                         <td>
-                                                            <div style={{ fontWeight: 600 }}>{ref.username || 'â€”'}</div>
-                                                            <div style={{ fontSize: 10, color: '#aaa' }}>{ref.email || 'â€”'}</div>
+                                                            <div style={{ fontWeight: 600 }}>{ref.username || '—'}</div>
+                                                            <div style={{ fontSize: 10, color: '#aaa' }}>{ref.email || '—'}</div>
                                                         </td>
                                                         <td>
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -941,8 +941,8 @@ function ReferralDetailModal({ promoter, usersMap, onClose }) {
                                                                 <span>{ref.countryName || rc.toUpperCase()}</span>
                                                             </div>
                                                         </td>
-                                                        <td style={{ fontFamily: 'monospace' }}>{ref.phone || 'â€”'}</td>
-                                                        <td style={{ color: '#888' }}>{ref.createdAt ? new Date(ref.createdAt).toLocaleDateString() : 'â€”'}</td>
+                                                        <td style={{ fontFamily: 'monospace' }}>{ref.phone || '—'}</td>
+                                                        <td style={{ color: '#888' }}>{ref.createdAt ? new Date(ref.createdAt).toLocaleDateString() : '—'}</td>
                                                         <td><StatusBadge status={ref.isActive ? 'active' : 'pending'} /></td>
                                                     </tr>
                                                 );
@@ -1687,13 +1687,13 @@ export function AdminShopDeposits() {
             subtitle: `Reference: ${dep.transactionId || dep.reference || dep.id}`,
             details: [
                 { label: 'Client ID', value: dep.uid },
-                { label: 'Username', value: u.username || u.fullName || 'â€”' },
-                { label: 'Phone', value: u.phone || dep.msisdn || 'â€”' },
+                { label: 'Username', value: u.username || u.fullName || '—' },
+                { label: 'Phone', value: u.phone || dep.msisdn || '—' },
                 { label: 'Amount', value: `${currency} ${amount.toLocaleString()}` },
                 { label: 'Method', value: dep.method || dep.channel || 'Manual USSD' },
-                { label: 'Transaction ID', value: dep.transactionId || dep.reference || dep.orderId || 'â€”' },
+                { label: 'Transaction ID', value: dep.transactionId || dep.reference || dep.orderId || '—' },
                 { label: 'Current Shop Balance', value: `${currency} ${Number(u.shopBalance || 0).toLocaleString()}` },
-                { label: 'Submitted', value: dep.createdAt ? new Date(dep.createdAt).toLocaleString() : 'â€”' },
+                { label: 'Submitted', value: dep.createdAt ? new Date(dep.createdAt).toLocaleString() : '—' },
             ],
             reason: 'Payment could not be verified', setReason: (r) => setModal(m => ({ ...m, reason: r }))
         });
@@ -1804,7 +1804,7 @@ export function AdminShopDeposits() {
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                             <img src={`https://flagcdn.com/w40/${cCode}.png`} alt={cCode} style={{ width: 24, height: 16, objectFit: 'cover', borderRadius: 2 }} />
                                             <div>
-                                                <div style={{ fontWeight: 700, fontSize: 13 }}>{u.username || u.fullName || 'â€”'}</div>
+                                                <div style={{ fontWeight: 700, fontSize: 13 }}>{u.username || u.fullName || '—'}</div>
                                                 <div style={{ fontSize: 11, color: '#999', fontFamily: 'monospace' }}>{dep.uid?.slice(0, 10)}...</div>
                                             </div>
                                         </div>
@@ -1820,8 +1820,8 @@ export function AdminShopDeposits() {
                                             {isPalmpesa ? 'âš¡ Auto PalmPesa' : 'ðŸ“± Manual USSD'}
                                         </span>
                                     </td>
-                                    <td className="gov-mono-text" style={{ fontSize: 12 }}>{dep.transactionId || dep.reference || dep.orderId || 'â€”'}</td>
-                                    <td style={{ fontSize: 12 }}>{dep.createdAt ? new Date(dep.createdAt).toLocaleString() : 'â€”'}</td>
+                                    <td className="gov-mono-text" style={{ fontSize: 12 }}>{dep.transactionId || dep.reference || dep.orderId || '—'}</td>
+                                    <td style={{ fontSize: 12 }}>{dep.createdAt ? new Date(dep.createdAt).toLocaleString() : '—'}</td>
                                     <td><StatusBadge status={dep.status} /></td>
                                     <td>
                                         <div className="gov-action-group">
