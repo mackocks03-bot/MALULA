@@ -46,7 +46,7 @@ export default function Tasks() {
     const { user, userData } = useAuth();
     const { translate } = useLanguage();
     const { showToast } = useToast();
-    const [taskProgress, setTaskProgress] = useState({});
+    const [taskProgress, setTaskProgress] = useState(null);
     const [completing, setCompleting] = useState(false);
     const [watching, setWatching] = useState(false);
     const [watchSeconds, setWatchSeconds] = useState(0);
@@ -130,7 +130,7 @@ export default function Tasks() {
                 showToast(`+1 ${translate('tasks.progress') || 'progress'} (${newCompleted}/${total})`, 'info');
             }
 
-            await setDoc(doc(db, 'userTasks', `${user.uid}_${taskKey}`), { uid: user.uid, ...updates });
+            await setDoc(doc(db, 'userTasks', `${user.uid}_${taskKey}`), { uid: user.uid, ...updates }, { merge: true });
         } catch {
             showToast(translate('common.error'), 'error');
         }
@@ -167,6 +167,16 @@ export default function Tasks() {
 
     // Currency symbol helper
     const currSym = CURRENCY_SYMBOLS[currency] || currency;
+
+    if (taskProgress === null) {
+        return (
+            <DashboardLayout>
+                <div style={{ padding: '60px 20px', textAlign: 'center' }}>
+                    <CinematicLoader text="Loading..." />
+                </div>
+            </DashboardLayout>
+        );
+    }
 
     return (
         <DashboardLayout>
