@@ -49,6 +49,18 @@
     letter-spacing: 0.2px;
 }
 
+.ch-week-badge {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 4px 14px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
 /* ── Countdown ── */
 .ch-countdown {
     display: flex;
@@ -201,7 +213,7 @@
     flex-shrink: 0;
 }
 
-/* ── Avatars ── */
+/* ── Avatars & Flags ── */
 .ch-avatar {
     width: 36px;
     height: 36px;
@@ -218,6 +230,12 @@
 .ch-avatar.silver { background: linear-gradient(135deg, #C0C0C0, #A8A8A8); color: #0F172A; }
 .ch-avatar.bronze { background: linear-gradient(135deg, #CD7F32, #B87333); color: #0F172A; }
 .ch-avatar.default{ background: var(--bg-input); color: var(--text-secondary); }
+
+.ch-flag-inline {
+    margin-right: 4px;
+    font-size: 13px;
+    vertical-align: middle;
+}
 
 /* ── User Info ── */
 .ch-user-info { min-width: 0; }
@@ -239,6 +257,8 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
 }
 
 /* ── Right Column ── */
@@ -246,8 +266,17 @@
 
 .ch-refs {
     font-weight: 700;
-    font-size: 13px;
+    font-size: 14px;
     color: var(--color-gold);
+    line-height: 1;
+}
+
+.ch-refs-label {
+    font-size: 9px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-top: 2px;
 }
 
 .ch-bar-wrap {
@@ -255,7 +284,7 @@
     height: 4px;
     background: var(--bg-input);
     border-radius: 2px;
-    margin-top: 5px;
+    margin-top: 4px;
     overflow: hidden;
 }
 
@@ -314,7 +343,7 @@
     flex-shrink: 0;
 }
 
-/* ── Empty state ── */
+/* ── Empty state & Spinner ── */
 .ch-empty {
     text-align: center;
     padding: 36px 20px;
@@ -333,6 +362,25 @@
 }
 
 .ch-empty p { font-size: 13px; }
+
+.ch-spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid var(--border-color);
+    border-top-color: var(--color-gold);
+    border-radius: 50%;
+    margin: 0 auto;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
 
 /* ── Responsive ── */
 @media (max-width: 400px) {
