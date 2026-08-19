@@ -1637,7 +1637,7 @@ export function AdminShopDeposits() {
                 // Find pending palmpesa ones that aren't already in shopDeposits
                 pSnap.docs.forEach(p => {
                     const data = p.data();
-                    if (!all.find(x => x.orderId === data.orderId || x.orderId === p.id)) {
+                    if (data.type === 'deposit' && !all.find(x => x.orderId === data.orderId || x.orderId === p.id)) {
                         all.push({ 
                             id: p.id, 
                             ...data, 
@@ -1690,7 +1690,7 @@ export function AdminShopDeposits() {
                 { label: 'Amount', value: `${currency} ${amount.toLocaleString()}` },
                 { label: 'Method', value: dep.method || dep.channel || 'Manual USSD' },
                 { label: 'Transaction ID', value: dep.transactionId || dep.reference || dep.orderId || '—' },
-                { label: 'Current Balance', value: `${currency} ${Number(u.shopBalance || 0).toLocaleString()}` },
+                { label: 'Current Shop Balance', value: `${currency} ${Number(u.shopBalance || 0).toLocaleString()}` },
                 { label: 'Submitted', value: dep.createdAt ? new Date(dep.createdAt).toLocaleString() : '—' },
             ],
             reason: 'Payment could not be verified', setReason: (r) => setModal(m => ({ ...m, reason: r }))
