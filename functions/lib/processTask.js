@@ -3,147 +3,150 @@
  *
  * Triggered by: onDocumentWritten userTasks/{userTaskId}
  *
- * Client writes a claim request:
- *   { status: 'pending_verification', taskId, taskTitle, category, reward }
- *
- * This function:
- *  1. Validates the user and active status
- *  2. Credits user balance securely based on the provided reward
- *  3. Updates claim record with status: 'completed'
- *
- * Idempotent — guarded by taskProcessed flag.
+ * Client writes a claim request with status: 'pending_verification'
  */
 
-/**
- * @param {import('firebase-admin/firestore').Firestore} db
- * @param {string} userTaskId
- * @param {object} claim  - the written userTask value
- */
-export async function runTaskProcessing(db, userTaskId, claim) {
-    if (!claim || claim.taskProcessed === true) return;
-    if (claim.status !== 'pending_verification') return;
+export async function runTaskProcessing(db, userTaskId, triggerClaim) {
+    if (!triggerClaim || triggerClaim.taskProcessed === true || triggerClaim.status !== 'pending_verification') return;
 
-    const uid = claim.uid;
-    const taskId = claim.taskId;
+    const uid = triggerClaim.uid;
+    const taskId = triggerClaim.taskId;
     
     if (!uid || !taskId) return;
 
-    // Reject immediately if the timestamp doesn't match the current server timezone (Dar es Salaam / EAT / UTC+3)
+    // Hardcoded daily rewards per country perfectly matching frontend configurations to prevent injection attacks
+    const DAILY_REWARDS = {
+        sunday:    { TZS: 5000, KES: 250, UGX: 15000, MWK: 4000, ZMW: 50, RWF: 2500, BIF: 5000, CDF: 5000 },
+        monday:    { TZS: 1000, KES: 50,  UGX: 3000,  MWK: 800,  ZMW: 10, RWF: 500,  BIF: 1000, CDF: 1000 },
+        tuesday:   { TZS: 1000, KES: 50,  UGX: 3000,  MWK: 800,  ZMW: 10, RWF: 500,  BIF: 1000, CDF: 1000 },
+        wednesday: { TZS: 2000, KES: 100, UGX: 6000,  MWK: 1600, ZMW: 20, RWF: 1000, BIF: 2000, CDF: 2000 },
+        thursday:  { TZS: 1000, KES: 50,  UGX: 3000,  MWK: 800,  ZMW: 10, RWF: 500,  BIF: 1000, CDF: 1000 },
+        friday:    { TZS: 1000, KES: 50,  UGX: 3000,  MWK: 800,  ZMW: 10, RWF: 500,  BIF: 1000, CDF: 1000 },
+        saturday:  { TZS: 1000, KES: 50,  UGX: 3000,  MWK: 800,  ZMW: 10, RWF: 500,  BIF: 1000, CDF: 1000 }
+    };
+
+    // Calculate server day explicitly
     const nowMs = Date.now();
-    const serverDate = new Date(nowMs + (3 * 3600000));
+    const serverDate = new Date(nowMs + (3 * 3600000)); // Dar es Salaam / EAT / UTC+3
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const serverDay = dayNames[serverDate.getUTCDay()];
-
-    if (!taskId.includes(serverDay)) {
-        await db.collection('userTasks').doc(userTaskId).update({
-            taskProcessed: true,
-            status: 'rejected',
-            rejectReason: 'Timezone manipulation blocked. Submitted task does not match server day.'
-        });
-        return;
-    }
 
     const claimRef = db.collection('userTasks').doc(userTaskId);
     const userRef = db.collection('users').doc(uid);
 
-    // Guard: mark as processing
-    await claimRef.update({ taskProcessed: 'processing' });
-
-    const batch = db.batch();
-
     try {
-        const now = Date.now();
+        await db.runTransaction(async (t) => {
+            // ── Verify Claim Exists & Not Processed ───────────────────────────────
+            const claimSnap = await t.get(claimRef);
+            if (!claimSnap.exists) {
+                throw new Error("Claim does not exist");
+            }
 
-        // ── Load user ──────────────────────────────────────────────────────
-        const userSnap = await userRef.get();
-        if (!userSnap.exists) {
-            await claimRef.update({ taskProcessed: true, status: 'rejected', rejectReason: 'User not found' });
-            return;
-        }
+            const claim = claimSnap.data();
+            if (claim.taskProcessed === true || claim.taskProcessed === 'processing' || claim.status !== 'pending_verification') {
+                return; // Guard against race conditions and double spends!
+            }
 
-        const user = userSnap.data();
-        const currency = claim.rewardCurrency || user.currency || 'TZS';
+            if (!taskId.includes(serverDay)) {
+                t.update(claimRef, {
+                    taskProcessed: true,
+                    status: 'rejected',
+                    rejectReason: 'Timezone manipulation blocked. Submitted task does not match server day.'
+                });
+                return;
+            }
 
-        if (!user.isActive || user.activationStatus !== 'approved') {
-            await claimRef.update({ taskProcessed: true, status: 'rejected', rejectReason: 'Account not active' });
-            return;
-        }
+            // Lock document from concurrent runs immediately
+            t.update(claimRef, { taskProcessed: 'processing' });
 
-        const reward = parseFloat(claim.reward) || 0;
-        const category = claim.category || claim.taskCategory || 'general';
+            // ── Verify User Status ────────────────────────────────────────────────
+            const userSnap = await t.get(userRef);
+            if (!userSnap.exists) {
+                t.update(claimRef, { taskProcessed: true, status: 'rejected', rejectReason: 'User not found' });
+                return;
+            }
 
-        if (reward <= 0) {
-            await claimRef.update({
-                taskProcessed: true,
-                status: 'rejected',
-                rejectReason: 'Invalid task reward'
+            const user = userSnap.data();
+            const currency = user.currency || 'TZS';
+
+            if (!user.isActive || user.activationStatus !== 'approved') {
+                t.update(claimRef, { taskProcessed: true, status: 'rejected', rejectReason: 'Account not active' });
+                return;
+            }
+
+            // ── Strictly Enforce Hardcoded Reward ─────────────────────────────────
+            // Overrides whatever `reward` the client requested. Spoofing is blocked.
+            const reward = DAILY_REWARDS[serverDay]?.[currency] || DAILY_REWARDS[serverDay]?.TZS || 0;
+            const category = claim.category || claim.taskCategory || 'general';
+
+            if (reward <= 0) {
+                t.update(claimRef, { taskProcessed: true, status: 'rejected', rejectReason: 'Invalid task reward configuration' });
+                return;
+            }
+
+            // ── Execute Balances ──────────────────────────────────────────────────
+            const currentBalance = parseFloat(user.balance) || 0;
+            const currentProfit = parseFloat(user.totalProfit) || 0;
+            
+            const earnings = user.earnings || {};
+            const categoryEarnings = parseFloat(earnings[category]) || 0;
+            earnings[category] = categoryEarnings + reward;
+            
+            const taskBalances = user.taskBalances || {};
+            const categoryTaskBal = parseFloat(taskBalances[category]) || 0;
+            taskBalances[category] = categoryTaskBal + reward;
+
+            const txRef = db.collection('transactions').doc();
+            const notifRef = db.collection('notifications').doc();
+
+            t.update(userRef, {
+                totalProfit: currentProfit + reward,
+                earnings: earnings,
+                taskBalances: taskBalances
             });
-            return;
-        }
 
-        // ── Credit balance ─────────────────────────────────────────────────
-        const currentBalance = parseFloat(user.balance) || 0;
-        const currentProfit = parseFloat(user.totalProfit) || 0;
-        
-        const earnings = user.earnings || {};
-        const categoryEarnings = parseFloat(earnings[category]) || 0;
-        earnings[category] = categoryEarnings + reward;
-        
-        const taskBalances = user.taskBalances || {};
-        const categoryTaskBal = parseFloat(taskBalances[category]) || 0;
-        taskBalances[category] = categoryTaskBal + reward;
+            t.set(txRef, {
+                uid,
+                type: 'task',
+                description: `Task reward: ${claim.taskTitle || 'Activity completed'}`,
+                amount: reward,
+                currency,
+                taskId,
+                category,
+                balanceAfter: currentBalance,
+                createdAt: nowMs
+            });
 
-        const txRef = db.collection('transactions').doc();
+            t.set(notifRef, {
+                uid,
+                type: 'earning',
+                title: 'Task Completed! 🎉',
+                message: `You earned ${reward} ${currency} from "${claim.taskTitle || 'task'}".`,
+                amount: reward,
+                currency,
+                taskId,
+                read: false,
+                createdAt: nowMs
+            });
 
-        batch.update(userRef, {
-            totalProfit: currentProfit + reward,
-            earnings: earnings,
-            taskBalances: taskBalances
+            // Mark claim strictly processed
+            t.update(claimRef, {
+                status: 'completed',
+                completedAt: nowMs,
+                updatedAt: nowMs,
+                reward: reward, // Store the truth
+                taskProcessed: true
+            });
+            console.log(`✅ Task reward securely credited using strict lookup: ${reward} ${currency} to user ${uid}`);
         });
-
-        batch.set(txRef, {
-            uid,
-            type: 'task',
-            description: `Task reward: ${claim.taskTitle || 'Activity completed'}`,
-            amount: reward,
-            currency,
-            taskId,
-            category,
-            balanceAfter: currentBalance,
-            createdAt: now
-        });
-
-        batch.update(claimRef, {
-            status: 'completed',
-            completedAt: now,
-            updatedAt: now,
-            taskProcessed: true
-        });
-
-        // Notification
-        const notifRef = db.collection('notifications').doc();
-        batch.set(notifRef, {
-            uid,
-            type: 'earning',
-            title: 'Task Completed! 🎉',
-            message: `You earned ${reward} ${currency} from "${claim.taskTitle || 'task'}".`,
-            amount: reward,
-            currency,
-            taskId,
-            read: false,
-            createdAt: now
-        });
-
-        await batch.commit();
-
-        console.log(`✅ Task reward ${reward} ${currency} credited to user ${uid} (kept separate from main balance ${currentBalance})`);
     } catch (error) {
-        // Release lock on error
-        await claimRef.update({
-            taskProcessed: false,
-            processingError: error.message,
-            status: 'failed'
-        });
-        throw error;
+        if (error.message !== 'Claim does not exist') {
+            await claimRef.update({
+                taskProcessed: false,
+                processingError: error.message,
+                status: 'failed'
+            });
+        }
+        console.error("Task processing transaction failed:", error);
     }
 }
