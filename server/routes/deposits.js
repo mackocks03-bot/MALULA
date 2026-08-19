@@ -8,7 +8,8 @@ import {
 } from '../services/palmpesa.js';
 import {
     verifyIdToken,
-    isFirebaseAdminConfigured
+    isFirebaseAdminConfigured,
+    getFirestore
 } from '../services/firebaseAdmin.js';
 import {
     queueDepositComplete,
@@ -199,6 +200,30 @@ router.post('/palmpesa/webhook', async (req, res) => {
     } catch (error) {
         console.error('PalmPesa deposit webhook error:', error);
         res.status(200).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * Live Admin Analytics - Proxy undocumented endpoints
+ */
+router.get('/palmpesa/transactions', async (req, res) => {
+    try {
+        const user = await requireUser(req, res);
+        if (!user) return;
+
+        // Requires firebase-admin SDK to check the admin role in Firestore
+        const db = getFirestore();
+        if (!db) return res.status(503).json({ success: false, error: 'Admin services unavailable' });
+        const uSnap = await db.collection('users').doc(user.uid).get();
+        if (!uSnap.exists || uSnap.data().role !== 'admin') {
+            return res.status(403).json({ success: false, error: 'Admin privileges required' });
+        }
+
+        const { getLiveTransactions } = await import('../services/palmpesa.js');
+        const list = await getLiveTransactions();
+        res.json({ success: true, transactions: list });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message || 'Failed to sync ledger' });
     }
 });
 

@@ -38,6 +38,7 @@ const icons = {
     refresh: 'M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15',
     wallet: 'M19 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2zm0 0V5a2 2 0 00-2-2H8a2 2 0 00-2 2v2',
     search: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0',
+    ledger: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01',
 };
 
 const adminLinks = [
@@ -45,6 +46,7 @@ const adminLinks = [
     { to: '/admin/users', label: 'Users Directory', icon: 'users' },
     { to: '/admin/payments', label: 'Activation Payments', icon: 'payments' },
     { to: '/admin/deposits', label: 'Wallet Deposits', icon: 'wallet' },
+    { to: '/admin/palmpesa-ledger', label: 'PalmPesa Ledger', icon: 'ledger' },
     { to: '/admin/withdrawals', label: 'Withdrawal Queue', icon: 'withdraw' },
     { to: '/admin/referrals', label: 'Referral Tracking', icon: 'referrals' },
     { to: '/admin/tasks', label: 'Task Assignments', icon: 'tasks' },
@@ -1838,6 +1840,192 @@ export function AdminShopDeposits() {
                     </tbody>
                 </table>
             </div>
+        </div>
+    );
+}
+
+/* -----------------------------------------------------------
+   LIVE PALMPESA TRANSACTION LEDGER
+   Pulls data directly from PalmPesa Developer API (not Firebase)
+----------------------------------------------------------- */
+export function AdminPalmpesaLedger() {
+    const { showToast } = useToast();
+    const { user } = useAuth();
+    const [txns, setTxns] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [fetchError, setFetchError] = useState(null);
+    const [q, setQ] = useState('');
+    const [filterStatus, setFilterStatus] = useState('all');
+
+    const load = useCallback(async () => {
+        setLoading(true);
+        setFetchError(null);
+        try {
+            const idToken = await user.getIdToken();
+            const res = await fetch('/api/deposits/palmpesa/transactions', {
+                headers: { Authorization: `Bearer ${idToken}` }
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || 'Failed to load ledger');
+            setTxns(data.transactions || []);
+        } catch (err) {
+            setFetchError(err.message);
+            showToast('PalmPesa Ledger: ' + err.message, 'error');
+        } finally {
+            setLoading(false);
+        }
+    }, [user, showToast]);
+
+    useEffect(() => { load(); }, [load]);
+
+    const statusStyle = (s = '') => {
+        const u = s.toUpperCase();
+        if (u === 'COMPLETED' || u === 'SUCCESS') return { bg: 'rgba(46,125,50,0.12)', color: '#2E7D32' };
+        if (u === 'PENDING') return { bg: 'rgba(237,108,2,0.12)', color: '#ED6C02' };
+        if (u === 'FAILED' || u === 'CANCELLED') return { bg: 'rgba(211,47,47,0.12)', color: '#D32F2F' };
+        return { bg: 'rgba(100,100,100,0.1)', color: '#888' };
+    };
+
+    const filtered = txns.filter(t => {
+        const status = (t.payment_status || t.status || '').toUpperCase();
+        const matchStatus = filterStatus === 'all' || status === filterStatus.toUpperCase();
+        if (!matchStatus) return false;
+        if (!q) return true;
+        const lq = q.toLowerCase();
+        return (
+            String(t.order_id || '').toLowerCase().includes(lq) ||
+            String(t.transid || '').toLowerCase().includes(lq) ||
+            String(t.reference || '').toLowerCase().includes(lq) ||
+            String(t.amount || '').includes(lq) ||
+            String(t.msisdn || t.phone || '').includes(lq) ||
+            String(t.name || '').toLowerCase().includes(lq) ||
+            String(t.channel || '').toLowerCase().includes(lq)
+        );
+    });
+
+    const statusCounts = {
+        all: txns.length,
+        completed: txns.filter(t => ['COMPLETED','SUCCESS'].includes((t.payment_status||t.status||'').toUpperCase())).length,
+        pending: txns.filter(t => (t.payment_status||t.status||'').toUpperCase() === 'PENDING').length,
+        failed: txns.filter(t => ['FAILED','CANCELLED'].includes((t.payment_status||t.status||'').toUpperCase())).length,
+    };
+
+    return (
+        <div>
+            <h1 className="gov-title">Live PalmPesa Ledger</h1>
+            <p style={{ color: '#888', marginBottom: 20, fontSize: 14 }}>
+                Real-time transaction history fetched directly from the PalmPesa Developer API. Data is NOT from our Firebase records.
+            </p>
+
+            <div className="gov-stats-row" style={{ marginBottom: 20 }}>
+                {[
+                    ['All Transactions', statusCounts.all, '#6366f1'],
+                    ['Completed', statusCounts.completed, '#2E7D32'],
+                    ['Pending', statusCounts.pending, '#ED6C02'],
+                    ['Failed / Cancelled', statusCounts.failed, '#D32F2F'],
+                ].map(([label, count, color]) => (
+                    <div key={label} className="gov-stat-card" style={{ borderTop: `3px solid ${color}` }}>
+                        <div className="gov-stat-value" style={{ color }}>{count}</div>
+                        <div className="gov-stat-label">{label}</div>
+                    </div>
+                ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: 12, marginBottom: 18, flexWrap: 'wrap', alignItems: 'center' }}>
+                <div style={{ position: 'relative', flex: 1, minWidth: 220 }}>
+                    <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', opacity: 0.5, pointerEvents: 'none' }}>
+                        <Icon d={icons.search} size={15} />
+                    </span>
+                    <input
+                        className="gov-search-input"
+                        placeholder="Search by order ID, phone, name, amount, Trans ID..."
+                        value={q}
+                        onChange={e => setQ(e.target.value)}
+                        style={{ paddingLeft: 36 }}
+                    />
+                </div>
+                <select className="gov-filter-select" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+                    <option value="all">All Status</option>
+                    <option value="completed">Completed</option>
+                    <option value="pending">Pending</option>
+                    <option value="failed">Failed</option>
+                </select>
+                <button className="gov-btn gov-btn-outline" onClick={load} disabled={loading} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <Icon d={icons.refresh} size={14} />
+                    {loading ? 'Loading...' : 'Refresh'}
+                </button>
+            </div>
+
+            {fetchError && (
+                <div className="gov-empty-state" style={{ color: '#D32F2F', border: '1px solid rgba(211,47,47,0.3)' }}>
+                    Failed to connect to PalmPesa API: {fetchError}
+                    <br />
+                    <button className="gov-btn gov-btn-outline" style={{ marginTop: 12 }} onClick={load}>Retry</button>
+                </div>
+            )}
+
+            {!fetchError && (
+                <div className="gov-table-wrapper">
+                    <table className="gov-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Order ID</th>
+                                <th>Amount (TZS)</th>
+                                <th>Phone / MSISDN</th>
+                                <th>Name</th>
+                                <th>Channel</th>
+                                <th>Trans ID / Ref</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {loading ? (
+                                <tr><td colSpan={9}><div style={{ textAlign: 'center', padding: 40 }}><span className="gov-spinner" /> Connecting to PalmPesa...</div></td></tr>
+                            ) : filtered.length === 0 ? (
+                                <tr><td colSpan={9}><div className="gov-empty-state">No transactions match your query.</div></td></tr>
+                            ) : filtered.map((t, i) => {
+                                const status = (t.payment_status || t.status || 'UNKNOWN').toUpperCase();
+                                const { bg, color } = statusStyle(status);
+                                const amt = Number(t.amount || 0);
+                                const date = t.updated_at || t.created_at || t.date;
+                                return (
+                                    <tr key={t.id || t.order_id || i}>
+                                        <td style={{ color: '#888', fontSize: 12 }}>{t.id || i + 1}</td>
+                                        <td className="gov-mono-text" style={{ fontSize: 12 }}>{t.order_id || '—'}</td>
+                                        <td style={{ fontWeight: 700 }}>
+                                            <span style={{ color: amt < 0 ? '#D32F2F' : '#2E7D32' }}>
+                                                TZS {Math.abs(amt).toLocaleString()}
+                                                {amt < 0 && <span style={{ fontSize: 10, marginLeft: 4 }}>(debit)</span>}
+                                            </span>
+                                        </td>
+                                        <td className="gov-mono-text" style={{ fontSize: 12 }}>{t.msisdn || t.phone || '—'}</td>
+                                        <td style={{ fontSize: 13 }}>{t.name || '—'}</td>
+                                        <td>
+                                            <span style={{ background: 'rgba(2,136,209,0.1)', color: '#0288D1', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 700 }}>
+                                                {t.channel || t.network || 'palmpesa'}
+                                            </span>
+                                        </td>
+                                        <td className="gov-mono-text" style={{ fontSize: 11, maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                                            title={t.transid || t.reference || ''}>
+                                            {t.transid || t.reference || '—'}
+                                        </td>
+                                        <td style={{ fontSize: 12 }}>
+                                            {date ? new Date(date).toLocaleString() : '—'}
+                                        </td>
+                                        <td>
+                                            <span style={{ background: bg, color, borderRadius: 6, padding: '3px 10px', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>
+                                                {status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 }

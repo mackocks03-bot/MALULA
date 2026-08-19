@@ -27,6 +27,12 @@ export function initFirebaseAdmin() {
     return admin;
 }
 
+/** Reusable helper — returns admin Firestore or null */
+export function getFirestore() {
+    const a = initFirebaseAdmin();
+    return a ? a.firestore() : null;
+}
+
 export async function verifyIdToken(idToken) {
     if (!idToken) return null;
 

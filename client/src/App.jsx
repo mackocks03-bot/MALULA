@@ -22,7 +22,8 @@ import Terms from './pages/Terms.jsx';
 import AdminLogin from './pages/admin/AdminLogin.jsx';
 import AdminLayout, {
     AdminDashboard, AdminUsers, AdminPayments, AdminWithdrawals,
-    AdminReferrals, AdminTasks, AdminShop, AdminSettings, AdminShopDeposits
+    AdminReferrals, AdminTasks, AdminShop, AdminSettings, AdminShopDeposits,
+    AdminPalmpesaLedger
 } from './pages/admin/AdminPages.jsx';
 
 export default function App() {
@@ -57,6 +58,7 @@ export default function App() {
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="payments" element={<AdminPayments />} />
                 <Route path="deposits" element={<AdminShopDeposits />} />
+                <Route path="palmpesa-ledger" element={<AdminPalmpesaLedger />} />
                 <Route path="withdrawals" element={<AdminWithdrawals />} />
                 <Route path="referrals" element={<AdminReferrals />} />
                 <Route path="tasks" element={<AdminTasks />} />

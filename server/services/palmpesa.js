@@ -175,3 +175,31 @@ export async function getOrderStatus(orderId) {
         raw: result
     };
 }
+
+/**
+ * Fetch all raw transactions from the undocumented PalmPesa history endpoint
+ */
+export async function getLiveTransactions() {
+    const authorization = authHeader();
+    if (!authorization) {
+        throw new Error('PalmPesa is not configured on the server');
+    }
+
+    const url = `${baseUrl()}/transactions`;
+    console.log(`[PalmPesa] GET ${url}`);
+
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            Authorization: authorization,
+            Accept: 'application/json'
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error(`PalmPesa request failed (${response.status})`);
+    }
+
+    const data = await response.json();
+    return data?.data?.transactions || [];
+}
