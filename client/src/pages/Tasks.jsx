@@ -85,7 +85,11 @@ export default function Tasks() {
     }, [user, scheduledId]);
 
     useEffect(() => {
-        if (!user) return;
+        if (!user) {
+            // User not available — still close the loader with a default empty state
+            setTaskProgress({ completed: 0, status: 'in-progress' });
+            return;
+        }
         const unsub = onSnapshot(doc(db, 'userTasks', `${user.uid}_${taskKey}`), (snap) => {
             setTaskProgress(snap.exists() ? snap.data() : { completed: 0, status: 'in-progress' });
         });
