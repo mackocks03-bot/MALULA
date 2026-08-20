@@ -207,9 +207,17 @@ export default function Affiliate() {
                                 const rCountryCode = (r.country || r.countryCode || 'TZ').toLowerCase();
                                 const rCurrency = r.currency || 'TZS';
                                 const rSymbol = CURRENCY_SYMBOLS[rCurrency] || rCurrency;
-                                
-                                const FEES_MATRIX = { TZS: 14500, KES: 650, UGX: 18500, MWK: 15000, ZMW: 150, RWF: 6000, BIF: 15000, CDF: 15000 };
-                                const rActivationFee = FEES_MATRIX[rCurrency] || FEES_MATRIX.TZS;
+
+                                // Hardcoded commission matrix (same as backend)
+                                const COMMISSION_MATRIX = {
+                                    TZS: [9000, 3000, 1000], KES: [500, 150, 50],
+                                    UGX: [13500, 4500, 1500], MWK: [6300, 2100, 700],
+                                    RWF: [5000, 1500, 500], ZMW: [100, 30, 10],
+                                    BIF: [10500, 3500, 1100], CDF: [10500, 3500, 1100], MZN: [250, 80, 25],
+                                };
+                                const levelIndex = (r._level || 1) - 1;
+                                const commissions = COMMISSION_MATRIX[rCurrency] || COMMISSION_MATRIX.TZS;
+                                const rCommission = commissions[levelIndex] ?? commissions[0];
 
                                 return (
                                     <div
@@ -264,15 +272,13 @@ export default function Affiliate() {
                                                         style={{ width: 14, height: 10, objectFit: 'cover', borderRadius: 1 }}
                                                     />
                                                     <span>{r.countryName || rCountryCode.toUpperCase()}</span>
-                                                    {rActivationFee != null && (
-                                                        <span style={{
-                                                            background: r.isActive ? 'rgba(34,197,94,0.1)' : 'rgba(249,115,22,0.08)',
-                                                            color: r.isActive ? '#16a34a' : '#ca8a04',
-                                                            padding: '0 5px', borderRadius: 4, fontWeight: 600
-                                                        }}>
-                                                            Fee: {rSymbol} {Number(rActivationFee).toLocaleString()}
-                                                        </span>
-                                                    )}
+                                                    <span style={{
+                                                        background: 'rgba(212,175,55,0.1)',
+                                                        color: 'var(--color-gold)',
+                                                        padding: '0 5px', borderRadius: 4, fontWeight: 600
+                                                    }}>
+                                                        +{rSymbol} {Number(rCommission).toLocaleString()}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
@@ -285,7 +291,7 @@ export default function Affiliate() {
                                                 color: r.isActive ? 'var(--color-green)' : 'var(--color-orange)',
                                                 borderRadius: 99, fontSize: 10, padding: '3px 8px', fontWeight: 600
                                             }}>
-                                                {r.isActive ? 'Active' : 'Pending'}
+                                                {r.isActive ? 'Active' : 'Inactive'}
                                             </span>
 
                                             {r.phone ? (
