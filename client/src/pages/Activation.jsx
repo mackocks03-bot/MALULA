@@ -281,6 +281,11 @@ export default function Activation() {
 
                     {!isSuccess && (status === 'pending' || status === 'rejected') && (
                         <>
+                            {isTanzania && palmpesaEnabled === null && (
+                                <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                                    <span className="spinner" style={{ display: 'inline-block', width: 24, height: 24, border: '2px solid var(--border-color)', borderTopColor: 'var(--color-gold)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                                </div>
+                            )}
                             {isTanzania && palmpesaEnabled !== null && (
                                 <>
                                     {showPalmpesa ? (
