@@ -171,55 +171,44 @@
     transform: none;
 }
 
-/* Custom Data Table - Classic Admin Structured Look */
+/* Custom Data Table */
 .admin-tasks-monitor .atm-table-wrapper {
     background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
     overflow: hidden;
-    border: 1px solid #cbd5e1;
 }
 
 .admin-tasks-monitor .atm-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
 }
 
 .admin-tasks-monitor .atm-table th {
-    background: #f1f5f9;
-    padding: 14px 16px;
+    background: #f8fafc;
+    padding: 16px 20px;
     text-align: left;
-    font-size: 12.5px;
+    font-size: 13px;
     font-weight: 700;
-    color: #334155;
+    color: #475569;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    border-bottom: 2px solid #cbd5e1;
-    border-right: 1px solid #e2e8f0;
-}
-
-.admin-tasks-monitor .atm-table th:last-child {
-    border-right: none;
+    border-bottom: 2px solid #e2e8f0;
 }
 
 .admin-tasks-monitor .atm-table td {
-    padding: 14px 16px;
-    border-bottom: 1px solid #e2e8f0;
-    border-right: 1px solid #e2e8f0;
-    vertical-align: middle;
-    font-size: 13.5px;
+    padding: 16px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: top;
 }
 
-.admin-tasks-monitor .atm-table td:last-child {
-    border-right: none;
-}
-
-.admin-tasks-monitor .atm-table tr:nth-child(even) td {
-    background: #f8fafc;
+.admin-tasks-monitor .atm-table tr:last-child td {
+    border-bottom: none;
 }
 
 .admin-tasks-monitor .atm-table tr:hover td {
-    background: #f1f5f9;
+    background: #f8fafc;
 }
 
 /* Unique Badges */

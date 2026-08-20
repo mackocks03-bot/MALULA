@@ -2080,18 +2080,44 @@ export function AdminTasksMonitor() {
             const user = usersMap[taskItem.uid];
             if (!user) throw new Error("User data missing");
 
-            // We safely route this claim purely through the backend Cloud Function. 
-            // It uses atomic transactions to protect against double payouts.
-            await updateDoc(doc(db, 'userTasks', taskItem.id), {
-                status: 'pending_verification',
-                taskProcessed: false,
-                processingError: null,
-                rejectReason: null,
-                adminForcedCredit: true,
-                updatedAt: Date.now()
+            const reward = Number(taskItem.reward || 0);
+            if (reward <= 0) throw new Error("Reward explicitly 0. Cannot force credit.");
+            const category = taskItem.category || taskItem.taskCategory || 'general';
+
+            const currentProfit = parseFloat(user.totalProfit) || 0;
+            const earnings = user.earnings || {};
+            earnings[category] = (parseFloat(earnings[category]) || 0) + reward;
+            
+            const taskBalances = user.taskBalances || {};
+            taskBalances[category] = (parseFloat(taskBalances[category]) || 0) + reward;
+
+            await updateDoc(doc(db, 'users', user.uid), {
+                totalProfit: currentProfit + reward,
+                earnings,
+                taskBalances
             });
 
-            showToast("Credit instruction sent securely to backend! Please refresh shortly.", "success");
+            await updateDoc(doc(db, 'userTasks', taskItem.id), {
+                status: 'completed',
+                taskProcessed: true,
+                completedAt: Date.now(),
+                updatedAt: Date.now(),
+                adminForcedCredit: true
+            });
+
+            await addDoc(collection(db, 'transactions'), {
+                uid: user.uid,
+                type: 'task',
+                description: `Task reward (Admin Force): ${taskItem.taskTitle || 'Activity completed'}`,
+                amount: reward,
+                currency: taskItem.rewardCurrency || user.currency || 'TZS',
+                taskId: taskItem.taskId,
+                category,
+                balanceAfter: parseFloat(user.balance) || 0,
+                createdAt: Date.now()
+            });
+
+            showToast("Credit injected successfully!", "success");
             loadData();
         } catch (err) {
             showToast("Failed: " + err.message, "error");
@@ -2217,14 +2243,13 @@ export function AdminTasksMonitor() {
                                             </span>
                                         </div>
                                         {(t.processingError || t.rejectReason) && (
-                                            <div style={{ fontSize: 11, color: '#dc2626', maxWidth: 220, lineHeight: 1.3, display: 'flex', gap: 4, marginTop: 4 }}>
-                                                <div style={{ marginTop: -2 }}><Icon d={icons.x} size={14} /></div>
-                                                <div>{t.processingError || t.rejectReason}</div>
+                                            <div style={{ fontSize: 11, color: '#dc2626', maxWidth: 220, lineHeight: 1.3 }}>
+                                                âš ï¸ {t.processingError || t.rejectReason}
                                             </div>
                                         )}
                                         {t.adminForcedCredit && (
-                                            <div style={{ fontSize: 11, color: '#059669', fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                                <Icon d={icons.check} size={14} /> MANUALLY CREDITED
+                                            <div style={{ fontSize: 11, color: '#059669', fontWeight: 700, marginTop: 4 }}>
+                                                âœ“ MANUALLY CREDITED
                                             </div>
                                         )}
                                     </td>

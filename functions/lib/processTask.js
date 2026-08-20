@@ -47,9 +47,7 @@ export async function runTaskProcessing(db, userTaskId, triggerClaim) {
                 return; // Guard against race conditions and double spends!
             }
 
-            const adminForced = claim.adminForcedCredit === true;
-
-            if (!adminForced && !taskId.includes(serverDay)) {
+            if (!taskId.includes(serverDay)) {
                 const msg = `Day mismatch: taskId="${taskId}" serverDay="${serverDay}" userTaskId="${userTaskId}"`;
                 console.warn('Task rejected —', msg);
                 t.update(claimRef, {
@@ -75,7 +73,7 @@ export async function runTaskProcessing(db, userTaskId, triggerClaim) {
 
             // Accept either flag — admin may set one but not both
             const isActivated = user.isActive === true || user.activationStatus === 'approved';
-            if (!adminForced && !isActivated) {
+            if (!isActivated) {
                 const reason = `isActive=${user.isActive} activationStatus=${user.activationStatus}`;
                 console.warn(`Task rejected — account not active for uid=${uid}: ${reason}`);
                 t.update(claimRef, { taskProcessed: true, status: 'rejected', rejectReason: 'Account not active: ' + reason });
