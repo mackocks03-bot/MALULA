@@ -13,6 +13,7 @@ import './css/AdminDashboard.css';
 import './css/AdminUsers.css';
 import './css/AdminPayments.css';
 import './css/AdminWithdrawals.css';
+import './css/AdminTasksMonitor.css';
 
 /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Icon helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const Icon = ({ d, size = 18 }) => (
@@ -2135,54 +2136,63 @@ export function AdminTasksMonitor() {
                t.uid.toLowerCase().includes(sq);
     });
 
+    const getBadgeStyle = (st) => {
+        if (st === 'completed') return 'atm-badge-success';
+        if (st === 'failed' || st === 'rejected') return 'atm-badge-danger';
+        if (st === 'pending_verification') return 'atm-badge-warning';
+        return 'atm-badge-info';
+    };
+
     return (
-        <div>
-            <div className="gov-header">
-                <div className="gov-title">
+        <div className="admin-tasks-monitor">
+            <div className="atm-header">
+                <div className="atm-header-left">
                     <h2>Daily Tasks Monitor ({todayKey.toUpperCase()})</h2>
-                    <p>Track user task activities, progress, and force manual payouts if required.</p>
+                    <p>Track user task activities, progress, and forcefully resolve failed payouts automatically.</p>
+                </div>
+                <div>
+                    <button className="atm-btn atm-btn-refresh" onClick={loadData} disabled={loading}>
+                        <Icon d={icons.refresh} /> {loading ? 'Refreshing...' : 'Refresh Live Logs'}
+                    </button>
                 </div>
             </div>
 
-            <div className="gov-metrics-grid" style={{ marginBottom: 24, gridTemplateColumns: 'repeat(4, 1fr)' }}>
-                <div className="gov-metric-card">
+            <div className="atm-metrics-grid">
+                <div className="atm-metric-card" style={{ borderLeftColor: '#3b82f6' }}>
                     <div className="title">Total Today</div>
-                    <div className="value">{tasks.length}</div>
+                    <div className="value" style={{ color: '#3b82f6' }}>{tasks.length}</div>
                 </div>
-                <div className="gov-metric-card">
+                <div className="atm-metric-card" style={{ borderLeftColor: '#10b981' }}>
                     <div className="title">Completed / Paid</div>
-                    <div className="value" style={{ color: '#2E7D32' }}>{tasks.filter(t => t.status === 'completed').length}</div>
+                    <div className="value" style={{ color: '#10b981' }}>{tasks.filter(t => t.status === 'completed').length}</div>
                 </div>
-                <div className="gov-metric-card">
+                <div className="atm-metric-card" style={{ borderLeftColor: '#f59e0b' }}>
                     <div className="title">Pending System</div>
                     <div className="value" style={{ color: '#f59e0b' }}>{tasks.filter(t => t.status === 'pending_verification').length}</div>
                 </div>
-                <div className="gov-metric-card">
+                <div className="atm-metric-card" style={{ borderLeftColor: '#ef4444' }}>
                     <div className="title">Failed / Rejected</div>
-                    <div className="value" style={{ color: '#D32F2F' }}>{tasks.filter(t => t.status === 'failed' || t.status === 'rejected').length}</div>
+                    <div className="value" style={{ color: '#ef4444' }}>{tasks.filter(t => t.status === 'failed' || t.status === 'rejected').length}</div>
                 </div>
             </div>
 
-            <div className="gov-filters">
-                <div className="gov-search">
+            <div className="atm-filters">
+                <div className="atm-search">
                     <Icon d={icons.search} />
                     <input type="text" placeholder="Search by username, phone, email, UID..." value={q} onChange={e => setQ(e.target.value)} />
                 </div>
-                <select className="gov-select" value={filter} onChange={e => setFilter(e.target.value)}>
-                    <option value="all">All Statuses</option>
-                    <option value="pending_verification">Pending Rewards</option>
+                <select className="atm-select" value={filter} onChange={e => setFilter(e.target.value)}>
+                    <option value="all">â€” All Statuses â€”</option>
+                    <option value="pending_verification">Pending System</option>
                     <option value="in-progress">In Progress</option>
                     <option value="completed">Completed / Paid</option>
-                    <option value="failed">Failed</option>
+                    <option value="failed">Failed Drops</option>
                     <option value="rejected">Rejected</option>
                 </select>
-                <button className="gov-btn gov-btn-outline" onClick={loadData} disabled={loading}>
-                    {loading ? 'Refreshing...' : 'Refresh Logs'}
-                </button>
             </div>
 
-            <div className="gov-table-wrapper">
-                <table className="gov-table">
+            <div className="atm-table-wrapper">
+                <table className="atm-table">
                     <thead>
                         <tr>
                             <th>User Details</th>
@@ -2195,47 +2205,61 @@ export function AdminTasksMonitor() {
                     </thead>
                     <tbody>
                         {loading && tasks.length === 0 ? (
-                            <tr><td colSpan={6}><div className="gov-empty-state"><span className="gov-spinner" /> Loading task logs...</div></td></tr>
+                            <tr><td colSpan={6}><div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Loading secure task logs...</div></td></tr>
                         ) : filtered.length === 0 ? (
-                            <tr><td colSpan={6}><div className="gov-empty-state">No task logs match your query.</div></td></tr>
+                            <tr><td colSpan={6}><div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>No task logs match your queries.</div></td></tr>
                         ) : filtered.map(t => {
                             const u = usersMap[t.uid] || {};
+                            const bCls = getBadgeStyle(t.status);
+                            
                             return (
                                 <tr key={t.id}>
                                     <td>
-                                        <div style={{ fontWeight: 700, color: 'var(--gov-blue)' }}>{u.username || 'Unknown'} {u.country ? `(${u.country})` : ''}</div>
-                                        <div style={{ fontSize: 11, color: '#666' }}>{u.fullName || 'No name'}</div>
-                                        <div style={{ fontSize: 11, color: '#666' }}>{u.phone || '—'} | {u.email || '—'}</div>
-                                        <div className="gov-mono-text" style={{ fontSize: 10, color: '#aaa', marginTop: 4 }}>{t.uid}</div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                            <div className="atm-avatar">
+                                                {u.username ? u.username.substring(0,2).toUpperCase() : 'U'}
+                                            </div>
+                                            <div>
+                                                <div style={{ fontWeight: 700, color: '#1e293b' }}>{u.username || 'Unknown'} {u.country ? `(${u.country})` : ''}</div>
+                                                <div style={{ fontSize: 12, color: '#64748b' }}>{u.phone || '—'} | {u.email || '—'}</div>
+                                                <div style={{ fontSize: 10, color: '#aaa', fontFamily: 'monospace', marginTop: 4 }}>{t.uid}</div>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td>
-                                        <div style={{ fontWeight: 600 }}>{t.taskTitle || (t.taskCategory || 'General').toUpperCase()}</div>
-                                        <div style={{ fontSize: 11, color: '#666' }}>Cat: {t.taskCategory || t.category || 'N/A'}</div>
+                                        <div style={{ fontWeight: 700, color: '#334155' }}>{t.taskTitle || (t.taskCategory || 'General').toUpperCase()}</div>
+                                        <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>Cat: {t.taskCategory || t.category || 'N/A'}</div>
                                     </td>
                                     <td>
-                                        <div style={{ fontWeight: 700 }}>{t.completed || 0} / {t.total || '?'}</div>
+                                        <div style={{ fontWeight: 800, color: '#0f172a' }}>{t.completed || 0} <span style={{ color: '#94a3b8', fontWeight: 500 }}>/ {t.total || '?'}</span></div>
                                     </td>
                                     <td>
-                                        <div style={{ fontWeight: 700, color: '#2E7D32' }}>{t.reward || 0} {t.rewardCurrency || u.currency || 'TZS'}</div>
+                                        <div style={{ fontWeight: 800, color: '#059669', fontSize: 15 }}>{t.reward || 0} {t.rewardCurrency || u.currency || 'TZS'}</div>
                                     </td>
                                     <td>
-                                        <div style={{ marginBottom: 4 }}><StatusBadge status={t.status} /></div>
+                                        <div style={{ marginBottom: 6 }}>
+                                            <span className={`atm-badge ${bCls}`}>
+                                                {t.status.replace('_', ' ')}
+                                            </span>
+                                        </div>
                                         {(t.processingError || t.rejectReason) && (
-                                            <div style={{ fontSize: 10, color: '#D32F2F', maxWidth: 200 }}>
-                                                {t.processingError || t.rejectReason}
+                                            <div style={{ fontSize: 11, color: '#dc2626', maxWidth: 220, lineHeight: 1.3 }}>
+                                                âš ï¸ {t.processingError || t.rejectReason}
                                             </div>
                                         )}
                                         {t.adminForcedCredit && (
-                                            <div style={{ fontSize: 10, color: '#2E7D32', fontWeight: 'bold' }}>MANUALLY CREDITED</div>
+                                            <div style={{ fontSize: 11, color: '#059669', fontWeight: 700, marginTop: 4 }}>
+                                                âœ“ MANUALLY CREDITED
+                                            </div>
                                         )}
                                     </td>
                                     <td>
                                         {(t.status === 'failed' || t.status === 'rejected' || t.status === 'pending_verification') ? (
-                                            <button className="gov-btn gov-btn-success" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => handleForceCredit(t)} disabled={crediting}>
+                                            <button className="atm-btn atm-btn-success" onClick={() => handleForceCredit(t)} disabled={crediting}>
                                                 Force Credit
                                             </button>
                                         ) : (
-                                            <span style={{ fontSize: 11, color: '#999' }}>—</span>
+                                            <span style={{ fontSize: 13, color: '#cbd5e1', fontWeight: 600 }}>COMPLETED</span>
                                         )}
                                     </td>
                                 </tr>
