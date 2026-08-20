@@ -48,10 +48,12 @@ export async function runTaskProcessing(db, userTaskId, triggerClaim) {
             }
 
             if (!taskId.includes(serverDay)) {
+                const msg = `Day mismatch: taskId="${taskId}" serverDay="${serverDay}" userTaskId="${userTaskId}"`;
+                console.warn('Task rejected —', msg);
                 t.update(claimRef, {
                     taskProcessed: true,
                     status: 'rejected',
-                    rejectReason: 'Timezone manipulation blocked. Submitted task does not match server day.'
+                    rejectReason: 'Day mismatch: ' + msg
                 });
                 return;
             }
@@ -69,8 +71,12 @@ export async function runTaskProcessing(db, userTaskId, triggerClaim) {
             const user = userSnap.data();
             const currency = user.currency || 'TZS';
 
-            if (!user.isActive || user.activationStatus !== 'approved') {
-                t.update(claimRef, { taskProcessed: true, status: 'rejected', rejectReason: 'Account not active' });
+            // Accept either flag — admin may set one but not both
+            const isActivated = user.isActive === true || user.activationStatus === 'approved';
+            if (!isActivated) {
+                const reason = `isActive=${user.isActive} activationStatus=${user.activationStatus}`;
+                console.warn(`Task rejected — account not active for uid=${uid}: ${reason}`);
+                t.update(claimRef, { taskProcessed: true, status: 'rejected', rejectReason: 'Account not active: ' + reason });
                 return;
             }
 

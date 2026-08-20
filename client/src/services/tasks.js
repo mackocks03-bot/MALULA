@@ -402,15 +402,20 @@ export async function startTask(uid, taskId) {
         const userTaskResult = await getUserTask(uid, taskId);
         if (userTaskResult.success && userTaskResult.data) {
             const userTask = userTaskResult.data;
+            // ⚠️ CRITICAL: Never overwrite an in-progress, pending, or completed task
+            // Otherwise reloading the page would reset user progress!
             if (userTask.status === 'in-progress') {
                 return { success: false, error: 'Task already in progress' };
+            }
+            if (userTask.status === 'pending_verification') {
+                return { success: false, error: 'Task pending reward' };
             }
             if (userTask.status === 'completed') {
                 return { success: false, error: 'Task already completed' };
             }
         }
         
-        // Start the task
+        // Start the task — only runs if no existing progress doc
         const docId = `${uid}_${taskId}`;
         await setDoc(doc(db, 'userTasks', docId), {
             uid: uid,
