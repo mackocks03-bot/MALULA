@@ -244,9 +244,14 @@ export async function registerUser(email, password, userData) {
                 email: email.toLowerCase(),
                 username: username
             });
-            stepLog('5', '✅ loginIndex saved');
+            // Write to phoneIndex as well
+            await setDoc(doc(db, 'phoneIndex', userData.phone), {
+                uid: uid,
+                phone: userData.phone
+            });
+            stepLog('5', '✅ loginIndex and phoneIndex saved');
         } catch (indexError) {
-            stepLog('5', `❌ Failed to save loginIndex: ${indexError.message}`);
+            stepLog('5', `❌ Failed to save indices: ${indexError.message}`);
             try {
                 await deleteUser(user);
                 await deleteUserData(uid);
@@ -397,6 +402,16 @@ export async function isUsernameAvailable(username) {
         const snapshot = await getDoc(doc(db, 'loginIndex', username));
         return !snapshot.exists();
     } catch (error) {
+        return false;
+    }
+}
+
+export async function isPhoneAvailable(phone) {
+    try {
+        const snapshot = await getDoc(doc(db, 'phoneIndex', phone));
+        return !snapshot.exists();
+    } catch (error) {
+        console.error('Error checking phone:', error);
         return false;
     }
 }

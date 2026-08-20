@@ -7,7 +7,7 @@ import CinematicLoader from '../components/CinematicLoader.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useToast } from '../contexts/ToastContext.jsx';
 import { COUNTRIES } from '../utils/helpers.js';
-import { registerUser, isUsernameAvailable, isEmailAvailable } from '../services/auth.js';
+import { registerUser, isUsernameAvailable, isEmailAvailable, isPhoneAvailable } from '../services/auth.js';
 import { db, doc, getDoc, sendPasswordResetEmail, auth } from '../services/firebase-config.js';
 
 function CountrySelect({ selectedCountryCode, onChange }) {
@@ -105,6 +105,9 @@ export default function Register() {
 
             const country = selectedCountry;
             const finalPhone = `${country.phoneCode.replace('+', '')}${cleanPhone}`;
+
+            const phoneOk = await isPhoneAvailable(finalPhone);
+            if (!phoneOk) { showToast(translate('auth.phoneRegistered') || 'Phone number already used', 'error'); setLoading(false); return; }
 
             const result = await registerUser(form.email, form.password, {
                 fullName: form.fullName,

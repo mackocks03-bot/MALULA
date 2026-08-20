@@ -11,17 +11,10 @@ export default function Profile() {
     const { user, userData, refreshUserData } = useAuth();
     const { translate } = useLanguage();
     const { showToast } = useToast();
-    const [form, setForm] = useState({ fullName: '', phone: '', username: '' });
-    const [saving, setSaving] = useState(false);
     const [upliner, setUpliner] = useState(null);
 
     useEffect(() => {
         if (userData) {
-            setForm({
-                fullName: userData.fullName || '',
-                phone: userData.phone || '',
-                username: userData.username || ''
-            });
             if (userData.referrer) {
                 fetchUpliner(userData.referrer);
             }
@@ -46,19 +39,6 @@ export default function Profile() {
     const currency = userData?.currency || 'TZS';
     const countryCode = (userData?.country || userData?.countryCode || 'TZ').toLowerCase();
     const uplinerCountryCode = (upliner?.country || upliner?.countryCode || 'TZ').toLowerCase();
-
-    const handleSave = async (e) => {
-        e.preventDefault();
-        setSaving(true);
-        try {
-            await updateUser(user.uid, form);
-            await refreshUserData();
-            showToast(translate('profile.saved') || 'Profile saved!', 'success');
-        } catch {
-            showToast(translate('common.error'), 'error');
-        }
-        setSaving(false);
-    };
 
     return (
         <DashboardLayout>
@@ -240,24 +220,62 @@ export default function Profile() {
                         )}
                     </div>
 
-                    {/* ── Edit Form ── */}
-                    <form onSubmit={handleSave}>
-                        <div className="form-group">
-                            <label className="form-label">{translate('auth.fullName')}</label>
-                            <input className="form-control" value={form.fullName} onChange={e => setForm({ ...form, fullName: e.target.value })} />
+                    {/* ── Profile Information Card ── */}
+                    <div style={{
+                        background: 'var(--color-surface)',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 14,
+                        padding: '20px',
+                        marginBottom: 40,
+                        boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
+                    }}>
+                        <div style={{
+                            fontSize: 13, fontWeight: 700, textTransform: 'uppercase',
+                            letterSpacing: 1, color: 'var(--text-muted)', marginBottom: 16,
+                            borderBottom: '1px solid var(--color-border)', paddingBottom: 10
+                        }}>
+                            {translate('profile.details') || 'Profile Information'}
                         </div>
-                        <div className="form-group">
-                            <label className="form-label">{translate('auth.username')}</label>
-                            <input className="form-control" value={form.username} disabled />
+                        
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>Full Name</span>
+                                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{userData?.fullName || 'N/A'}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>Username</span>
+                                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>@{userData?.username}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>Email</span>
+                                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{userData?.email}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>Phone</span>
+                                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>+{userData?.phone}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>Joined</span>
+                                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                                    {userData?.createdAt ? new Date(userData.createdAt).toLocaleDateString() : 'N/A'}
+                                </span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>Status</span>
+                                <span style={{ 
+                                    fontWeight: 700, 
+                                    color: (userData?.activationStatus === 'active' || userData?.isActive) ? '#22c55e' : '#f97316',
+                                    background: (userData?.activationStatus === 'active' || userData?.isActive) ? 'rgba(34, 197, 94, 0.1)' : 'rgba(249, 115, 22, 0.1)',
+                                    padding: '4px 10px',
+                                    borderRadius: 12,
+                                    fontSize: 12,
+                                    textTransform: 'uppercase'
+                                }}>
+                                    {(userData?.activationStatus === 'active' || userData?.isActive) ? 'Active' : 'Pending'}
+                                </span>
+                            </div>
                         </div>
-                        <div className="form-group">
-                            <label className="form-label">{translate('auth.phone')}</label>
-                            <input className="form-control" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
-                        </div>
-                        <button type="submit" className="btn-primary-auth" disabled={saving}>
-                            {saving ? translate('app.saving') : translate('profile.save') || 'Save Profile'}
-                        </button>
-                    </form>
+                    </div>
                 </div>
             </div>
 
