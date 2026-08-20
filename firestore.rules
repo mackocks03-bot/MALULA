@@ -15,6 +15,11 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
+    match /phoneIndex/{phone} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
     // settings: read-only for everyone (exchange rates, fee config used at registration)
     match /settings/{docId} {
       allow read: if true;
@@ -44,7 +49,7 @@ service cloud.firestore {
     }
     
     match /userTasks/{userTaskId} {
-      allow read: if request.auth != null && (resource.data.uid == request.auth.uid || isAdmin());
+      allow read: if request.auth != null && (resource == null || resource.data.uid == request.auth.uid || isAdmin());
       allow create, update: if request.auth != null && (request.resource.data.uid == request.auth.uid || resource.data.uid == request.auth.uid);
       allow delete: if isAdmin();
     }
