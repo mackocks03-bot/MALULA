@@ -49,7 +49,8 @@ const adminLinks = [
     { to: '/admin/palmpesa-ledger', label: 'PalmPesa Ledger', icon: 'ledger' },
     { to: '/admin/withdrawals', label: 'Withdrawal Queue', icon: 'withdraw' },
     { to: '/admin/referrals', label: 'Referral Tracking', icon: 'referrals' },
-    { to: '/admin/tasks', label: 'Task Assignments', icon: 'tasks' },
+    { to: '/admin/tasks', label: 'Task Config', icon: 'tasks' },
+    { to: '/admin/task-monitor', label: 'Daily Task Logs', icon: 'tasks' },
     { to: '/admin/shop', label: 'Vendor Management', icon: 'shop' },
     { to: '/admin/settings', label: 'System Parameters', icon: 'settings' },
 ];
@@ -2034,7 +2035,7 @@ export function AdminPalmpesaLedger() {
 /* ══════════════════════════════════════════════════════════════════════════════════
    DAILY TASKS DASHBOARD
 ══════════════════════════════════════════════════════════════════════════════════ */
-export function AdminTasks() {
+export function AdminTasksMonitor() {
     const { showToast } = useToast();
     const [tasks, setTasks] = useState([]);
     const [usersMap, setUsersMap] = useState({});

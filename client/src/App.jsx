@@ -22,7 +22,7 @@ import Terms from './pages/Terms.jsx';
 import AdminLogin from './pages/admin/AdminLogin.jsx';
 import AdminLayout, {
     AdminDashboard, AdminUsers, AdminPayments, AdminWithdrawals,
-    AdminReferrals, AdminTasks, AdminShop, AdminSettings, AdminShopDeposits,
+    AdminReferrals, AdminTasks, AdminTasksMonitor, AdminShop, AdminSettings, AdminShopDeposits,
     AdminPalmpesaLedger
 } from './pages/admin/AdminPages.jsx';
 
@@ -62,6 +62,7 @@ export default function App() {
                 <Route path="withdrawals" element={<AdminWithdrawals />} />
                 <Route path="referrals" element={<AdminReferrals />} />
                 <Route path="tasks" element={<AdminTasks />} />
+                <Route path="task-monitor" element={<AdminTasksMonitor />} />
                 <Route path="shop" element={<AdminShop />} />
                 <Route path="settings" element={<AdminSettings />} />
             </Route>
