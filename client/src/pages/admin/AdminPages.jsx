@@ -2030,3 +2030,219 @@ export function AdminPalmpesaLedger() {
         </div>
     );
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════════
+   DAILY TASKS DASHBOARD
+══════════════════════════════════════════════════════════════════════════════════ */
+export function AdminTasks() {
+    const { showToast } = useToast();
+    const [tasks, setTasks] = useState([]);
+    const [usersMap, setUsersMap] = useState({});
+    const [q, setQ] = useState('');
+    const [filter, setFilter] = useState('all');
+    const [loading, setLoading] = useState(true);
+    const [crediting, setCrediting] = useState(false);
+
+    // Get today's key logic perfectly synced with user perspective
+    const DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const todayKey = DAY_KEYS[new Date().getDay()];
+
+    const loadData = useCallback(async () => {
+        setLoading(true);
+        try {
+            const uSnap = await getDocs(collection(db, 'users'));
+            const uMap = {};
+            uSnap.docs.forEach(d => { uMap[d.id] = { uid: d.id, ...d.data() }; });
+            setUsersMap(uMap);
+
+            const tSnap = await getDocs(collection(db, 'userTasks'));
+            const todayTasks = tSnap.docs
+                .map(d => ({ id: d.id, ...d.data() }))
+                .filter(t => t.taskId && t.taskId.includes(todayKey));
+            
+            todayTasks.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+            setTasks(todayTasks);
+        } catch (err) {
+            showToast('Failed to load tasks', 'error');
+        }
+        setLoading(false);
+    }, [todayKey, showToast]);
+
+    useEffect(() => { loadData(); }, [loadData]);
+
+    const handleForceCredit = async (taskItem) => {
+        const u = usersMap[taskItem.uid] || {};
+        if (!window.confirm(`Force credit ${taskItem.reward || 0} ${taskItem.rewardCurrency || 'TZS'} to ${u.username || 'this user'}?`)) return;
+        setCrediting(true);
+        try {
+            const user = usersMap[taskItem.uid];
+            if (!user) throw new Error("User data missing");
+
+            const reward = Number(taskItem.reward || 0);
+            if (reward <= 0) throw new Error("Reward explicitly 0. Cannot force credit.");
+            const category = taskItem.category || taskItem.taskCategory || 'general';
+
+            const currentProfit = parseFloat(user.totalProfit) || 0;
+            const earnings = user.earnings || {};
+            earnings[category] = (parseFloat(earnings[category]) || 0) + reward;
+            
+            const taskBalances = user.taskBalances || {};
+            taskBalances[category] = (parseFloat(taskBalances[category]) || 0) + reward;
+
+            await updateDoc(doc(db, 'users', user.uid), {
+                totalProfit: currentProfit + reward,
+                earnings,
+                taskBalances
+            });
+
+            await updateDoc(doc(db, 'userTasks', taskItem.id), {
+                status: 'completed',
+                taskProcessed: true,
+                completedAt: Date.now(),
+                updatedAt: Date.now(),
+                adminForcedCredit: true
+            });
+
+            await addDoc(collection(db, 'transactions'), {
+                uid: user.uid,
+                type: 'task',
+                description: `Task reward (Admin Force): ${taskItem.taskTitle || 'Activity completed'}`,
+                amount: reward,
+                currency: taskItem.rewardCurrency || user.currency || 'TZS',
+                taskId: taskItem.taskId,
+                category,
+                balanceAfter: parseFloat(user.balance) || 0,
+                createdAt: Date.now()
+            });
+
+            showToast("Credit injected successfully!", "success");
+            loadData();
+        } catch (err) {
+            showToast("Failed: " + err.message, "error");
+        }
+        setCrediting(false);
+    };
+
+    const filtered = tasks.filter(t => {
+        const u = usersMap[t.uid] || {};
+        if (filter !== 'all' && t.status !== filter) return false;
+        if (!q) return true;
+        const sq = q.toLowerCase();
+        return (u.username || '').toLowerCase().includes(sq) ||
+               (u.email || '').toLowerCase().includes(sq) ||
+               (u.phone || '').toLowerCase().includes(sq) ||
+               t.uid.toLowerCase().includes(sq);
+    });
+
+    return (
+        <div>
+            <div className="gov-header">
+                <div className="gov-title">
+                    <h2>Daily Tasks Monitor ({todayKey.toUpperCase()})</h2>
+                    <p>Track user task activities, progress, and force manual payouts if required.</p>
+                </div>
+            </div>
+
+            <div className="gov-metrics-grid" style={{ marginBottom: 24, gridTemplateColumns: 'repeat(4, 1fr)' }}>
+                <div className="gov-metric-card">
+                    <div className="title">Total Today</div>
+                    <div className="value">{tasks.length}</div>
+                </div>
+                <div className="gov-metric-card">
+                    <div className="title">Completed / Paid</div>
+                    <div className="value" style={{ color: '#2E7D32' }}>{tasks.filter(t => t.status === 'completed').length}</div>
+                </div>
+                <div className="gov-metric-card">
+                    <div className="title">Pending System</div>
+                    <div className="value" style={{ color: '#f59e0b' }}>{tasks.filter(t => t.status === 'pending_verification').length}</div>
+                </div>
+                <div className="gov-metric-card">
+                    <div className="title">Failed / Rejected</div>
+                    <div className="value" style={{ color: '#D32F2F' }}>{tasks.filter(t => t.status === 'failed' || t.status === 'rejected').length}</div>
+                </div>
+            </div>
+
+            <div className="gov-filters">
+                <div className="gov-search">
+                    <Icon d={icons.search} />
+                    <input type="text" placeholder="Search by username, phone, email, UID..." value={q} onChange={e => setQ(e.target.value)} />
+                </div>
+                <select className="gov-select" value={filter} onChange={e => setFilter(e.target.value)}>
+                    <option value="all">All Statuses</option>
+                    <option value="pending_verification">Pending Rewards</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="completed">Completed / Paid</option>
+                    <option value="failed">Failed</option>
+                    <option value="rejected">Rejected</option>
+                </select>
+                <button className="gov-btn gov-btn-outline" onClick={loadData} disabled={loading}>
+                    {loading ? 'Refreshing...' : 'Refresh Logs'}
+                </button>
+            </div>
+
+            <div className="gov-table-wrapper">
+                <table className="gov-table">
+                    <thead>
+                        <tr>
+                            <th>User Details</th>
+                            <th>Task Overview</th>
+                            <th>Progress</th>
+                            <th>Reward</th>
+                            <th>Status & Logs</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {loading && tasks.length === 0 ? (
+                            <tr><td colSpan={6}><div className="gov-empty-state"><span className="gov-spinner" /> Loading task logs...</div></td></tr>
+                        ) : filtered.length === 0 ? (
+                            <tr><td colSpan={6}><div className="gov-empty-state">No task logs match your query.</div></td></tr>
+                        ) : filtered.map(t => {
+                            const u = usersMap[t.uid] || {};
+                            return (
+                                <tr key={t.id}>
+                                    <td>
+                                        <div style={{ fontWeight: 700, color: 'var(--gov-blue)' }}>{u.username || 'Unknown'} {u.country ? `(${u.country})` : ''}</div>
+                                        <div style={{ fontSize: 11, color: '#666' }}>{u.fullName || 'No name'}</div>
+                                        <div style={{ fontSize: 11, color: '#666' }}>{u.phone || '—'} | {u.email || '—'}</div>
+                                        <div className="gov-mono-text" style={{ fontSize: 10, color: '#aaa', marginTop: 4 }}>{t.uid}</div>
+                                    </td>
+                                    <td>
+                                        <div style={{ fontWeight: 600 }}>{t.taskTitle || (t.taskCategory || 'General').toUpperCase()}</div>
+                                        <div style={{ fontSize: 11, color: '#666' }}>Cat: {t.taskCategory || t.category || 'N/A'}</div>
+                                    </td>
+                                    <td>
+                                        <div style={{ fontWeight: 700 }}>{t.completed || 0} / {t.total || '?'}</div>
+                                    </td>
+                                    <td>
+                                        <div style={{ fontWeight: 700, color: '#2E7D32' }}>{t.reward || 0} {t.rewardCurrency || u.currency || 'TZS'}</div>
+                                    </td>
+                                    <td>
+                                        <div style={{ marginBottom: 4 }}><StatusBadge status={t.status} /></div>
+                                        {(t.processingError || t.rejectReason) && (
+                                            <div style={{ fontSize: 10, color: '#D32F2F', maxWidth: 200 }}>
+                                                {t.processingError || t.rejectReason}
+                                            </div>
+                                        )}
+                                        {t.adminForcedCredit && (
+                                            <div style={{ fontSize: 10, color: '#2E7D32', fontWeight: 'bold' }}>MANUALLY CREDITED</div>
+                                        )}
+                                    </td>
+                                    <td>
+                                        {(t.status === 'failed' || t.status === 'rejected' || t.status === 'pending_verification') ? (
+                                            <button className="gov-btn gov-btn-success" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => handleForceCredit(t)} disabled={crediting}>
+                                                Force Credit
+                                            </button>
+                                        ) : (
+                                            <span style={{ fontSize: 11, color: '#999' }}>—</span>
+                                        )}
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
