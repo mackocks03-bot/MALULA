@@ -11,6 +11,7 @@ import {
     collection, query, where, orderBy, onSnapshot
 } from '../services/firebase-config.js';
 import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 // ─── Firestore Paths ─────────────────────────────────────────────────────────
 // sellerProducts/{sellerUid}/{productId}  → stored as flat sub-collection
@@ -480,25 +481,32 @@ export default function Shop() {
     const certRef = useRef(null);
     const [generatingCert, setGeneratingCert] = useState(false);
 
-    const handleDownloadCertificate = async () => {
+    const handleDownloadCertificate = async (format = 'image') => {
         if (!certRef.current || !kycData) return;
-        setGeneratingCert(true);
-        showToast('Generating official certificate...', 'info');
+        setGeneratingCert(format);
+        showToast(`Generating ${format === 'pdf' ? 'PDF' : 'image'} certificate...`, 'info');
         try {
-            // allow fonts to load and wait for next tick
             await new Promise(r => setTimeout(r, 100));
-            const canvas = await html2canvas(certRef.current, { scale: 3, useCORS: true, backgroundColor: '#050a15' });
-            const imgData = canvas.toDataURL('image/jpeg', 0.95);
-            const link = document.createElement('a');
-            link.href = imgData;
-            link.download = `NEW-HOPE_CHAT_Certificate_${kycData.businessName.replace(/\s+/g, '_')}.jpg`;
-            link.click();
+            const canvas = await html2canvas(certRef.current, { scale: 3, useCORS: true, backgroundColor: '#0a0f1c' });
+            const safeName = kycData.businessName.replace(/\s+/g, '_');
+            if (format === 'pdf') {
+                const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [canvas.width / 3, canvas.height / 3] });
+                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width / 3, canvas.height / 3);
+                pdf.save(`NEW-HOPE_CHAT_Certificate_${safeName}.pdf`);
+            } else {
+                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                const link = document.createElement('a');
+                link.href = imgData;
+                link.download = `NEW-HOPE_CHAT_Certificate_${safeName}.jpg`;
+                link.click();
+            }
             showToast('Certificate Downloaded!', 'success');
         } catch (e) {
             console.error(e);
             showToast('Failed to generate certificate', 'error');
         } finally {
-            setGeneratingCert(false);
+            setGeneratingCert(null);
         }
     };
 
@@ -843,19 +851,42 @@ export default function Shop() {
                             {bizStatus === 'approved' ? '✅ Verified' : bizStatus === 'pending' ? '⏳ Pending Review' : bizStatus === 'rejected' ? 'Re-apply' : 'Apply for Verification'}
                         </button>
                         {kycData && bizStatus === 'approved' && (
-                            <button
-                                onClick={handleDownloadCertificate}
-                                disabled={generatingCert}
-                                style={{
-                                    width: '100%', padding: '10px', background: 'rgba(0, 255, 126, 0.08)',
-                                    color: '#00ff7e', border: '1px solid rgba(0, 255, 126, 0.3)',
-                                    borderRadius: 8, fontFamily: "'Space Mono', monospace",
-                                    fontSize: 11, fontWeight: 700, letterSpacing: 1, cursor: generatingCert ? 'wait' : 'pointer',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                                }}
-                            >
-                                {generatingCert ? '⏳ GENERATING PDF...' : '⬇️ DOWNLOAD CERTIFICATE'}
-                            </button>
+                            <div style={{ display: 'flex', gap: 8, marginTop: 0 }}>
+                                <button
+                                    onClick={() => handleDownloadCertificate('image')}
+                                    disabled={!!generatingCert}
+                                    style={{
+                                        flex: 1, padding: '12px 6px',
+                                        background: generatingCert === 'image' ? '#1d4ed8' : '#2563eb',
+                                        color: '#ffffff', border: 'none',
+                                        borderRadius: 8, fontFamily: "'Space Mono', monospace",
+                                        fontSize: 11, fontWeight: 700, letterSpacing: 0.5,
+                                        cursor: generatingCert ? 'wait' : 'pointer',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                                        boxShadow: '0 2px 12px rgba(37,99,235,0.5)',
+                                        transition: 'background 0.2s',
+                                    }}
+                                >
+                                    {generatingCert === 'image' ? '⏳' : '🖼️'} SAVE IMAGE
+                                </button>
+                                <button
+                                    onClick={() => handleDownloadCertificate('pdf')}
+                                    disabled={!!generatingCert}
+                                    style={{
+                                        flex: 1, padding: '12px 6px',
+                                        background: generatingCert === 'pdf' ? '#b91c1c' : '#dc2626',
+                                        color: '#ffffff', border: 'none',
+                                        borderRadius: 8, fontFamily: "'Space Mono', monospace",
+                                        fontSize: 11, fontWeight: 700, letterSpacing: 0.5,
+                                        cursor: generatingCert ? 'wait' : 'pointer',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                                        boxShadow: '0 2px 12px rgba(220,38,38,0.5)',
+                                        transition: 'background 0.2s',
+                                    }}
+                                >
+                                    {generatingCert === 'pdf' ? '⏳' : '📄'} SAVE PDF
+                                </button>
+                            </div>
                         )}
                         {kycData && bizStatus !== 'approved' && (
                             <button
