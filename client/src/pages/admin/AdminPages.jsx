@@ -14,6 +14,7 @@ import './css/AdminUsers.css';
 import './css/AdminPayments.css';
 import './css/AdminWithdrawals.css';
 import './css/AdminTasksMonitor.css';
+import './css/AdminKycReview.css';
 
 /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Icon helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const Icon = ({ d, size = 18 }) => (
@@ -53,6 +54,7 @@ const adminLinks = [
     { to: '/admin/tasks', label: 'Task Config', icon: 'tasks' },
     { to: '/admin/task-monitor', label: 'Daily Task Logs', icon: 'tasks' },
     { to: '/admin/shop', label: 'Vendor Management', icon: 'shop' },
+    { to: '/admin/kyc-review', label: 'KYC Verifications', icon: 'check' },
     { to: '/admin/settings', label: 'System Parameters', icon: 'settings' },
 ];
 
@@ -2265,6 +2267,188 @@ export function AdminTasksMonitor() {
                                 </tr>
                             );
                         })}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════════
+   ADMIN KYC REVIEW
+══════════════════════════════════════════════════════════════════════════════════ */
+export function AdminKycReview() {
+    const [applications, setApplications] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [reviewApp, setReviewApp] = useState(null);
+    const { showToast } = useToast();
+
+    const loadData = useCallback(async () => {
+        setLoading(true);
+        try {
+            const snap = await getDocs(collection(db, 'businessVerification'));
+            const data = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.createdAt - a.createdAt);
+            setApplications(data);
+        } catch (e) {
+            console.error(e);
+            showToast("Failed to load KYC applications", "error");
+        }
+        setLoading(false);
+    }, [showToast]);
+
+    useEffect(() => { loadData(); }, [loadData]);
+
+    const handleApprove = async () => {
+        if (!window.confirm("Approve this KYC application and grant vendor access?")) return;
+        try {
+            await updateDoc(doc(db, 'businessVerification', reviewApp.id), {
+                status: 'approved',
+                updatedAt: Date.now()
+            });
+            showToast("Vendor KYC Approved! They can now post products.", "success");
+            setReviewApp(null);
+            loadData();
+        } catch (err) {
+            showToast("Approval failed", "error");
+        }
+    };
+
+    const handleReject = async (reason) => {
+        if (!reason) { showToast("Rejection reason is required", "error"); return; }
+        if (!window.confirm("Reject this KYC application entirely?")) return;
+        try {
+            await updateDoc(doc(db, 'businessVerification', reviewApp.id), {
+                status: 'rejected',
+                rejectReason: reason,
+                updatedAt: Date.now()
+            });
+            showToast("Vendor KYC Rejected.", "error");
+            setReviewApp(null);
+            loadData();
+        } catch (err) {
+            showToast("Rejection failed", "error");
+        }
+    };
+
+    return (
+        <div className="kyc-review-container">
+            {/* Modal */}
+            {reviewApp && (
+                <div className="kyc-modal-overlay" onClick={e => { if (e.target === e.currentTarget) setReviewApp(null); }}>
+                    <div className="kyc-modal-box">
+                        <div className="kyc-modal-header">
+                            <h2>Reviewing Operator Identity: <span style={{ color: '#3b82f6' }}>{reviewApp.businessName}</span></h2>
+                            <button className="kyc-modal-close" onClick={() => setReviewApp(null)}>&times;</button>
+                        </div>
+                        
+                        <div className="kyc-modal-body">
+                            
+                            {/* Left Data */}
+                            <div className="kyc-data-panel">
+                                <div className="kyc-section-title">Applicant Data Extract</div>
+                                <div className="kyc-data-grid">
+                                    <div className="kyc-data-item"><label>Legal Name</label><div className="val">{reviewApp.fullName}</div></div>
+                                    <div className="kyc-data-item"><label>Business Name</label><div className="val">{reviewApp.businessName}</div></div>
+                                    <div className="kyc-data-item"><label>ID Type</label><div className="val">{(reviewApp.idType || 'N/A').toUpperCase().replace('_', ' ')}</div></div>
+                                    <div className="kyc-data-item"><label>ID Target Reference Number</label><div className="kyc-id-highlight">{reviewApp.idNumber || 'N/A'}</div></div>
+                                    <div className="kyc-data-item"><label>Region / Locality</label><div className="val">{reviewApp.region || 'N/A'}</div></div>
+                                    <div className="kyc-data-item"><label>Intercepted Comms</label><div className="val">{reviewApp.phone} <br/> {reviewApp.email}</div></div>
+                                </div>
+                            </div>
+
+                            {/* Right Images */}
+                            <div className="kyc-images-panel">
+                                <div className="kyc-section-title">Cryptographic Proof & Documents</div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                    <div className="kyc-image-box">
+                                        <div className="kyc-image-title">FRONT OF ID</div>
+                                        <div className="kyc-image-wrapper">
+                                            {reviewApp.idFrontB64 ? 
+                                                <img src={reviewApp.idFrontB64} alt="ID Front" /> :
+                                                <div style={{ color: '#64748b', fontSize: 13 }}>No Signal Received</div>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div className="kyc-image-box">
+                                        <div className="kyc-image-title">BACK OF ID</div>
+                                        <div className="kyc-image-wrapper">
+                                            {reviewApp.idBackB64 ? 
+                                                <img src={reviewApp.idBackB64} alt="ID Back" /> :
+                                                <div style={{ color: '#64748b', fontSize: 13 }}>No Signal Received</div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                        
+                        <div className="kyc-modal-footer">
+                            <button className="kyc-action-btn kyc-btn-reject" onClick={() => {
+                                const reason = prompt("Enter explicit reason for denial (Logged to secure node):");
+                                if (reason) handleReject(reason);
+                            }}>
+                                ✕ REJECT CLEARANCE
+                            </button>
+                            <button className="kyc-action-btn kyc-btn-approve" onClick={handleApprove}>
+                                ✓ GRANT AUTHORIZATION
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="kyc-header">
+                <div>
+                    <h1>KYC Processing Node</h1>
+                    <p>Review submitted identity files against external registries securely.</p>
+                </div>
+            </div>
+
+            <div className="kyc-table-wrapper">
+                <table className="kyc-table">
+                    <thead>
+                        <tr>
+                            <th>Upload Intel</th>
+                            <th>Target Info</th>
+                            <th>Entity Tag</th>
+                            <th>Access Status</th>
+                            <th>Directive</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {loading && applications.length === 0 ? (
+                            <tr><td colSpan={5} style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>Establishing link to application databank...</td></tr>
+                        ) : applications.length === 0 ? (
+                            <tr><td colSpan={5} style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>No active KYC files waiting for processing.</td></tr>
+                        ) : applications.map(app => (
+                            <tr key={app.id}>
+                                <td>
+                                    <div className="kyc-cell-main">{new Date(app.createdAt).toLocaleDateString()}</div>
+                                    <div className="kyc-cell-sub">{new Date(app.createdAt).toLocaleTimeString()}</div>
+                                </td>
+                                <td>
+                                    <div className="kyc-cell-main">{app.fullName}</div>
+                                    <div className="kyc-cell-sub">{app.email}</div>
+                                </td>
+                                <td>
+                                    <div className="kyc-cell-main" style={{ color: '#3b82f6' }}>{app.businessName}</div>
+                                    <div className="kyc-cell-sub">{app.businessType}</div>
+                                </td>
+                                <td>
+                                    <span className={`kyc-badge ${app.status || 'pending'}`}>{(app.status || 'pending').toUpperCase()}</span>
+                                    {app.rejectReason && <div style={{ fontSize: 11, color: '#f87171', marginTop: 6, maxWidth: 200 }}>Denial: {app.rejectReason}</div>}
+                                </td>
+                                <td style={{ textAlign: 'right' }}>
+                                    <button 
+                                        className={app.status === 'pending' ? 'kyc-btn-review' : 'kyc-btn-reviewed'}
+                                        onClick={() => setReviewApp(app)}
+                                    >
+                                        {app.status === 'pending' ? 'Execute Review' : 'Inspect'}
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
                     </tbody>
                 </table>
             </div>

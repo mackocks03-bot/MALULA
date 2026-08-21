@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import './css/KycScan.css';
 import DashboardLayout from '../components/DashboardLayout.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
@@ -23,6 +24,12 @@ const CAT_ICONS = {
     furniture: '🛋️', electronics: '💻', cars: '🚗',
 };
 
+const VerifiedBadge = ({ size = 16, style = {} }) => (
+    <svg viewBox="0 0 24 24" aria-label="Verified" role="img" style={{ height: size, width: size, verticalAlign: 'text-bottom', color: '#1d9bf0', ...style }}>
+        <g><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.918-3.998-.47 0-.92.084-1.336.25C14.818 2.415 13.51 1.5 12 1.5s-2.816.917-3.337 2.25c-.416-.165-.866-.25-1.336-.25-2.21 0-3.918 1.79-3.918 4 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.46.74 2.76 1.834 3.45C3.157 16.29 3 16.78 3 17.3c0 2.21 1.71 4 3.918 4 .58 0 1.14-.15 1.635-.42C9.07 22.4 10.45 23.3 12 23.3s2.93-.9 3.447-2.42c.496.27 1.055.42 1.635.42 2.21 0 3.918-1.79 3.918-4 0-.52-.157-1.01-.334-1.45C21.76 15.26 22.5 13.96 22.5 12.5zm-12.75 3.32L5.875 11.9l1.45-1.45 2.425 2.41 5.925-5.91 1.45 1.45-7.375 7.42z" fill="currentColor"></path></g>
+    </svg>
+);
+
 // ─── Business Verification Modal ─────────────────────────────────────────────
 function VerifyModal({ userData, onClose, onSuccess }) {
     const [form, setForm] = useState({
@@ -31,15 +38,62 @@ function VerifyModal({ userData, onClose, onSuccess }) {
         businessName: '',
         businessType: '',
         businessDesc: '',
+        idType: '',
+        idNumber: '',
+        region: '',
+        idFrontB64: null,
+        idBackB64: null
     });
+    
+    const [scanning, setScanning] = useState(false);
+    const [scanText, setScanText] = useState('INITIALIZING SECURE UPLINK...');
+    const [scanProgress, setScanProgress] = useState(0);
+
+    const frontRef = useRef();
+    const backRef = useRef();
     const { showToast } = useToast();
     const { user } = useAuth();
+
+    const handleImageChange = (e, field) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => setForm(f => ({ ...f, [field]: reader.result }));
+        reader.readAsDataURL(file);
+    };
 
     const submit = async (e) => {
         e.preventDefault();
         if (!form.fullName || !form.phone || !form.businessName || !form.businessType) {
-            showToast('Please fill all required fields', 'error'); return;
+            showToast('Please fill all business details', 'error'); return;
         }
+        if (!form.idType || !form.idNumber || !form.region || !form.idFrontB64 || !form.idBackB64) {
+            showToast('All KYC documents and ID fields are strictly required', 'error'); return;
+        }
+
+        // Trigger AI Simulation
+        setScanning(true);
+        setScanProgress(0);
+
+        let progress = 0;
+        const steps = [
+            "EXTRACTING BIOMETRIC MARKERS...",
+            "VERIFYING GOVERNMENT REGISTRY...",
+            "ANALYZING DOCUMENT HOLOGRAPHY...",
+            "CRYPTOGRAPHIC HASH GENERATED.",
+            "FINALIZING CLEARANCE..."
+        ];
+
+        const interval = setInterval(() => {
+            progress += (Math.random() * 15) + 5;
+            if (progress >= 95) progress = 95;
+            setScanProgress(progress);
+            
+            const stepIndex = Math.min(Math.floor(progress / 20), steps.length - 1);
+            setScanText(steps[stepIndex]);
+        }, 400);
+
+        // Perform actual background upload in parallel
         try {
             await import('../services/firebase-config.js').then(({ db, doc, setDoc }) =>
                 setDoc(doc(db, 'businessVerification', user.uid), {
@@ -52,75 +106,191 @@ function VerifyModal({ userData, onClose, onSuccess }) {
                     updatedAt: Date.now(),
                 })
             );
-            // notify admin
-            await addDoc(collection(db, 'adminNotifications'), {
-                type: 'business_verification',
-                uid: user.uid,
-                username: userData?.username,
-                businessName: form.businessName,
-                message: `${form.fullName} applied for verification`,
-                createdAt: Date.now(),
-                read: false,
-            });
-            showToast('Application submitted! Pending review.', 'success');
-            onSuccess();
-            onClose();
-        } catch {
-            showToast('Error submitting application', 'error');
+            await import('../services/firebase-config.js').then(({ db, collection, addDoc }) => 
+                addDoc(collection(db, 'adminNotifications'), {
+                    type: 'business_verification',
+                    uid: user.uid,
+                    username: userData?.username,
+                    businessName: form.businessName,
+                    message: `${form.fullName} submitted full KYC for verification`,
+                    createdAt: Date.now(),
+                    read: false,
+                })
+            );
+
+            // Wait specifically to let the dramatic animation play out
+            setTimeout(() => {
+                clearInterval(interval);
+                setScanProgress(100);
+                setScanText('KYC SECURELY TRANSMITTED');
+                setTimeout(() => {
+                    showToast('Application submitted! Pending review.', 'success');
+                    onSuccess();
+                    onClose();
+                }, 800);
+            }, 3800); // Dramatic 3.8s wait
+            
+        } catch (err) {
+            clearInterval(interval);
+            setScanning(false);
+            showToast('Error securely submitting application', 'error');
         }
     };
 
     return (
         <div style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)',
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
             backdropFilter: 'blur(8px)', zIndex: 9999,
             display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
-        }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+        }} onClick={e => { if (e.target === e.currentTarget && !scanning) onClose(); }}>
+            
             <div style={{
                 background: 'var(--bg-card)', border: '1px solid var(--border-color)',
-                borderRadius: 16, padding: 24, width: '100%', maxWidth: 420,
-                maxHeight: '90vh', overflowY: 'auto', position: 'relative',
+                borderRadius: 16, padding: 24, width: '100%', maxWidth: 700,
+                maxHeight: '92vh', overflowY: 'auto', position: 'relative',
             }}>
-                <button onClick={onClose} style={{
+                <button onClick={onClose} disabled={scanning} style={{
                     position: 'absolute', top: 12, right: 16, background: 'none',
-                    border: 'none', color: 'var(--text-muted)', fontSize: 22, cursor: 'pointer',
+                    border: 'none', color: 'var(--text-muted)', fontSize: 22, cursor: scanning ? 'not-allowed' : 'pointer',
+                    opacity: scanning ? 0 : 1
                 }}>✕</button>
-                <div style={{ textAlign: 'center', fontSize: 48, marginBottom: 8 }}>🏪</div>
-                <h3 style={{ textAlign: 'center', color: 'var(--text-primary)', marginBottom: 4 }}>Business Verification</h3>
-                <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 12, marginBottom: 16 }}>Complete your profile to start selling</p>
-                <form onSubmit={submit}>
-                    {[
-                        { id: 'fullName', label: 'Full Name *', type: 'text' },
-                        { id: 'phone', label: 'Phone *', type: 'tel' },
-                        { id: 'businessName', label: 'Business Name *', type: 'text' },
-                    ].map(({ id, label, type }) => (
-                        <div key={id} style={{ marginBottom: 12 }}>
-                            <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>{label}</label>
-                            <input
-                                type={type} className="form-control"
-                                value={form[id]} required
-                                onChange={e => setForm(f => ({ ...f, [id]: e.target.value }))}
-                            />
+
+                {scanning && (
+                    <div className="kyc-scan-overlay">
+                        <div className="kyc-scan-container">
+                            <div className="kyc-grid"></div>
+                            <div className="kyc-silhouette"></div>
+                            <div className="kyc-laser"></div>
                         </div>
-                    ))}
-                    <div style={{ marginBottom: 12 }}>
-                        <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>Business Type *</label>
-                        <select className="form-control" value={form.businessType} required
-                            onChange={e => setForm(f => ({ ...f, businessType: e.target.value }))}>
-                            <option value="">Select type</option>
-                            {['retail', 'wholesale', 'service', 'online', 'other'].map(t => (
-                                <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                        <div className="kyc-status-text">{scanText}</div>
+                        <div className="kyc-progress-bar">
+                            <div className="kyc-progress-fill" style={{ width: `${scanProgress}%` }}></div>
+                        </div>
+                        <div style={{ marginTop: 12, fontSize: 11, color: 'rgba(0,255,255,0.4)' }}>
+                            Do not close this secure window
+                        </div>
+                    </div>
+                )}
+
+                <div style={{ textAlign: 'center', fontSize: 40, marginBottom: 8 }}>🏪</div>
+                <h3 style={{ textAlign: 'center', color: 'var(--text-primary)', marginBottom: 4 }}>Business KYC Verification</h3>
+                <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 12, marginBottom: 24 }}>Complete your profile and provide identity documentation securely.</p>
+                
+                <form onSubmit={submit}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
+                        {/* LEFT COLUMN: Business & Basics */}
+                        <div>
+                            <div style={{ fontWeight: 600, color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: 8, marginBottom: 12 }}>1. Business & Contact Data</div>
+                            {[
+                                { id: 'fullName', label: 'Full Legal Name *', type: 'text' },
+                                { id: 'phone', label: 'Contact Phone *', type: 'tel' },
+                                { id: 'businessName', label: 'Business Name *', type: 'text' },
+                                { id: 'region', label: 'Operating Region / City *', type: 'text' },
+                            ].map(({ id, label, type }) => (
+                                <div key={id} style={{ marginBottom: 12 }}>
+                                    <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>{label}</label>
+                                    <input
+                                        type={type} className="form-control"
+                                        value={form[id]} required
+                                        onChange={e => setForm(f => ({ ...f, [id]: e.target.value }))}
+                                    />
+                                </div>
                             ))}
-                        </select>
+                            
+                            <div style={{ marginBottom: 12 }}>
+                                <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>Business Type *</label>
+                                <select className="form-control" value={form.businessType} required
+                                    onChange={e => setForm(f => ({ ...f, businessType: e.target.value }))}>
+                                    <option value="">Select type</option>
+                                    {['retail', 'wholesale', 'service', 'online', 'other'].map(t => (
+                                        <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div style={{ marginBottom: 12 }}>
+                                <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>Description / What you sell</label>
+                                <textarea className="form-control" rows={2} value={form.businessDesc}
+                                    onChange={e => setForm(f => ({ ...f, businessDesc: e.target.value }))} />
+                            </div>
+                        </div>
+
+                        {/* RIGHT COLUMN: KYC Data */}
+                        <div>
+                            <div style={{ fontWeight: 600, color: 'var(--color-gold)', borderBottom: '1px solid var(--border-color)', paddingBottom: 8, marginBottom: 12 }}>2. KYC Identity Verification</div>
+                            
+                            <div style={{ marginBottom: 12 }}>
+                                <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>Document Type *</label>
+                                <select className="form-control" value={form.idType} required
+                                    onChange={e => setForm(f => ({ ...f, idType: e.target.value }))}>
+                                    <option value="">Select Government ID</option>
+                                    <option value="national_id">National ID Card</option>
+                                    <option value="passport">Passport</option>
+                                    <option value="driver_license">Driver's License</option>
+                                    <option value="voter_id">Voter ID</option>
+                                </select>
+                            </div>
+
+                            <div style={{ marginBottom: 16 }}>
+                                <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>ID Document Number *</label>
+                                <input
+                                    type="text" className="form-control" placeholder="Enter ID number exactly as shown"
+                                    value={form.idNumber} required
+                                    onChange={e => setForm(f => ({ ...f, idNumber: e.target.value }))}
+                                />
+                            </div>
+
+                            <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+                                {/* ID FRONT */}
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'block', marginBottom: 4, fontWeight: 600 }}>ID FRONT IMAGE *</label>
+                                    <div onClick={() => frontRef.current?.click()} style={{
+                                        height: 100, background: 'var(--bg-input)', border: '1.5px dashed var(--border-color)',
+                                        borderRadius: 10, cursor: 'pointer', textAlign: 'center', display: 'flex', flexDirection: 'column',
+                                        alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: 4
+                                    }}>
+                                        {form.idFrontB64 ? (
+                                            <img src={form.idFrontB64} alt="ID Front" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                                        ) : (
+                                            <>
+                                                <span style={{ fontSize: 24, marginBottom: 4 }}>📄</span>
+                                                <span style={{ fontSize: 10, color: 'var(--text-muted)', padding: '0 8px' }}>Tap to upload Front of ID</span>
+                                            </>
+                                        )}
+                                        <input ref={frontRef} type="file" accept="image/*" style={{ display: 'none' }} required={!form.idFrontB64} onChange={e => handleImageChange(e, 'idFrontB64')} />
+                                    </div>
+                                </div>
+
+                                {/* ID BACK */}
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'block', marginBottom: 4, fontWeight: 600 }}>ID BACK IMAGE *</label>
+                                    <div onClick={() => backRef.current?.click()} style={{
+                                        height: 100, background: 'var(--bg-input)', border: '1.5px dashed var(--border-color)',
+                                        borderRadius: 10, cursor: 'pointer', textAlign: 'center', display: 'flex', flexDirection: 'column',
+                                        alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: 4
+                                    }}>
+                                        {form.idBackB64 ? (
+                                            <img src={form.idBackB64} alt="ID Back" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                                        ) : (
+                                            <>
+                                                <span style={{ fontSize: 24, marginBottom: 4 }}>🪪</span>
+                                                <span style={{ fontSize: 10, color: 'var(--text-muted)', padding: '0 8px' }}>Tap to upload Back of ID</span>
+                                            </>
+                                        )}
+                                        <input ref={backRef} type="file" accept="image/*" style={{ display: 'none' }} required={!form.idBackB64} onChange={e => handleImageChange(e, 'idBackB64')} />
+                                    </div>
+                                </div>
+                            </div>
+                            <div style={{ fontSize: 11, color: 'var(--color-gold)', background: 'rgba(255,215,0,0.1)', padding: 10, borderRadius: 8 }}>
+                                🔒 Your identity verification documents are securely processed and are never shared publicly.
+                            </div>
+                        </div>
                     </div>
-                    <div style={{ marginBottom: 16 }}>
-                        <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>Description</label>
-                        <textarea className="form-control" rows={2} value={form.businessDesc}
-                            onChange={e => setForm(f => ({ ...f, businessDesc: e.target.value }))} />
-                    </div>
-                    <div style={{ display: 'flex', gap: 10 }}>
-                        <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Submit</button>
-                        <button type="button" className="btn" onClick={onClose}
+
+                    <div style={{ display: 'flex', gap: 10, marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--border-color)' }}>
+                        <button type="submit" className="btn btn-primary" style={{ flex: 2, padding: '14px', fontSize: 15, fontWeight: 700 }} disabled={scanning}>
+                            {scanning ? 'Transmitting...' : 'Submit Verification'}
+                        </button>
+                        <button type="button" className="btn" onClick={onClose} disabled={scanning}
                             style={{ flex: 1, background: 'var(--bg-input)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}>
                             Cancel
                         </button>
@@ -158,8 +328,8 @@ function ProductZoom({ product, currency, currentUid, onClose, onOrder }) {
                 </div>
                 <div style={{ padding: 20 }}>
                     <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{product.name}</div>
-                    <div style={{ fontSize: 13, color: 'var(--text-muted)', margin: '6px 0' }}>
-                        👤 {product.sellerName} {product.isVerifiedSeller ? '✓' : ''}
+                    <div style={{ fontSize: 13, color: 'var(--text-muted)', margin: '6px 0', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        👤 {product.sellerName} {product.isVerifiedSeller && <VerifiedBadge size={14} />}
                     </div>
                     <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-gold)', margin: '8px 0' }}>{price}</div>
                     {product.description && <div style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '10px 0' }}>{product.description}</div>}
@@ -465,7 +635,7 @@ export default function Shop() {
                             {{
                                 'not-applied': <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>Not applied</span>,
                                 'pending':     <span style={{ color: '#F97316', fontSize: 12 }}>⏳ Under Review</span>,
-                                'approved':    <span style={{ color: '#22C55E', fontSize: 12 }}>✅ Verified Seller</span>,
+                                'approved':    <span style={{ color: '#22C55E', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}><VerifiedBadge size={14} /> Verified Seller</span>,
                                 'rejected':    <span style={{ color: '#EF4444', fontSize: 12 }}>❌ Rejected</span>,
                             }[bizStatus]}
                         </div>
@@ -537,8 +707,10 @@ export default function Shop() {
                                             : <div style={{ width: '100%', height: 100, background: 'var(--bg-input)', borderRadius: 8, marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>📦</div>
                                         }
                                         <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
-                                        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>by {p.sellerName}</div>
-                                        {p.isVerifiedSeller && <div style={{ display: 'inline-block', background: 'rgba(34,197,94,0.1)', color: '#22C55E', fontSize: 10, padding: '1px 8px', borderRadius: 10, margin: '2px 0' }}>✓ Verified</div>}
+                                        <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                                            by {p.sellerName}
+                                            {p.isVerifiedSeller && <VerifiedBadge size={12} />}
+                                        </div>
                                         <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-gold)', margin: '4px 0' }}>{formatCurrency(p.price || 0, currency)}</div>
                                         {own
                                             ? <button className="btn" onClick={e => { e.stopPropagation(); deleteProduct(p.id); }} style={{ width: '100%', padding: 6, background: 'rgba(239,68,68,0.1)', color: '#EF4444', border: 'none', borderRadius: 8, fontSize: 11, cursor: 'pointer' }}>

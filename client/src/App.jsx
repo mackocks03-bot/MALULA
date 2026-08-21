@@ -23,7 +23,7 @@ import AdminLogin from './pages/admin/AdminLogin.jsx';
 import AdminLayout, {
     AdminDashboard, AdminUsers, AdminPayments, AdminWithdrawals,
     AdminReferrals, AdminTasks, AdminTasksMonitor, AdminShop, AdminSettings, AdminShopDeposits,
-    AdminPalmpesaLedger
+    AdminPalmpesaLedger, AdminKycReview
 } from './pages/admin/AdminPages.jsx';
 
 export default function App() {
@@ -64,6 +64,7 @@ export default function App() {
                 <Route path="tasks" element={<AdminTasks />} />
                 <Route path="task-monitor" element={<AdminTasksMonitor />} />
                 <Route path="shop" element={<AdminShop />} />
+                <Route path="kyc-review" element={<AdminKycReview />} />
                 <Route path="settings" element={<AdminSettings />} />
             </Route>
 
