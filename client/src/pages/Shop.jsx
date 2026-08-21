@@ -155,18 +155,36 @@ function VerifyModal({ userData, onClose, onSuccess }) {
                     opacity: scanning ? 0 : 1
                 }}>✕</button>
 
+                {/* AI Scan overlay rendered outside modal scroll container */}
                 {scanning && (
                     <div className="kyc-scan-overlay">
+                        {/* Matrix rain columns */}
+                        {['10%','20%','32%','45%','58%','70%','82%','92%'].map((left, i) => (
+                            <div key={i} className="kyc-matrix-col" style={{
+                                left, animationDuration: `${2.5 + i * 0.4}s`, animationDelay: `${i * 0.2}s`
+                            }}>{'01011001100110010110100101'.split('').join('\n')}</div>
+                        ))}
+                        <div className="kyc-scan-topbar" />
                         <div className="kyc-scan-container">
-                            <div className="kyc-grid"></div>
-                            <div className="kyc-silhouette"></div>
-                            <div className="kyc-laser"></div>
+                            <div className="kyc-grid" />
+                            <div className="kyc-face-outline" />
+                            <div className="kyc-corner-tr" />
+                            <div className="kyc-corner-bl" />
+                            <div className="kyc-eye-wrapper">
+                                <div className="kyc-eyes-row">
+                                    <div className="kyc-eye" />
+                                    <div className="kyc-eye" style={{ animationDelay: '0.4s' }} />
+                                </div>
+                            </div>
+                            <div className="kyc-laser" />
                         </div>
                         <div className="kyc-status-text">{scanText}</div>
                         <div className="kyc-progress-bar">
-                            <div className="kyc-progress-fill" style={{ width: `${scanProgress}%` }}></div>
+                            <div className="kyc-progress-fill" style={{ width: `${scanProgress}%` }} />
                         </div>
-                        <div style={{ marginTop: 12, fontSize: 11, color: 'rgba(0,255,255,0.4)' }}>
+                        <div className="kyc-data-readout">
+                            [{new Date().toISOString()}]<br />
+                            NODE: KYC-SECURE-01 · PROTOCOL: AES-256<br />
                             Do not close this secure window
                         </div>
                     </div>
@@ -373,6 +391,61 @@ function OrderSuccess({ amount, productName, onClose }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// KYC PREVIEW CARD  (shown to user after submission)
+// ─────────────────────────────────────────────────────────────────────────────
+function KycPreviewCard({ kycData, onClose }) {
+    const statusLabels = { pending: 'AWAITING CLEARANCE', approved: 'ACCESS GRANTED', rejected: 'ACCESS DENIED' };
+    const statusClass = kycData.status || 'pending';
+    return (
+        <div className="kyc-preview-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+            <div className="kyc-preview-card">
+                <div className="kyc-preview-sweep" />
+                <div className="kyc-preview-header">
+                    <div className="kyc-preview-header-icon">🆔</div>
+                    <div className="kyc-preview-header-title">
+                        <h3>IDENTITY FILE</h3>
+                        <p>KYC Verification Record</p>
+                    </div>
+                </div>
+                <div className="kyc-preview-body">
+                    <div className={`kyc-preview-status ${statusClass}`}>
+                        <div className="kyc-pulse-dot" />
+                        {statusLabels[statusClass] || 'PROCESSING'}
+                    </div>
+                    <div className="kyc-preview-field">
+                        <label>Legal Name</label>
+                        <div className="pval">{kycData.fullName}</div>
+                    </div>
+                    <div className="kyc-preview-field">
+                        <label>Business Entity</label>
+                        <div className="pval">{kycData.businessName} <span style={{ color: 'rgba(0,255,255,0.4)', fontSize: 12 }}>({kycData.businessType})</span></div>
+                    </div>
+                    <div className="kyc-preview-field">
+                        <label>Document Class</label>
+                        <div className="pval">{(kycData.idType || 'N/A').toUpperCase().replace('_', ' ')}</div>
+                    </div>
+                    <div className="kyc-preview-field">
+                        <label>Reference ID</label>
+                        <div className="kyc-preview-id-badge">{kycData.idNumber || '—'}</div>
+                    </div>
+                    <div className="kyc-preview-field">
+                        <label>Region</label>
+                        <div className="pval">{kycData.region || '—'}</div>
+                    </div>
+                    <div className="kyc-preview-field">
+                        <label>Submitted</label>
+                        <div className="pval" style={{ fontSize: 12 }}>{new Date(kycData.createdAt).toLocaleString()}</div>
+                    </div>
+                </div>
+                <div className="kyc-preview-footer">
+                    <button className="kyc-preview-close-btn" onClick={onClose}>[ CLOSE RECORD ]</button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // MAIN SHOP COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 export default function Shop() {
@@ -397,6 +470,8 @@ export default function Shop() {
     const [zoomProduct, setZoomProduct] = useState(null);
     const [showVerifyModal, setShowVerifyModal] = useState(false);
     const [orderSuccess, setOrderSuccess] = useState(null);
+    const [showKycPreview, setShowKycPreview] = useState(false);
+    const [kycData, setKycData] = useState(null);
 
     // ── Orders ────────────────────────────────────────────────────────────────
     const [orders, setOrders] = useState([]);
@@ -415,7 +490,11 @@ export default function Shop() {
         if (!user) return;
         const load = async () => {
             const snap = await getDoc(doc(db, 'businessVerification', user.uid));
-            if (snap.exists()) setBizStatus(snap.data().status || 'not-applied');
+            if (snap.exists()) {
+                const data = snap.data();
+                setBizStatus(data.status || 'not-applied');
+                setKycData(data);
+            }
         };
         load();
     }, [user]);
@@ -600,6 +679,9 @@ export default function Shop() {
                     onSuccess={() => setBizStatus('pending')}
                 />
             )}
+            {showKycPreview && kycData && (
+                <KycPreviewCard kycData={kycData} onClose={() => setShowKycPreview(false)} />
+            )}
             {zoomProduct && (
                 <ProductZoom
                     product={zoomProduct}
@@ -640,7 +722,7 @@ export default function Shop() {
                             }[bizStatus]}
                         </div>
                         <button
-                            className="btn btn-primary" style={{ width: '100%' }}
+                            className="btn btn-primary" style={{ width: '100%', marginBottom: kycData ? 8 : 0 }}
                             disabled={bizStatus === 'pending' || bizStatus === 'approved'}
                             onClick={() => {
                                 if (bizStatus === 'approved') { showToast('Already verified', 'info'); return; }
@@ -650,6 +732,20 @@ export default function Shop() {
                         >
                             {bizStatus === 'approved' ? '✅ Verified' : bizStatus === 'pending' ? '⏳ Pending Review' : bizStatus === 'rejected' ? 'Re-apply' : 'Apply for Verification'}
                         </button>
+                        {kycData && (
+                            <button
+                                onClick={() => setShowKycPreview(true)}
+                                style={{
+                                    width: '100%', padding: '10px', background: 'rgba(0,255,255,0.06)',
+                                    color: '#00ffff', border: '1px solid rgba(0,255,255,0.25)',
+                                    borderRadius: 8, fontFamily: "'Space Mono', monospace",
+                                    fontSize: 11, fontWeight: 700, letterSpacing: 1, cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                                }}
+                            >
+                                🔍 View My KYC Record
+                            </button>
+                        )}
                     </div>
 
                     {/* ── Category Tabs ─────────────────────────────────────── */}
