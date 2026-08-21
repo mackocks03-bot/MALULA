@@ -36,15 +36,18 @@ export async function runTaskProcessing(db, userTaskId, triggerClaim) {
 
     try {
         await db.runTransaction(async (t) => {
-            // ── Verify Claim Exists & Not Processed ───────────────────────────────
+            // ── ALL READS MUST HAPPEN BEFORE ANY WRITES ─────────────────────────
             const claimSnap = await t.get(claimRef);
+            const userSnap = await t.get(userRef);
+
+            // ── Verify Claim Exists & Not Processed ───────────────────────────────
             if (!claimSnap.exists) {
                 throw new Error("Claim does not exist");
             }
 
             const claim = claimSnap.data();
-            if (claim.taskProcessed === true || claim.taskProcessed === 'processing' || claim.status !== 'pending_verification') {
-                return; // Guard against race conditions and double spends!
+            if (claim.taskProcessed === true || claim.status !== 'pending_verification') {
+                return; // Guard against race conditions and double spends
             }
 
             if (!taskId.includes(serverDay)) {
@@ -58,11 +61,7 @@ export async function runTaskProcessing(db, userTaskId, triggerClaim) {
                 return;
             }
 
-            // Lock document from concurrent runs immediately
-            t.update(claimRef, { taskProcessed: 'processing' });
-
             // ── Verify User Status ────────────────────────────────────────────────
-            const userSnap = await t.get(userRef);
             if (!userSnap.exists) {
                 t.update(claimRef, { taskProcessed: true, status: 'rejected', rejectReason: 'User not found' });
                 return;
