@@ -10,6 +10,7 @@ import {
     db, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc,
     collection, query, where, orderBy, onSnapshot
 } from '../services/firebase-config.js';
+import html2canvas from 'html2canvas';
 
 // ─── Firestore Paths ─────────────────────────────────────────────────────────
 // sellerProducts/{sellerUid}/{productId}  → stored as flat sub-collection
@@ -475,6 +476,32 @@ export default function Shop() {
     const [kycData, setKycData] = useState(null);
     const [confirmDialog, setConfirmDialog] = useState(null);
 
+    // ── Certificate Generation ────────────────────────────────────────────────
+    const certRef = useRef(null);
+    const [generatingCert, setGeneratingCert] = useState(false);
+
+    const handleDownloadCertificate = async () => {
+        if (!certRef.current || !kycData) return;
+        setGeneratingCert(true);
+        showToast('Generating official certificate...', 'info');
+        try {
+            // allow fonts to load and wait for next tick
+            await new Promise(r => setTimeout(r, 100));
+            const canvas = await html2canvas(certRef.current, { scale: 3, useCORS: true, backgroundColor: '#050a15' });
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            const link = document.createElement('a');
+            link.href = imgData;
+            link.download = `NEW-HOPE_CHAT_Certificate_${kycData.businessName.replace(/\s+/g, '_')}.jpg`;
+            link.click();
+            showToast('Certificate Downloaded!', 'success');
+        } catch (e) {
+            console.error(e);
+            showToast('Failed to generate certificate', 'error');
+        } finally {
+            setGeneratingCert(false);
+        }
+    };
+
     // ── Orders ────────────────────────────────────────────────────────────────
     const [orders, setOrders] = useState([]);
     const [pendingOrderCount, setPendingOrderCount] = useState(0);
@@ -706,6 +733,65 @@ export default function Shop() {
                 onConfirm={confirmDialog?.onConfirm}
                 onCancel={() => setConfirmDialog(null)}
             />
+
+            {/* ── Hidden Certificate Node For HTML2Canvas ── */}
+            <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', pointerEvents: 'none' }}>
+                <div ref={certRef} style={{
+                    width: 700, height: 480, background: '#0a0f1c', border: '12px solid #00ffff',
+                    padding: '30px 40px', fontFamily: "'Space Mono', monospace", color: '#fff', position: 'relative', overflow: 'hidden',
+                    boxSizing: 'border-box'
+                }}>
+                    {/* Watermark */}
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.05, fontSize: 80, fontWeight: 900, transform: 'rotate(-25deg)', whiteSpace: 'nowrap' }}>
+                        NEW-HOPE CHAT
+                    </div>
+                    {/* Content */}
+                    <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', height: '100%' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid rgba(0,255,255,0.3)', paddingBottom: 15, marginBottom: 25 }}>
+                            <div>
+                                <h1 style={{ margin: 0, color: '#00ffff', fontSize: 32, letterSpacing: 2 }}>OFFICIAL VENDOR</h1>
+                                <div style={{ color: '#94a3b8', fontSize: 13, marginTop: 4 }}>NEW-HOPE SECURE PLATFORM CERTIFICATE</div>
+                            </div>
+                            <VerifiedBadge size={54} />
+                        </div>
+
+                        <div style={{ flex: 1 }}>
+                            <h2 style={{ fontSize: 28, margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: 1 }}>{kycData?.businessName || 'Business Name'}</h2>
+                            <div style={{ color: '#00ff7e', fontWeight: 700, fontSize: 16, marginBottom: 30 }}>({kycData?.businessType || 'BUSINESS'})</div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                                <div>
+                                    <div style={{ fontSize: 11, color: 'rgba(0,255,255,0.6)', marginBottom: 6 }}>OPERATOR NAME</div>
+                                    <div style={{ fontSize: 17, borderBottom: '1px dashed #334155', paddingBottom: 6 }}>{kycData?.fullName || 'N/A'}</div>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 11, color: 'rgba(0,255,255,0.6)', marginBottom: 6 }}>REGISTRY NUMBER</div>
+                                    <div style={{ fontSize: 17, borderBottom: '1px dashed #334155', paddingBottom: 6, color: '#fbbf24' }}>{kycData?.idNumber || 'N/A'}</div>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 11, color: 'rgba(0,255,255,0.6)', marginBottom: 6 }}>LOCATION / REGION</div>
+                                    <div style={{ fontSize: 17, borderBottom: '1px dashed #334155', paddingBottom: 6 }}>{kycData?.region || 'N/A'}</div>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 11, color: 'rgba(0,255,255,0.6)', marginBottom: 6 }}>AUTHORIZATION DATE</div>
+                                    <div style={{ fontSize: 17, borderBottom: '1px dashed #334155', paddingBottom: 6 }}>{new Date(kycData?.updatedAt || kycData?.createdAt || Date.now()).toLocaleDateString()}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderTop: '2px solid rgba(0,255,255,0.1)', paddingTop: 16 }}>
+                            <div>
+                                <div style={{ fontSize: 10, color: '#64748b', marginBottom: 4 }}>VERIFICATION ID RECORD</div>
+                                <div style={{ fontSize: 10, color: '#00ffff' }}>{kycData?.id || 'AUTH-0000-0000'}</div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <div style={{ color: '#00ff7e', fontWeight: 700, fontSize: 15, letterSpacing: 1 }}>STATUS: ACTIVE & VERIFIED</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {zoomProduct && (
                 <ProductZoom
                     product={zoomProduct}
@@ -756,7 +842,22 @@ export default function Shop() {
                         >
                             {bizStatus === 'approved' ? '✅ Verified' : bizStatus === 'pending' ? '⏳ Pending Review' : bizStatus === 'rejected' ? 'Re-apply' : 'Apply for Verification'}
                         </button>
-                        {kycData && (
+                        {kycData && bizStatus === 'approved' && (
+                            <button
+                                onClick={handleDownloadCertificate}
+                                disabled={generatingCert}
+                                style={{
+                                    width: '100%', padding: '10px', background: 'rgba(0, 255, 126, 0.08)',
+                                    color: '#00ff7e', border: '1px solid rgba(0, 255, 126, 0.3)',
+                                    borderRadius: 8, fontFamily: "'Space Mono', monospace",
+                                    fontSize: 11, fontWeight: 700, letterSpacing: 1, cursor: generatingCert ? 'wait' : 'pointer',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                                }}
+                            >
+                                {generatingCert ? '⏳ GENERATING PDF...' : '⬇️ DOWNLOAD CERTIFICATE'}
+                            </button>
+                        )}
+                        {kycData && bizStatus !== 'approved' && (
                             <button
                                 onClick={() => setShowKycPreview(true)}
                                 style={{

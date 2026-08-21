@@ -15,7 +15,7 @@ import './css/AdminPayments.css';
 import './css/AdminWithdrawals.css';
 import './css/AdminTasksMonitor.css';
 import './css/AdminKycReview.css';
-import { ConfirmModal, PromptModal } from '../../components/Modals.jsx';
+import { ConfirmModal as GlobalConfirmModal, PromptModal } from '../../components/Modals.jsx';
 
 /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Icon helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const Icon = ({ d, size = 18 }) => (
@@ -1407,7 +1407,7 @@ export function AdminShop() {
                     </tbody>
                 </table>
             </div>
-            <ConfirmModal
+            <GlobalConfirmModal
                 isOpen={!!confirmDialog}
                 title={confirmDialog?.title}
                 message={confirmDialog?.message}
@@ -2294,6 +2294,14 @@ export function AdminTasksMonitor() {
                     </tbody>
                 </table>
             </div>
+            <GlobalConfirmModal
+                isOpen={!!confirmDialog}
+                title={confirmDialog?.title}
+                message={confirmDialog?.message}
+                isDestructive={false}
+                onConfirm={confirmDialog?.onConfirm}
+                onCancel={() => setConfirmDialog(null)}
+            />
         </div>
     );
 }
@@ -2498,7 +2506,7 @@ export function AdminKycReview() {
                     </tbody>
                 </table>
             </div>
-            <ConfirmModal
+            <GlobalConfirmModal
                 isOpen={!!confirmDialog}
                 title={confirmDialog?.title}
                 message={confirmDialog?.message}
