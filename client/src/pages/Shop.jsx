@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useToast } from '../contexts/ToastContext.jsx';
 import { formatCurrency } from '../utils/helpers.js';
+import { ConfirmModal } from '../components/Modals.jsx';
 import {
     db, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc,
     collection, query, where, orderBy, onSnapshot
@@ -472,6 +473,7 @@ export default function Shop() {
     const [orderSuccess, setOrderSuccess] = useState(null);
     const [showKycPreview, setShowKycPreview] = useState(false);
     const [kycData, setKycData] = useState(null);
+    const [confirmDialog, setConfirmDialog] = useState(null);
 
     // ── Orders ────────────────────────────────────────────────────────────────
     const [orders, setOrders] = useState([]);
@@ -565,47 +567,61 @@ export default function Shop() {
     // ─────────────────────────────────────────────────────────────────────────
     const placeOrder = async (product) => {
         if (!user || product.sellerUid === user.uid) { showToast('Cannot order your own product', 'error'); return; }
-        if (!window.confirm(`Order "${product.name}" for ${formatCurrency(product.price || 0, currency)}?`)) return;
-        try {
-            const commission = (product.price || 0) * 0.05;
-            const sellerAmount = (product.price || 0) - commission;
-            await addDoc(collection(db, 'orders'), {
-                productId: product.id,
-                productName: product.name,
-                price: product.price || 0,
-                sellerUid: product.sellerUid,
-                buyerUid: user.uid,
-                buyerName: userData?.fullName || userData?.username || 'Customer',
-                buyerPhone: userData?.phone || '',
-                commission,
-                sellerAmount,
-                status: 'pending',
-                createdAt: Date.now(),
-            });
-            // Notify seller
-            await addDoc(collection(db, 'notifications'), {
-                uid: product.sellerUid,
-                type: 'order',
-                message: `🛒 New order for "${product.name}" (${formatCurrency(product.price || 0, currency)})`,
-                read: false,
-                createdAt: Date.now(),
-            });
-            setOrderSuccess({ amount: formatCurrency(product.price || 0, currency), productName: product.name });
-        } catch (e) {
-            console.error(e);
-            showToast('Error placing order', 'error');
-        }
+        
+        setConfirmDialog({
+            title: 'Confirm Order',
+            message: `Order "${product.name}" for ${formatCurrency(product.price || 0, currency)}?`,
+            onConfirm: async () => {
+                setConfirmDialog(null);
+                try {
+                    const commission = (product.price || 0) * 0.05;
+                    const sellerAmount = (product.price || 0) - commission;
+                    await addDoc(collection(db, 'orders'), {
+                        productId: product.id,
+                        productName: product.name,
+                        price: product.price || 0,
+                        sellerUid: product.sellerUid,
+                        buyerUid: user.uid,
+                        buyerName: userData?.fullName || userData?.username || 'Customer',
+                        buyerPhone: userData?.phone || '',
+                        commission,
+                        sellerAmount,
+                        status: 'pending',
+                        createdAt: Date.now(),
+                    });
+                    // Notify seller
+                    await addDoc(collection(db, 'notifications'), {
+                        uid: product.sellerUid,
+                        type: 'order',
+                        message: `🛒 New order for "${product.name}" (${formatCurrency(product.price || 0, currency)})`,
+                        read: false,
+                        createdAt: Date.now(),
+                    });
+                    setOrderSuccess({ amount: formatCurrency(product.price || 0, currency), productName: product.name });
+                } catch (e) {
+                    console.error(e);
+                    showToast('Error placing order', 'error');
+                }
+            }
+        });
     };
 
     // ─────────────────────────────────────────────────────────────────────────
     // DELETE PRODUCT
     // ─────────────────────────────────────────────────────────────────────────
     const deleteProduct = async (id) => {
-        if (!window.confirm('Delete this product?')) return;
-        try {
-            await deleteDoc(doc(db, 'sellerProducts', id));
-            showToast('Product deleted', 'success');
-        } catch { showToast('Error', 'error'); }
+        setConfirmDialog({
+            title: 'Delete Product',
+            message: 'Are you sure you want to delete this product? This action cannot be undone.',
+            isDestructive: true,
+            onConfirm: async () => {
+                setConfirmDialog(null);
+                try {
+                    await deleteDoc(doc(db, 'sellerProducts', id));
+                    showToast('Product deleted', 'success');
+                } catch { showToast('Error', 'error'); }
+            }
+        });
     };
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -682,6 +698,14 @@ export default function Shop() {
             {showKycPreview && kycData && (
                 <KycPreviewCard kycData={kycData} onClose={() => setShowKycPreview(false)} />
             )}
+            <ConfirmModal
+                isOpen={!!confirmDialog}
+                title={confirmDialog?.title}
+                message={confirmDialog?.message}
+                isDestructive={confirmDialog?.isDestructive}
+                onConfirm={confirmDialog?.onConfirm}
+                onCancel={() => setConfirmDialog(null)}
+            />
             {zoomProduct && (
                 <ProductZoom
                     product={zoomProduct}

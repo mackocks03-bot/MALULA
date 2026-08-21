@@ -3,6 +3,8 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useToast } from '../contexts/ToastContext.jsx';
 import { logoutUser } from '../services/auth.js';
+import { ConfirmModal } from './Modals.jsx';
+import { useState } from 'react';
 import Logo from './Logo.jsx';
 
 const menuItems = [
@@ -52,19 +54,27 @@ export default function Sidebar({ open, onClose }) {
     const { translate } = useLanguage();
     const { showToast } = useToast();
     const navigate = useNavigate();
+    const [confirmDialog, setConfirmDialog] = useState(null);
 
     const name = userData?.fullName || userData?.username || 'User';
     const initial = name.charAt(0).toUpperCase();
 
     const handleLogout = async () => {
-        if (window.confirm(translate('spin.confirmLogout') || 'Are you sure you want to logout?')) {
-            try {
-                await logoutUser();
-                navigate('/login');
-            } catch {
-                showToast(translate('common.error') || 'Error', 'error');
+        setConfirmDialog({
+            title: 'Logout',
+            message: translate('spin.confirmLogout') || 'Are you sure you want to logout?',
+            isDestructive: true,
+            confirmText: 'Logout',
+            onConfirm: async () => {
+                setConfirmDialog(null);
+                try {
+                    await logoutUser();
+                    navigate('/login');
+                } catch {
+                    showToast(translate('common.error') || 'Error', 'error');
+                }
             }
-        }
+        });
     };
 
     return (
@@ -109,6 +119,15 @@ export default function Sidebar({ open, onClose }) {
                     </li>
                 </ul>
             </nav>
+            <ConfirmModal
+                isOpen={!!confirmDialog}
+                title={confirmDialog?.title}
+                message={confirmDialog?.message}
+                isDestructive={confirmDialog?.isDestructive}
+                confirmText={confirmDialog?.confirmText || 'Confirm'}
+                onConfirm={confirmDialog?.onConfirm}
+                onCancel={() => setConfirmDialog(null)}
+            />
         </>
     );
 }

@@ -15,6 +15,7 @@ import './css/AdminPayments.css';
 import './css/AdminWithdrawals.css';
 import './css/AdminTasksMonitor.css';
 import './css/AdminKycReview.css';
+import { ConfirmModal, PromptModal } from '../../components/Modals.jsx';
 
 /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Icon helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const Icon = ({ d, size = 18 }) => (
@@ -1344,6 +1345,7 @@ export function AdminShop() {
     const [products, setProducts] = useState([]);
     const [adding, setAdding] = useState(false);
     const [newProduct, setNewProduct] = useState({ title: '', price: '10.00', image: '' });
+    const [confirmDialog, setConfirmDialog] = useState(null);
 
     const loadProducts = useCallback(() => { getDocs(collection(db, 'products')).then(s => setProducts(!s.empty ? s.docs.map(d => ({ id: d.id, ...d.data() })) : [])); }, []);
     useEffect(() => { loadProducts(); }, [loadProducts]);
@@ -1359,8 +1361,15 @@ export function AdminShop() {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Delete vendor item?')) return;
-        try { await deleteDoc(doc(db, 'products', id)); loadProducts(); } catch (e) { }
+        setConfirmDialog({
+            title: 'Delete Vendor Item',
+            message: 'Are you sure you want to completely de-list this vendor item?',
+            isDestructive: true,
+            onConfirm: async () => {
+                setConfirmDialog(null);
+                try { await deleteDoc(doc(db, 'products', id)); loadProducts(); } catch (e) { }
+            }
+        });
     };
 
     return (
@@ -1398,6 +1407,14 @@ export function AdminShop() {
                     </tbody>
                 </table>
             </div>
+            <ConfirmModal
+                isOpen={!!confirmDialog}
+                title={confirmDialog?.title}
+                message={confirmDialog?.message}
+                isDestructive={confirmDialog?.isDestructive}
+                onConfirm={confirmDialog?.onConfirm}
+                onCancel={() => setConfirmDialog(null)}
+            />
         </div>
     );
 }
@@ -2042,6 +2059,7 @@ export function AdminTasksMonitor() {
     const { showToast } = useToast();
     const [tasks, setTasks] = useState([]);
     const [usersMap, setUsersMap] = useState({});
+    const [confirmDialog, setConfirmDialog] = useState(null);
     const [q, setQ] = useState('');
     const [filter, setFilter] = useState('all');
     const [loading, setLoading] = useState(true);
@@ -2076,10 +2094,14 @@ export function AdminTasksMonitor() {
 
     const handleForceCredit = async (taskItem) => {
         const u = usersMap[taskItem.uid] || {};
-        if (!window.confirm(`Force credit ${taskItem.reward || 0} ${taskItem.rewardCurrency || 'TZS'} to ${u.username || 'this user'}?`)) return;
-        setCrediting(true);
-        try {
-            const user = usersMap[taskItem.uid];
+        setConfirmDialog({
+            title: 'Force Credit Warning',
+            message: `You are about to forcibly credit ${taskItem.reward || 0} ${taskItem.rewardCurrency || 'TZS'} to ${u.username || 'this user'}. Proceed?`,
+            onConfirm: async () => {
+                setConfirmDialog(null);
+                setCrediting(true);
+                try {
+                    const user = usersMap[taskItem.uid];
             if (!user) throw new Error("User data missing");
 
             const reward = Number(taskItem.reward || 0);
@@ -2125,6 +2147,8 @@ export function AdminTasksMonitor() {
             showToast("Failed: " + err.message, "error");
         }
         setCrediting(false);
+            }
+        });
     };
 
     const filtered = tasks.filter(t => {
@@ -2281,6 +2305,8 @@ export function AdminKycReview() {
     const [applications, setApplications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [reviewApp, setReviewApp] = useState(null);
+    const [confirmDialog, setConfirmDialog] = useState(null);
+    const [promptDialog, setPromptDialog] = useState(null);
     const { showToast } = useToast();
 
     const loadData = useCallback(async () => {
@@ -2299,35 +2325,48 @@ export function AdminKycReview() {
     useEffect(() => { loadData(); }, [loadData]);
 
     const handleApprove = async () => {
-        if (!window.confirm("Approve this KYC application and grant vendor access?")) return;
-        try {
-            await updateDoc(doc(db, 'businessVerification', reviewApp.id), {
-                status: 'approved',
-                updatedAt: Date.now()
-            });
-            showToast("Vendor KYC Approved! They can now post products.", "success");
-            setReviewApp(null);
-            loadData();
-        } catch (err) {
-            showToast("Approval failed", "error");
-        }
+        setConfirmDialog({
+            title: 'Authorize Access',
+            message: 'Approve this KYC application and grant full vendor access?',
+            onConfirm: async () => {
+                setConfirmDialog(null);
+                try {
+                    await updateDoc(doc(db, 'businessVerification', reviewApp.id), {
+                        status: 'approved',
+                        updatedAt: Date.now()
+                    });
+                    showToast("Vendor KYC Approved! They can now post products.", "success");
+                    setReviewApp(null);
+                    loadData();
+                } catch (err) {
+                    showToast("Approval failed", "error");
+                }
+            }
+        });
     };
 
     const handleReject = async (reason) => {
         if (!reason) { showToast("Rejection reason is required", "error"); return; }
-        if (!window.confirm("Reject this KYC application entirely?")) return;
-        try {
-            await updateDoc(doc(db, 'businessVerification', reviewApp.id), {
-                status: 'rejected',
-                rejectReason: reason,
-                updatedAt: Date.now()
-            });
-            showToast("Vendor KYC Rejected.", "error");
-            setReviewApp(null);
-            loadData();
-        } catch (err) {
-            showToast("Rejection failed", "error");
-        }
+        setConfirmDialog({
+            title: 'Reject Application',
+            message: 'Are you sure you want to completely reject this KYC application?',
+            isDestructive: true,
+            onConfirm: async () => {
+                setConfirmDialog(null);
+                try {
+                    await updateDoc(doc(db, 'businessVerification', reviewApp.id), {
+                        status: 'rejected',
+                        rejectReason: reason,
+                        updatedAt: Date.now()
+                    });
+                    showToast("Vendor KYC Rejected.", "error");
+                    setReviewApp(null);
+                    loadData();
+                } catch (err) {
+                    showToast("Rejection failed", "error");
+                }
+            }
+        });
     };
 
     return (
@@ -2385,8 +2424,15 @@ export function AdminKycReview() {
                         
                         <div className="kyc-modal-footer">
                             <button className="kyc-action-btn kyc-btn-reject" onClick={() => {
-                                const reason = prompt("Enter explicit reason for denial (Logged to secure node):");
-                                if (reason) handleReject(reason);
+                                setPromptDialog({
+                                    title: 'Denial Reason',
+                                    message: 'Enter explicit reason for denial (Logged to secure node):',
+                                    placeholder: 'e.g. ID Image blurry',
+                                    onConfirm: (reason) => {
+                                        setPromptDialog(null);
+                                        handleReject(reason);
+                                    }
+                                });
                             }}>
                                 ✕ REJECT CLEARANCE
                             </button>
@@ -2452,6 +2498,22 @@ export function AdminKycReview() {
                     </tbody>
                 </table>
             </div>
+            <ConfirmModal
+                isOpen={!!confirmDialog}
+                title={confirmDialog?.title}
+                message={confirmDialog?.message}
+                isDestructive={confirmDialog?.isDestructive}
+                onConfirm={confirmDialog?.onConfirm}
+                onCancel={() => setConfirmDialog(null)}
+            />
+            <PromptModal
+                isOpen={!!promptDialog}
+                title={promptDialog?.title}
+                message={promptDialog?.message}
+                placeholder={promptDialog?.placeholder}
+                onConfirm={promptDialog?.onConfirm}
+                onCancel={() => setPromptDialog(null)}
+            />
         </div>
     );
 }
