@@ -1,0 +1,242 @@
+/* ═══════════════════════════════════════════════════════════
+   GLOBAL CHAT  —  WhatsApp-inspired Premium UI
+   ═══════════════════════════════════════════════════════════ */
+
+.wachat-root {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    background: #ECE5DD;
+    overflow: hidden;
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+.wachat-header {
+    background: #075E54;
+    color: #fff;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    z-index: 10;
+}
+
+.wachat-back-btn {
+    background: none;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+}
+
+.wachat-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #25D366;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.wachat-header-info {
+    flex: 1;
+}
+
+.wachat-header-info h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.wachat-online {
+    font-size: 12px;
+    color: rgba(255,255,255,0.8);
+    margin-top: 1px;
+}
+
+.wachat-bonus-pill {
+    font-size: 11px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 20px;
+    padding: 4px 10px;
+    white-space: nowrap;
+}
+
+/* ── Bonus Progress Bar ──────────────────────────────────── */
+.wachat-progress-bar {
+    background: #054d44;
+    padding: 4px 16px;
+    flex-shrink: 0;
+}
+.wachat-progress-track {
+    height: 3px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.wachat-progress-fill {
+    height: 100%;
+    background: #25D366;
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+
+/* ── Wallpaper / Message Area ───────────────────────────── */
+.wachat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 12px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    background-color: #E5DDD5;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Ccircle cx='50' cy='50' r='2' fill='%23c8c0b5' opacity='0.4'/%3E%3C/svg%3E");
+    scroll-behavior: smooth;
+}
+
+.wachat-messages::-webkit-scrollbar { width: 4px; }
+.wachat-messages::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 4px; }
+
+/* ── Date divider ────────────────────────────────────────── */
+.wachat-date-chip {
+    align-self: center;
+    background: rgba(255,255,255,0.75);
+    backdrop-filter: blur(4px);
+    padding: 3px 12px;
+    border-radius: 10px;
+    font-size: 11px;
+    color: #6B7280;
+    margin: 8px 0;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* ── Bubble ─────────────────────────────────────────────── */
+.wachat-bubble {
+    max-width: 78%;
+    padding: 7px 10px 5px;
+    border-radius: 8px;
+    position: relative;
+    word-break: break-word;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.wachat-bubble.incoming {
+    background: #fff;
+    align-self: flex-start;
+    border-top-left-radius: 2px;
+}
+
+.wachat-bubble.outgoing {
+    background: #DCF8C6;
+    align-self: flex-end;
+    border-top-right-radius: 2px;
+}
+
+.wachat-bubble-sender {
+    font-size: 12px;
+    font-weight: 700;
+    color: #075E54;
+    margin-bottom: 2px;
+    line-height: 1.2;
+}
+
+.wachat-bubble-text {
+    font-size: 14.5px;
+    color: #1a1a1a;
+    line-height: 1.4;
+}
+
+.wachat-bubble-meta {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 3px;
+    margin-top: 3px;
+}
+
+.wachat-bubble-time {
+    font-size: 10.5px;
+    color: #8696A0;
+}
+
+.wachat-ticks {
+    color: #53BDEB;
+    font-size: 12px;
+}
+
+/* ── Input Bar ──────────────────────────────────────────── */
+.wachat-input-bar {
+    background: #F0F0F0;
+    padding: 8px 10px;
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.wachat-input-wrap {
+    flex: 1;
+    background: #fff;
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    padding: 8px 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.wachat-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 15px;
+    color: #111;
+    max-height: 100px;
+    resize: none;
+    font-family: inherit;
+    line-height: 1.4;
+}
+
+.wachat-input::placeholder { color: #aaa; }
+
+.wachat-send-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #25D366;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(37, 211, 102, 0.4);
+    transition: background 0.15s, transform 0.1s;
+}
+.wachat-send-btn:hover { background: #128C7E; transform: scale(1.05); }
+.wachat-send-btn:active { transform: scale(0.96); }
+.wachat-send-btn svg { color: #fff; }
+
+/* ── Empty state ─────────────────────────────────────────── */
+.wachat-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #888;
+    gap: 8px;
+    font-size: 14px;
+    opacity: 0.7;
+}

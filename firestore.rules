@@ -113,6 +113,34 @@ service cloud.firestore {
       allow update: if isAdmin();
     }
 
+    // ── Chat Collections ──────────────────────────────────────────────────────
+    // Global chat messages: any authenticated user can read and send
+    match /chatMessages/{msgId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    // Daily message count tracker (docId = uid_date)
+    match /chatCount/{docId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.uid
+        || request.auth != null && request.resource.data.uid == request.auth.uid;
+    }
+
+    // Chat bonus claim flags (docId = uid_date)
+    match /chatBonus/{docId} {
+      allow read, write: if request.auth != null && (
+        request.resource.data.uid == request.auth.uid ||
+        (resource != null && resource.data.uid == request.auth.uid)
+      );
+    }
+
+    // Online presence (docId = uid)
+    match /online/{uid} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+
     // Default fallback (block writes unless admin)
     match /{document=**} {
       allow read: if request.auth != null && isAdmin();

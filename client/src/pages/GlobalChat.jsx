@@ -1,30 +1,41 @@
 import { useState, useEffect, useRef } from 'react';
-import DashboardLayout from '../components/DashboardLayout.jsx';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useToast } from '../contexts/ToastContext.jsx';
 import { formatCurrency } from '../utils/helpers.js';
 import { db, doc, setDoc, addDoc, collection, getDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, limit } from '../services/firebase-config.js';
-import dataStore from '../utils/dataStore.js';
+import './css/GlobalChat.css';
 
 const BONUS_THRESHOLD = 10;
 const BONUS_TZS = 1000;
+
+// Color palette for sender names (WhatsApp-style)
+const SENDER_COLORS = ['#E91E63','#9C27B0','#3F51B5','#009688','#FF5722','#795548','#607D8B','#F44336'];
+const senderColor = (uid) => SENDER_COLORS[uid.charCodeAt(0) % SENDER_COLORS.length];
 
 export default function GlobalChat() {
     const { user, userData, refreshUserData } = useAuth();
     const { translate } = useLanguage();
     const { showToast } = useToast();
+    const navigate = useNavigate();
+
     const [messages, setMessages] = useState([]);
     const [text, setText] = useState('');
     const [todayCount, setTodayCount] = useState(0);
     const [onlineCount, setOnlineCount] = useState(0);
     const [bonusClaimed, setBonusClaimed] = useState(false);
+    const [sending, setSending] = useState(false);
+
     const messagesEndRef = useRef(null);
+    const inputRef = useRef(null);
     const currency = userData?.currency || 'TZS';
+    const isWednesday = new Date().getDay() === 3;
 
     useEffect(() => {
         if (!user) return;
         const today = new Date().toISOString().split('T')[0];
+
         getDoc(doc(db, 'chatCount', `${user.uid}_${today}`)).then(snap => {
             setTodayCount(snap.exists() ? snap.data().count : 0);
         });
@@ -32,26 +43,20 @@ export default function GlobalChat() {
             setBonusClaimed(snap.exists());
         });
 
-        const messagesRef = query(collection(db, 'chatMessages'), orderBy('createdAt', 'desc'), limit(50));
+        const messagesRef = query(collection(db, 'chatMessages'), orderBy('createdAt', 'desc'), limit(80));
         const msgMap = {};
-
         const unsubMessages = onSnapshot(messagesRef, (snapshot) => {
             snapshot.docChanges().forEach((change) => {
-                if (change.type === 'added') {
+                if (change.type === 'added' || change.type === 'modified') {
                     msgMap[change.doc.id] = { id: change.doc.id, ...change.doc.data() };
                 }
-                if (change.type === 'removed') {
-                    delete msgMap[change.doc.id];
-                }
+                if (change.type === 'removed') delete msgMap[change.doc.id];
             });
             setMessages(Object.values(msgMap).sort((a, b) => a.createdAt - b.createdAt));
         });
 
         setDoc(doc(db, 'online', user.uid), { username: userData?.username, lastSeen: Date.now() });
-        const onlineUnsub = onSnapshot(collection(db, 'online'), (snap) => {
-            setOnlineCount(snap.size);
-        });
-
+        const onlineUnsub = onSnapshot(collection(db, 'online'), snap => setOnlineCount(snap.size));
         const heartbeat = setInterval(() => {
             setDoc(doc(db, 'online', user.uid), { username: userData?.username, lastSeen: Date.now() });
         }, 30000);
@@ -69,40 +74,39 @@ export default function GlobalChat() {
     }, [messages]);
 
     const sendMessage = async (e) => {
-        e.preventDefault();
-        if (!text.trim()) return;
+        e?.preventDefault();
+        const trimmed = text.trim();
+        if (!trimmed || sending) return;
+        setSending(true);
 
         try {
             await addDoc(collection(db, 'chatMessages'), {
                 uid: user.uid,
                 username: userData?.username || 'User',
-                text: text.trim(),
-                createdAt: Date.now()
+                text: trimmed,
+                createdAt: Date.now(),
             });
 
             const today = new Date().toISOString().split('T')[0];
             const newCount = todayCount + 1;
-            await setDoc(doc(db, 'chatCount', `${user.uid}_${today}`), { count: newCount });
+            await setDoc(doc(db, 'chatCount', `${user.uid}_${today}`), { count: newCount, uid: user.uid });
             setTodayCount(newCount);
 
-            // Chat bonus: 10 messages on Wednesday (day 3)
-            const isWednesday = new Date().getDay() === 3;
             if (isWednesday && newCount >= BONUS_THRESHOLD && !bonusClaimed) {
                 const bonusAmt = BONUS_TZS;
-
                 await updateDoc(doc(db, 'users', user.uid), {
                     'earnings.chat': (userData?.earnings?.chat || 0) + bonusAmt,
                     'taskBalances.chat': (userData?.taskBalances?.chat || 0) + bonusAmt,
                     totalProfit: (userData?.totalProfit || 0) + bonusAmt,
-                    balance: (userData?.balance || 0) + bonusAmt
+                    balance: (userData?.balance || 0) + bonusAmt,
                 });
-                await setDoc(doc(db, 'chatBonus', `${user.uid}_${today}`), { claimed: true });
+                await setDoc(doc(db, 'chatBonus', `${user.uid}_${today}`), { claimed: true, uid: user.uid });
                 await addDoc(collection(db, 'transactions'), {
                     uid: user.uid,
                     type: 'chat_bonus',
                     description: 'Daily chat bonus (10 messages)',
                     amount: bonusAmt,
-                    createdAt: Date.now()
+                    createdAt: Date.now(),
                 });
                 setBonusClaimed(true);
                 refreshUserData();
@@ -110,64 +114,129 @@ export default function GlobalChat() {
             }
 
             setText('');
-        } catch {
-            showToast(translate('common.error'), 'error');
+            inputRef.current?.focus();
+        } catch (err) {
+            console.error(err);
+            showToast(translate('common.error') || 'Failed to send', 'error');
+        } finally {
+            setSending(false);
         }
     };
 
-    const isWednesday = new Date().getDay() === 3;
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    };
+
+    const formatTime = (ts) =>
+        ts ? new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+    const formatDate = (ts) => {
+        const d = new Date(ts);
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+        if (d.toDateString() === today.toDateString()) return 'TODAY';
+        if (d.toDateString() === yesterday.toDateString()) return 'YESTERDAY';
+        return d.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
+    };
+
+    // Group messages by date
+    const msgGroups = [];
+    let lastDate = null;
+    messages.forEach(msg => {
+        const d = msg.createdAt ? new Date(msg.createdAt).toDateString() : 'unknown';
+        if (d !== lastDate) {
+            msgGroups.push({ type: 'date', label: formatDate(msg.createdAt), key: d });
+            lastDate = d;
+        }
+        msgGroups.push({ type: 'msg', ...msg });
+    });
+
+    const progressPct = Math.min((todayCount / BONUS_THRESHOLD) * 100, 100);
 
     return (
-        <DashboardLayout>
-            <div className="chat-container" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 120px)', padding: '0 16px' }}>
-                <div className="chat-header" style={{ padding: '12px 0', borderBottom: '1px solid var(--border-color)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h2>{translate('chat.title')}</h2>
-                        <span className="online-count" style={{ fontSize: 12, color: 'var(--color-green)' }}>
-                            ● {onlineCount} {translate('chat.online') || 'online'}
-                        </span>
-                    </div>
-                    <div className="chat-bonus-indicator" style={{ marginTop: 8 }}>
-                        <div className="progress-bar" style={{ height: 4, background: 'var(--border-color)', borderRadius: 4, overflow: 'hidden' }}>
-                            <div className="progress-fill" style={{ width: `${Math.min((todayCount / BONUS_THRESHOLD) * 100, 100)}%`, height: '100%', background: 'var(--color-gold)' }} />
-                        </div>
-                        <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                            {todayCount}/{BONUS_THRESHOLD} {translate('chat.messagesToday') || 'messages today'}
-                            {isWednesday ? (bonusClaimed ? ' · ✅ Bonus claimed' : ' · Bonus on Wed') : ' · Bonus on Wednesdays'}
-                        </p>
-                    </div>
+        <div className="wachat-root">
+            {/* ── Header ── */}
+            <div className="wachat-header">
+                <button className="wachat-back-btn" onClick={() => navigate(-1)} aria-label="Back">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                </button>
+                <div className="wachat-avatar">💬</div>
+                <div className="wachat-header-info">
+                    <h2>Global Community</h2>
+                    <div className="wachat-online">● {onlineCount} online</div>
                 </div>
+                <div className="wachat-bonus-pill">
+                    {isWednesday
+                        ? bonusClaimed ? '✅ Bonus claimed' : `${todayCount}/${BONUS_THRESHOLD} msgs`
+                        : 'Bonus on Wed 🎁'}
+                </div>
+            </div>
 
-                <div className="chat-messages" style={{ flex: 1, overflowY: 'auto', padding: '12px 0', display: 'flex', flexDirection: 'column' }}>
-                    {messages.map(msg => (
-                        <div key={msg.id} className={`chat-message ${msg.uid === user?.uid ? 'own' : ''}`} style={{
-                            marginBottom: 8, padding: '8px 12px', borderRadius: 12,
-                            background: msg.uid === user?.uid ? 'var(--color-gold-soft)' : 'var(--bg-card)',
-                            alignSelf: msg.uid === user?.uid ? 'flex-end' : 'flex-start',
-                            maxWidth: '80%'
-                        }}>
-                            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-gold)', marginBottom: 2 }}>{msg.username}</div>
-                            <div>{msg.text}</div>
-                            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>
-                                {msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+            {/* Bonus progress */}
+            <div className="wachat-progress-bar">
+                <div className="wachat-progress-track">
+                    <div className="wachat-progress-fill" style={{ width: `${progressPct}%` }} />
+                </div>
+            </div>
+
+            {/* ── Messages area ── */}
+            <div className="wachat-messages">
+                {messages.length === 0 && (
+                    <div className="wachat-empty">
+                        <span style={{ fontSize: 40 }}>💬</span>
+                        <span>No messages yet. Say hello!</span>
+                    </div>
+                )}
+                {msgGroups.map((item, i) => {
+                    if (item.type === 'date') {
+                        return <div key={item.key} className="wachat-date-chip">{item.label}</div>;
+                    }
+                    const isOwn = item.uid === user?.uid;
+                    return (
+                        <div key={item.id || i} className={`wachat-bubble ${isOwn ? 'outgoing' : 'incoming'}`}>
+                            {!isOwn && (
+                                <div className="wachat-bubble-sender" style={{ color: senderColor(item.uid) }}>
+                                    {item.username}
+                                </div>
+                            )}
+                            <div className="wachat-bubble-text">{item.text}</div>
+                            <div className="wachat-bubble-meta">
+                                <span className="wachat-bubble-time">{formatTime(item.createdAt)}</span>
+                                {isOwn && <span className="wachat-ticks">✓✓</span>}
                             </div>
                         </div>
-                    ))}
-                    <div ref={messagesEndRef} />
-                </div>
+                    );
+                })}
+                <div ref={messagesEndRef} />
+            </div>
 
-                <form onSubmit={sendMessage} className="chat-input" style={{ display: 'flex', gap: 8, padding: '12px 0', borderTop: '1px solid var(--border-color)' }}>
-                    <input
-                        className="form-control"
+            {/* ── Input Bar ── */}
+            <div className="wachat-input-bar">
+                <div className="wachat-input-wrap">
+                    <textarea
+                        ref={inputRef}
+                        className="wachat-input"
+                        rows={1}
                         value={text}
                         onChange={e => setText(e.target.value)}
-                        placeholder={translate('chat.placeholder') || 'Type a message...'}
-                        style={{ flex: 1 }}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Type a message…"
                         maxLength={500}
                     />
-                    <button type="submit" className="btn btn-primary">{translate('chat.send') || 'Send'}</button>
-                </form>
+                </div>
+                <button className="wachat-send-btn" type="button" onClick={sendMessage} disabled={!text.trim() || sending}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13" />
+                        <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                    </svg>
+                </button>
             </div>
-        </DashboardLayout>
+        </div>
     );
 }
