@@ -7,11 +7,12 @@ import { useToast } from '../contexts/ToastContext.jsx';
 import { formatCurrency } from '../utils/helpers.js';
 import { ConfirmModal } from '../components/Modals.jsx';
 import {
-    db, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc,
+    db, doc, getDoc, getDocs, addDoc, updateDoc, setDoc, deleteDoc,
     collection, query, where, orderBy, onSnapshot
 } from '../services/firebase-config.js';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import DeliveryTracker from '../components/DeliveryTracker.jsx';
 
 // ─── Firestore Paths ─────────────────────────────────────────────────────────
 // sellerProducts/{sellerUid}/{productId}  → stored as flat sub-collection
@@ -74,6 +75,19 @@ function VerifyModal({ userData, onClose, onSuccess }) {
             showToast('All KYC documents and ID fields are strictly required', 'error'); return;
         }
 
+        // ── Require location access before proceeding ──────────────────────
+        let gpsLocation = null;
+        try {
+            if (!navigator.geolocation) throw new Error('no_geo');
+            const pos = await new Promise((res, rej) =>
+                navigator.geolocation.getCurrentPosition(res, rej, { timeout: 8000, enableHighAccuracy: true })
+            );
+            gpsLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy };
+        } catch {
+            showToast('📍 Location access is required for KYC verification. Please allow location and try again.', 'error');
+            return;
+        }
+
         // Trigger AI Simulation
         setScanning(true);
         setScanProgress(0);
@@ -104,6 +118,9 @@ function VerifyModal({ userData, onClose, onSuccess }) {
                     username: userData?.username || '',
                     email: user.email || '',
                     ...form,
+                    // ── GPS location saved here — visible to admin ──
+                    gpsLocation: gpsLocation || null,
+                    gpsRecordedAt: Date.now(),
                     status: 'pending',
                     createdAt: Date.now(),
                     updatedAt: Date.now(),
@@ -476,6 +493,7 @@ export default function Shop() {
     const [showKycPreview, setShowKycPreview] = useState(false);
     const [kycData, setKycData] = useState(null);
     const [confirmDialog, setConfirmDialog] = useState(null);
+    const [trackingProduct, setTrackingProduct] = useState(null);
 
     // ── Certificate Generation ────────────────────────────────────────────────
     const certRef = useRef(null);
@@ -600,45 +618,59 @@ export default function Shop() {
     // ─────────────────────────────────────────────────────────────────────────
     // PLACE ORDER (5% commission)
     // ─────────────────────────────────────────────────────────────────────────
-    const placeOrder = async (product) => {
+    const placeOrder = (product) => {
         if (!user || product.sellerUid === user.uid) { showToast('Cannot order your own product', 'error'); return; }
-        
-        setConfirmDialog({
-            title: 'Confirm Order',
-            message: `Order "${product.name}" for ${formatCurrency(product.price || 0, currency)}?`,
-            onConfirm: async () => {
-                setConfirmDialog(null);
-                try {
-                    const commission = (product.price || 0) * 0.05;
-                    const sellerAmount = (product.price || 0) - commission;
-                    await addDoc(collection(db, 'orders'), {
-                        productId: product.id,
-                        productName: product.name,
-                        price: product.price || 0,
-                        sellerUid: product.sellerUid,
-                        buyerUid: user.uid,
-                        buyerName: userData?.fullName || userData?.username || 'Customer',
-                        buyerPhone: userData?.phone || '',
-                        commission,
-                        sellerAmount,
-                        status: 'pending',
-                        createdAt: Date.now(),
-                    });
-                    // Notify seller
-                    await addDoc(collection(db, 'notifications'), {
-                        uid: product.sellerUid,
-                        type: 'order',
-                        message: `🛒 New order for "${product.name}" (${formatCurrency(product.price || 0, currency)})`,
-                        read: false,
-                        createdAt: Date.now(),
-                    });
-                    setOrderSuccess({ amount: formatCurrency(product.price || 0, currency), productName: product.name });
-                } catch (e) {
-                    console.error(e);
-                    showToast('Error placing order', 'error');
-                }
+        setTrackingProduct(product);
+    };
+
+    const finalizeOrder = async (product) => {
+        setTrackingProduct(null);
+        try {
+            const price = product.price || 0;
+            const commission = price * 0.05;
+            const sellerAmount = price - commission;
+
+            // ── Check buyer has enough shopBalance ────────────────────────────
+            const buyerSnap = await getDoc(doc(db, 'users', user.uid));
+            const shopBalance = buyerSnap.exists() ? (buyerSnap.data().shopBalance || 0) : 0;
+            if (shopBalance < price) {
+                showToast(`Insufficient shop balance. You need ${formatCurrency(price, currency)} but have ${formatCurrency(shopBalance, currency)}.`, 'error');
+                return;
             }
-        });
+
+            // ── Deduct from buyer's shopBalance ──────────────────────────────
+            await updateDoc(doc(db, 'users', user.uid), {
+                shopBalance: shopBalance - price,
+            });
+
+            await addDoc(collection(db, 'orders'), {
+                productId: product.id,
+                productName: product.name,
+                price,
+                sellerUid: product.sellerUid,
+                buyerUid: user.uid,
+                buyerName: userData?.fullName || userData?.username || 'Customer',
+                buyerPhone: userData?.phone || '',
+                commission,
+                sellerAmount,
+                status: 'pending',
+                createdAt: Date.now(),
+            });
+
+            // Notify seller
+            await addDoc(collection(db, 'notifications'), {
+                uid: product.sellerUid,
+                type: 'order',
+                message: `🛒 New order for "${product.name}" (${formatCurrency(price, currency)})`,
+                read: false,
+                createdAt: Date.now(),
+            });
+
+            setOrderSuccess({ amount: formatCurrency(price, currency), productName: product.name });
+        } catch (e) {
+            console.error(e);
+            showToast('Error placing order: ' + e.message, 'error');
+        }
     };
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -816,6 +848,14 @@ export default function Shop() {
                     onClose={() => setOrderSuccess(null)}
                 />
             )}
+            {trackingProduct && (
+                <DeliveryTracker
+                    productName={trackingProduct.name}
+                    amount={formatCurrency(trackingProduct.price || 0, currency)}
+                    onClose={() => setTrackingProduct(null)}
+                    onComplete={() => finalizeOrder(trackingProduct)}
+                />
+            )}
 
             <div style={{ minHeight: '100vh', paddingBottom: 80 }}>
                 <div style={{ maxWidth: 540, margin: '0 auto', padding: '0 12px' }}>
@@ -934,7 +974,7 @@ export default function Shop() {
 
                     {/* ── Product Grid ──────────────────────────────────────── */}
                     {showProductGrid && (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10, marginBottom: 16 }}>
                             {loadingProducts ? (
                                 <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
                                     Loading products...

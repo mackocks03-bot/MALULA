@@ -105,12 +105,26 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && (resource.data.uid == request.auth.uid || isAdmin());
     }
     
+    // Orders: buyers create, sellers update status
+    match /orders/{orderId} {
+      allow read: if request.auth != null && (
+        resource.data.buyerUid == request.auth.uid ||
+        resource.data.sellerUid == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if request.auth != null && request.resource.data.buyerUid == request.auth.uid;
+      allow update: if request.auth != null && (
+        resource.data.sellerUid == request.auth.uid || isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
     // Business KYC Verification
-    // Users submit their own doc (docId == uid). Only admin can approve/reject (update status).
+    // Users submit their own doc (docId == uid). Owner can update for location; admin can approve/reject.
     match /businessVerification/{uid} {
       allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
       allow create: if request.auth != null && request.auth.uid == uid;
-      allow update: if isAdmin();
+      allow update: if request.auth != null && (request.auth.uid == uid || isAdmin());
     }
 
     // ── Chat Collections ──────────────────────────────────────────────────────
