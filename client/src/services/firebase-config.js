@@ -32,7 +32,8 @@ import {
     endAt,
     endBefore,
     writeBatch,
-    arrayUnion
+    arrayUnion,
+    increment
 } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
@@ -84,5 +85,6 @@ export {
     signOut,
     onAuthStateChanged,
     fetchSignInMethodsForEmail,
-    deleteUser
+    deleteUser,
+    increment
 };

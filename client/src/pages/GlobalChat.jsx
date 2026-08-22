@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useToast } from '../contexts/ToastContext.jsx';
 import { formatCurrency } from '../utils/helpers.js';
-import { db, doc, setDoc, addDoc, collection, getDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, limit } from '../services/firebase-config.js';
+import { db, doc, setDoc, addDoc, collection, getDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, limit, increment } from '../services/firebase-config.js';
 import './css/GlobalChat.css';
 
 const BONUS_THRESHOLD = 10;
@@ -95,10 +95,10 @@ export default function GlobalChat() {
             if (isWednesday && newCount >= BONUS_THRESHOLD && !bonusClaimed) {
                 const bonusAmt = BONUS_TZS;
                 await updateDoc(doc(db, 'users', user.uid), {
-                    'earnings.chat': (userData?.earnings?.chat || 0) + bonusAmt,
-                    'taskBalances.chat': (userData?.taskBalances?.chat || 0) + bonusAmt,
-                    totalProfit: (userData?.totalProfit || 0) + bonusAmt,
-                    balance: (userData?.balance || 0) + bonusAmt,
+                    'earnings.chat': increment(bonusAmt),
+                    'taskBalances.chat': increment(bonusAmt),
+                    totalProfit: increment(bonusAmt),
+                    balance: increment(bonusAmt),
                 });
                 await setDoc(doc(db, 'chatBonus', `${user.uid}_${today}`), { claimed: true, uid: user.uid });
                 await addDoc(collection(db, 'transactions'), {
