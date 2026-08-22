@@ -13,6 +13,7 @@ import {
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import DeliveryTracker from '../components/DeliveryTracker.jsx';
+import ViewTrackingMap from '../components/ViewTrackingMap.jsx';
 
 // ─── Firestore Paths ─────────────────────────────────────────────────────────
 // sellerProducts/{sellerUid}/{productId}  → stored as flat sub-collection
@@ -530,7 +531,9 @@ export default function Shop() {
 
     // ── Orders ────────────────────────────────────────────────────────────────
     const [orders, setOrders] = useState([]);
+    const [myPurchases, setMyPurchases] = useState([]);
     const [pendingOrderCount, setPendingOrderCount] = useState(0);
+    const [viewingOrder, setViewingOrder] = useState(null);
 
     // ── Sell form ─────────────────────────────────────────────────────────────
     const [todayPosts, setTodayPosts] = useState(0);
@@ -611,6 +614,18 @@ export default function Shop() {
             const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             setOrders(list);
             setPendingOrderCount(list.filter(o => o.status === 'pending').length);
+        });
+        return () => unsub();
+    }, [user]);
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // LOAD PURCHASES (realtime — as buyer)
+    // ─────────────────────────────────────────────────────────────────────────
+    useEffect(() => {
+        if (!user) return;
+        const q = query(collection(db, 'orders'), where('buyerUid', '==', user.uid), orderBy('createdAt', 'desc'));
+        const unsub = onSnapshot(q, snap => {
+            setMyPurchases(snap.docs.map(d => ({ id: d.id, ...d.data() })));
         });
         return () => unsub();
     }, [user]);
@@ -1115,12 +1130,39 @@ export default function Shop() {
                     {/* ── Orders Page ───────────────────────────────────────── */}
                     {bottomPage === 'orders' && (
                         <div>
-                            <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-primary)', marginBottom: 12 }}>🛍️ My Orders</div>
-                            {orders.length === 0 ? (
-                                <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
-                                    <div style={{ fontSize: 40, marginBottom: 8 }}>📦</div>
-                                    <div>No orders yet</div>
+                            {/* MY PURCHASES SECTION */}
+                            <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-primary)', marginBottom: 12, marginTop: 4 }}>🛍️ My Purchases</div>
+                            {myPurchases.length === 0 ? (
+                                <div style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 24, fontStyle: 'italic' }}>No purchases yet. Start shopping!</div>
+                            ) : myPurchases.map(o => (
+                                <div key={o.id} style={{
+                                    background: 'var(--bg-card)', border: '1px solid var(--border-color)',
+                                    borderRadius: 10, padding: 12, marginBottom: 8, display: 'flex', flexDirection: 'column'
+                                }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                        <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 14 }}>{o.productName}</span>
+                                        <span style={{ fontWeight: 700, color: 'var(--color-gold)' }}>{formatCurrency(o.price || 0, currency)}</span>
+                                    </div>
+                                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{new Date(o.createdAt).toLocaleDateString()}</div>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
+                                        <span style={{
+                                            fontSize: 10, fontWeight: 700, padding: '4px 10px', borderRadius: 10,
+                                            background: { pending: 'rgba(249,115,22,0.1)', traveling: 'rgba(59,130,246,0.1)', completed: 'rgba(34,197,94,0.1)', rejected: 'rgba(239,68,68,0.1)' }[o.status] || 'transparent',
+                                            color: { pending: '#F97316', traveling: '#3B82F6', completed: '#22C55E', rejected: '#EF4444' }[o.status] || 'var(--text-muted)',
+                                        }}>
+                                            {(o.status || 'pending').toUpperCase()}
+                                        </span>
+                                        <button onClick={() => setViewingOrder(o)} style={{ padding: '6px 14px', border: '1px solid var(--border-color)', borderRadius: 20, background: 'var(--bg-input)', color: 'var(--color-gold)', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>📍 Track Order</button>
+                                    </div>
                                 </div>
+                            ))}
+
+                            <div style={{ width: '100%', height: 1, background: 'var(--border-color)', margin: '24px 0 16px' }} />
+
+                            {/* ORDERS TO DELIVER (SELLER) SECTION */}
+                            <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-primary)', marginBottom: 12 }}>🚚 Orders to Deliver</div>
+                            {orders.length === 0 ? (
+                                <div style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 24, fontStyle: 'italic' }}>No orders placed on your products yet.</div>
                             ) : orders.map(o => (
                                 <div key={o.id} style={{
                                     background: 'var(--bg-card)', border: '1px solid var(--border-color)',
@@ -1137,8 +1179,8 @@ export default function Shop() {
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
                                         <span style={{
                                             fontSize: 10, fontWeight: 600, padding: '2px 10px', borderRadius: 10,
-                                            background: { pending: 'rgba(249,115,22,0.1)', confirmed: 'rgba(59,130,246,0.1)', completed: 'rgba(34,197,94,0.1)', rejected: 'rgba(239,68,68,0.1)' }[o.status] || 'transparent',
-                                            color: { pending: '#F97316', confirmed: '#3B82F6', completed: '#22C55E', rejected: '#EF4444' }[o.status] || 'var(--text-muted)',
+                                            background: { pending: 'rgba(249,115,22,0.1)', confirmed: 'rgba(59,130,246,0.1)', traveling: 'rgba(59,130,246,0.1)', completed: 'rgba(34,197,94,0.1)', rejected: 'rgba(239,68,68,0.1)' }[o.status] || 'transparent',
+                                            color: { pending: '#F97316', confirmed: '#3B82F6', traveling: '#3B82F6', completed: '#22C55E', rejected: '#EF4444' }[o.status] || 'var(--text-muted)',
                                         }}>
                                             {(o.status || 'pending').charAt(0).toUpperCase() + (o.status || 'pending').slice(1)}
                                         </span>
@@ -1217,6 +1259,11 @@ export default function Shop() {
                     </button>
                 ))}
             </nav>
+
+            {/* View Order Map Modal */}
+            {viewingOrder && (
+                <ViewTrackingMap order={viewingOrder} onClose={() => setViewingOrder(null)} />
+            )}
         </DashboardLayout>
     );
 }
