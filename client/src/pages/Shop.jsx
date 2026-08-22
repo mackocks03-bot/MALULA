@@ -877,6 +877,25 @@ export default function Shop() {
             <div style={{ minHeight: '100vh', paddingBottom: 80 }}>
                 <div style={{ maxWidth: 540, margin: '0 auto', padding: '0 12px' }}>
 
+                    {/* ── Shop Top Nav ───────────────────────────────────────────── */}
+                    <div style={{ margin: '16px 0', background: 'var(--bg-card)', borderRadius: 12, padding: 6, display: 'flex', border: '1px solid var(--border-color)' }}>
+                        {[
+                            { key: 'shop',     icon: '🛍️', label: 'Shop' },
+                            { key: 'orders',   icon: '📦', label: 'Orders', badge: pendingOrderCount },
+                            { key: 'business', icon: '🏪', label: 'Business' },
+                        ].map(({ key, icon, label, badge }) => (
+                            <button key={key} onClick={() => { setBottomPage(key); if (key === 'shop') setActiveTab('all'); }} style={{
+                                flex: 1, padding: '8px 0', background: bottomPage === key ? 'var(--color-gold)' : 'transparent',
+                                color: bottomPage === key ? '#0F172A' : 'var(--text-secondary)',
+                                border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, position: 'relative'
+                            }}>
+                                <span>{icon}</span> {label}
+                                {badge > 0 && <span style={{ position: 'absolute', top: -5, right: 10, background: '#EF4444', color: 'white', borderRadius: '50%', padding: '2px 6px', fontSize: 9 }}>{badge}</span>}
+                            </button>
+                        ))}
+                    </div>
+
                     {/* ── Business Card ─────────────────────────────────────── */}
                     {bottomPage === 'shop' && (
                         <div style={{
@@ -1247,36 +1266,6 @@ export default function Shop() {
 
                 </div>
             </div>
-
-            {/* ── Shop Bottom Nav ───────────────────────────────────────────── */}
-            <nav style={{
-                position: 'fixed', bottom: 0, left: 0, right: 0,
-                background: 'var(--bg-card)', backdropFilter: 'blur(20px)',
-                borderTop: '1px solid var(--border-color)',
-                display: 'flex', justifyContent: 'space-around',
-                padding: '6px 0 10px', zIndex: 100,
-            }}>
-                {[
-                    { key: 'shop',     icon: '🛍️', label: 'Shop' },
-                    { key: 'orders',   icon: '📦', label: 'Orders', badge: pendingOrderCount },
-                    { key: 'business', icon: '🏪', label: 'Business' },
-                ].map(({ key, icon, label, badge }) => (
-                    <button key={key} onClick={() => { setBottomPage(key); if (key === 'shop') setActiveTab('all'); }} style={{
-                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-                        color: bottomPage === key ? 'var(--color-gold)' : 'var(--text-muted)',
-                        border: 'none', background: 'transparent', fontSize: 10, cursor: 'pointer',
-                        padding: '4px 16px', position: 'relative', fontWeight: bottomPage === key ? 700 : 400,
-                    }}>
-                        <span style={{ fontSize: 20 }}>{icon}</span>
-                        <span>{label}</span>
-                        {badge > 0 && <span style={{
-                            position: 'absolute', top: 2, right: 10, width: 14, height: 14,
-                            background: '#EF4444', borderRadius: '50%', fontSize: 8, fontWeight: 700,
-                            color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}>{badge}</span>}
-                    </button>
-                ))}
-            </nav>
 
             {/* View Order Map Modal */}
             {viewingOrder && (

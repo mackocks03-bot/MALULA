@@ -2531,13 +2531,8 @@ export function AdminKycReview() {
    ORDERS DISPATCH MANAGEMENT
 ════════════════════════════════════════════════════════════════════════ */
 export function AdminOrders() {
-    const { showToast } = require('../../contexts/ToastContext.jsx').useToast();
-    const { useState, useEffect, useCallback } = require('react');
-    const { db, doc, collection, getDocs, updateDoc } = require('../../services/firebase-config.js');
-    
-    // Using standard React context and imports that exist in the file scope
-    // The required hooks are actually already imported at the top of AdminPages.jsx
-    
+    const { showToast } = useToast();
+
     const [orders, setOrders] = useState([]);
     const [usersMap, setUsersMap] = useState({});
     const [q, setQ] = useState('');
