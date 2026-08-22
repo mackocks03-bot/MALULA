@@ -97,7 +97,6 @@ export default function GlobalChat() {
                     earnings: { chat: increment(bonusAmt) },
                     taskBalances: { chat: increment(bonusAmt) },
                     totalProfit: increment(bonusAmt),
-                    balance: increment(bonusAmt),
                 }, { merge: true });
                 await setDoc(doc(db, 'chatBonus', `${user.uid}_${today}`), { claimed: true, uid: user.uid });
                 await addDoc(collection(db, 'transactions'), {
