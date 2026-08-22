@@ -1269,7 +1269,10 @@ export default function Shop() {
 
             {/* View Order Map Modal */}
             {viewingOrder && (
-                <ViewTrackingMap order={viewingOrder} onClose={() => setViewingOrder(null)} />
+                <ViewTrackingMap 
+                    order={myPurchases.find(o => o.id === viewingOrder.id) || orders.find(o => o.id === viewingOrder.id) || viewingOrder} 
+                    onClose={() => setViewingOrder(null)} 
+                />
             )}
         </DashboardLayout>
     );
