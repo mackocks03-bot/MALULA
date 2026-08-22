@@ -532,6 +532,7 @@ export default function Shop() {
     // ── Orders ────────────────────────────────────────────────────────────────
     const [orders, setOrders] = useState([]);
     const [myPurchases, setMyPurchases] = useState([]);
+    const [ordersSubTab, setOrdersSubTab] = useState('purchases'); // 'purchases' | 'deliver'
     const [pendingOrderCount, setPendingOrderCount] = useState(0);
     const [viewingOrder, setViewingOrder] = useState(null);
 
@@ -609,12 +610,12 @@ export default function Shop() {
     // ─────────────────────────────────────────────────────────────────────────
     useEffect(() => {
         if (!user) return;
-        const q = query(collection(db, 'orders'), where('sellerUid', '==', user.uid), orderBy('createdAt', 'desc'));
+        const q = query(collection(db, 'orders'), where('sellerUid', '==', user.uid));
         const unsub = onSnapshot(q, snap => {
-            const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
             setOrders(list);
             setPendingOrderCount(list.filter(o => o.status === 'pending').length);
-        });
+        }, err => console.error('Seller orders query error:', err));
         return () => unsub();
     }, [user]);
 
@@ -623,10 +624,11 @@ export default function Shop() {
     // ─────────────────────────────────────────────────────────────────────────
     useEffect(() => {
         if (!user) return;
-        const q = query(collection(db, 'orders'), where('buyerUid', '==', user.uid), orderBy('createdAt', 'desc'));
+        const q = query(collection(db, 'orders'), where('buyerUid', '==', user.uid));
         const unsub = onSnapshot(q, snap => {
-            setMyPurchases(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-        });
+            const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            setMyPurchases(list);
+        }, err => console.error('Buyer purchases query error:', err));
         return () => unsub();
     }, [user]);
 
@@ -876,10 +878,11 @@ export default function Shop() {
                 <div style={{ maxWidth: 540, margin: '0 auto', padding: '0 12px' }}>
 
                     {/* ── Business Card ─────────────────────────────────────── */}
-                    <div style={{
-                        background: 'var(--bg-card)', border: '1px solid var(--border-color)',
-                        borderRadius: 12, padding: 16, marginBottom: 14,
-                    }}>
+                    {bottomPage === 'shop' && (
+                        <div style={{
+                            background: 'var(--bg-card)', border: '1px solid var(--border-color)',
+                            borderRadius: 12, padding: 16, marginBottom: 14,
+                        }}>
                         <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', marginBottom: 4 }}>
                             🏪 {translate('shop.business') || 'Business Profile'}
                         </div>
@@ -958,6 +961,7 @@ export default function Shop() {
                             </button>
                         )}
                     </div>
+                    )}
 
                     {/* ── Category Tabs ─────────────────────────────────────── */}
                     {bottomPage === 'shop' && (
@@ -1130,8 +1134,20 @@ export default function Shop() {
                     {/* ── Orders Page ───────────────────────────────────────── */}
                     {bottomPage === 'orders' && (
                         <div>
+                            <div style={{ display: 'flex', gap: 6, marginBottom: 16, background: 'var(--bg-input)', padding: 4, borderRadius: 12 }}>
+                                <button
+                                    onClick={() => setOrdersSubTab('purchases')}
+                                    style={{ flex: 1, padding: '8px 0', border: 'none', borderRadius: 8, background: ordersSubTab === 'purchases' ? 'var(--color-gold)' : 'transparent', color: ordersSubTab === 'purchases' ? '#0F172A' : 'var(--text-secondary)', fontWeight: 600, fontSize: 13, cursor: 'pointer', transition: 'all 0.2s' }}
+                                >🛍️ My Purchases</button>
+                                <button
+                                    onClick={() => setOrdersSubTab('deliver')}
+                                    style={{ flex: 1, padding: '8px 0', border: 'none', borderRadius: 8, background: ordersSubTab === 'deliver' ? 'var(--color-gold)' : 'transparent', color: ordersSubTab === 'deliver' ? '#0F172A' : 'var(--text-secondary)', fontWeight: 600, fontSize: 13, cursor: 'pointer', transition: 'all 0.2s' }}
+                                >🚚 Deliveries</button>
+                            </div>
+
                             {/* MY PURCHASES SECTION */}
-                            <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-primary)', marginBottom: 12, marginTop: 4 }}>🛍️ My Purchases</div>
+                            {ordersSubTab === 'purchases' && (
+                                <div>
                             {myPurchases.length === 0 ? (
                                 <div style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 24, fontStyle: 'italic' }}>No purchases yet. Start shopping!</div>
                             ) : myPurchases.map(o => (
@@ -1156,11 +1172,11 @@ export default function Shop() {
                                     </div>
                                 </div>
                             ))}
-
-                            <div style={{ width: '100%', height: 1, background: 'var(--border-color)', margin: '24px 0 16px' }} />
-
+                                </div>
+                            )}
                             {/* ORDERS TO DELIVER (SELLER) SECTION */}
-                            <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-primary)', marginBottom: 12 }}>🚚 Orders to Deliver</div>
+                            {ordersSubTab === 'deliver' && (
+                                <div>
                             {orders.length === 0 ? (
                                 <div style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 24, fontStyle: 'italic' }}>No orders placed on your products yet.</div>
                             ) : orders.map(o => (
@@ -1194,6 +1210,8 @@ export default function Shop() {
                                     )}
                                 </div>
                             ))}
+                                </div>
+                            )}
                         </div>
                     )}
 
