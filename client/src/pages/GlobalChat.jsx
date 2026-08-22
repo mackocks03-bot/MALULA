@@ -91,6 +91,17 @@ export default function GlobalChat() {
             await setDoc(doc(db, 'chatCount', `${user.uid}_${today}`), { count: newCount, uid: user.uid });
             setTodayCount(newCount);
 
+            // Keep Tasks.jsx perfectly synced with live progress
+            const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            const dayStr = dayNames[new Date().getDay()];
+            const taskKey = `task_${dayStr}_${today}`;
+            await setDoc(doc(db, 'userTasks', `${user.uid}_${taskKey}`), { 
+                status: newCount >= BONUS_THRESHOLD ? 'completed' : 'in-progress', 
+                completed: newCount,
+                category: 'chat',
+                uid: user.uid
+            }, { merge: true });
+
             if (newCount >= BONUS_THRESHOLD && !bonusClaimed) {
                 const bonusAmt = BONUS_TZS;
                 await setDoc(doc(db, 'users', user.uid), {
@@ -99,6 +110,9 @@ export default function GlobalChat() {
                     totalProfit: increment(bonusAmt),
                 }, { merge: true });
                 await setDoc(doc(db, 'chatBonus', `${user.uid}_${today}`), { claimed: true, uid: user.uid });
+                
+                await setDoc(doc(db, 'userTasks', `${user.uid}_${taskKey}`), { reward: bonusAmt }, { merge: true });
+
                 await addDoc(collection(db, 'transactions'), {
                     uid: user.uid,
                     type: 'chat_bonus',
