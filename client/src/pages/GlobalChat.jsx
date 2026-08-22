@@ -30,7 +30,6 @@ export default function GlobalChat() {
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
     const currency = userData?.currency || 'TZS';
-    const isWednesday = new Date().getDay() === 3;
 
     useEffect(() => {
         if (!user) return;
@@ -92,14 +91,14 @@ export default function GlobalChat() {
             await setDoc(doc(db, 'chatCount', `${user.uid}_${today}`), { count: newCount, uid: user.uid });
             setTodayCount(newCount);
 
-            if (isWednesday && newCount >= BONUS_THRESHOLD && !bonusClaimed) {
+            if (newCount >= BONUS_THRESHOLD && !bonusClaimed) {
                 const bonusAmt = BONUS_TZS;
-                await updateDoc(doc(db, 'users', user.uid), {
-                    'earnings.chat': increment(bonusAmt),
-                    'taskBalances.chat': increment(bonusAmt),
+                await setDoc(doc(db, 'users', user.uid), {
+                    earnings: { chat: increment(bonusAmt) },
+                    taskBalances: { chat: increment(bonusAmt) },
                     totalProfit: increment(bonusAmt),
                     balance: increment(bonusAmt),
-                });
+                }, { merge: true });
                 await setDoc(doc(db, 'chatBonus', `${user.uid}_${today}`), { claimed: true, uid: user.uid });
                 await addDoc(collection(db, 'transactions'), {
                     uid: user.uid,
@@ -172,9 +171,7 @@ export default function GlobalChat() {
                     <div className="wachat-online">● {onlineCount} online</div>
                 </div>
                 <div className="wachat-bonus-pill">
-                    {isWednesday
-                        ? bonusClaimed ? '✅ Bonus claimed' : `${todayCount}/${BONUS_THRESHOLD} msgs`
-                        : 'Bonus on Wed 🎁'}
+                    {bonusClaimed ? '✅ Bonus claimed' : `${todayCount}/${BONUS_THRESHOLD} msgs`}
                 </div>
             </div>
 
