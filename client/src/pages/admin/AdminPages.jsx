@@ -2535,20 +2535,26 @@ export function AdminOrders() {
 
     const [orders, setOrders] = useState([]);
     const [usersMap, setUsersMap] = useState({});
+    const [productsMap, setProductsMap] = useState({});
     const [q, setQ] = useState('');
     const [loading, setLoading] = useState(true);
 
     const loadOrders = useCallback(async () => {
         setLoading(true);
         try {
-            const [oSnap, uSnap] = await Promise.all([
+            const [oSnap, uSnap, pSnap] = await Promise.all([
                 getDocs(collection(db, 'orders')),
-                getDocs(collection(db, 'users'))
+                getDocs(collection(db, 'users')),
+                getDocs(collection(db, 'sellerProducts'))
             ]);
             
             const uMap = {};
             if (!uSnap.empty) uSnap.docs.forEach(d => uMap[d.id] = d.data());
             setUsersMap(uMap);
+
+            const pMap = {};
+            if (!pSnap.empty) pSnap.docs.forEach(d => pMap[d.id] = d.data());
+            setProductsMap(pMap);
 
             if (!oSnap.empty) {
                 const list = oSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -2557,7 +2563,7 @@ export function AdminOrders() {
                 setOrders([]);
             }
         } catch (e) {
-            showToast('Failed to load orders', 'error');
+            showToast('Failed to load orders & products', 'error');
         } finally {
             setLoading(false);
         }
@@ -2569,9 +2575,9 @@ export function AdminOrders() {
         try {
             await updateDoc(doc(db, 'orders', orderId), { status: newStatus });
             setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
-            showToast(`Order status updated to ${newStatus.toUpperCase()}`, 'success');
+            showToast(`Status shifted to ${newStatus.toUpperCase()} successfully`, 'success');
         } catch (e) {
-            showToast('Failed to update status', 'error');
+            showToast('Dispatch failed', 'error');
         }
     };
 
