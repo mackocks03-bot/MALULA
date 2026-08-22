@@ -80,7 +80,7 @@ export default function Affiliate() {
         ...tree.level3.map(r => ({ ...r, _level: 3 })),
     ];
 
-    const referrals = activeTab === 'all' ? allReferrals : (tree[activeTab] || []);
+    const referrals = activeTab === 'all' ? allReferrals : allReferrals.filter(r => `level${r._level}` === activeTab);
 
     const activeCount = allReferrals.filter(r => r.isActive).length;
     const inactiveCount = allReferrals.filter(r => !r.isActive).length;
