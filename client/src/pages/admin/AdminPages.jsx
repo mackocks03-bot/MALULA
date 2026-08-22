@@ -2589,77 +2589,292 @@ export function AdminOrders() {
     );
 
     return (
-        <div>
-            <h1 className="gov-title">Order Dispatch Control</h1>
-            <p className="gov-subtitle">Global supply chain management and live transit triggering</p>
+        <div className="admin-orders-premium">
+            <style>{`
+                .admin-orders-premium {
+                    padding: 0 10px;
+                }
+                .aop-header {
+                    margin-bottom: 24px;
+                }
+                .aop-title {
+                    font-size: 28px;
+                    font-weight: 800;
+                    background: linear-gradient(135deg, #FFD700 0%, #F59E0B 100%);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    margin: 0 0 6px 0;
+                    letter-spacing: -0.5px;
+                }
+                .aop-subtitle {
+                    font-size: 13px;
+                    color: var(--text-secondary);
+                    margin: 0;
+                }
+                .aop-search-bar {
+                    display: flex;
+                    gap: 12px;
+                    margin-bottom: 24px;
+                }
+                .aop-search-input {
+                    flex: 1;
+                    background: var(--bg-input);
+                    border: 1px solid var(--border-color);
+                    border-radius: 12px;
+                    padding: 12px 18px;
+                    color: var(--text-primary);
+                    font-size: 14px;
+                    outline: none;
+                    transition: border 0.2s, box-shadow 0.2s;
+                }
+                .aop-search-input:focus {
+                    border-color: #FFD700;
+                    box-shadow: 0 0 0 3px rgba(255,215,0,0.1);
+                }
+                .aop-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+                    gap: 20px;
+                }
+                .aop-card {
+                    background: var(--bg-card);
+                    border: 1px solid var(--border-color);
+                    border-radius: 16px;
+                    overflow: hidden;
+                    display: flex;
+                    flex-direction: column;
+                    transition: transform 0.2s, box-shadow 0.2s;
+                    position: relative;
+                }
+                .aop-card:hover {
+                    transform: translateY(-4px);
+                    box-shadow: 0 12px 24px -8px rgba(0,0,0,0.3);
+                    border-color: rgba(255,215,0,0.3);
+                }
+                .aop-card-image {
+                    width: 100%;
+                    height: 160px;
+                    object-fit: cover;
+                    background: #1E293B;
+                }
+                .aop-card-no-image {
+                    width: 100%;
+                    height: 160px;
+                    background: #0F172A;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 40px;
+                    color: #334155;
+                }
+                .aop-card-content {
+                    padding: 16px;
+                    display: flex;
+                    flex-direction: column;
+                    flex: 1;
+                }
+                .aop-card-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    margin-bottom: 12px;
+                }
+                .aop-card-title {
+                    font-weight: 700;
+                    font-size: 16px;
+                    color: var(--text-primary);
+                    line-height: 1.3;
+                    margin: 0;
+                }
+                .aop-card-price {
+                    font-weight: 800;
+                    color: #22C55E;
+                    font-size: 15px;
+                    margin-top: 4px;
+                }
+                .aop-status-badge {
+                    padding: 4px 10px;
+                    border-radius: 20px;
+                    font-size: 10px;
+                    font-weight: 800;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                .aop-badge-pending { background: rgba(245,158,11,0.1); color: #F59E0B; border: 1px solid rgba(245,158,11,0.3); }
+                .aop-badge-confirmed { background: rgba(59,130,246,0.1); color: #3B82F6; border: 1px solid rgba(59,130,246,0.3); }
+                .aop-badge-traveling { background: rgba(139,92,246,0.1); color: #8B5CF6; border: 1px solid rgba(139,92,246,0.3); }
+                .aop-badge-completed { background: rgba(34,197,94,0.1); color: #22C55E; border: 1px solid rgba(34,197,94,0.3); }
+                .aop-badge-rejected { background: rgba(239,68,68,0.1); color: #EF4444; border: 1px solid rgba(239,68,68,0.3); }
+                
+                .aop-meta-row {
+                    display: flex;
+                    justify-content: space-between;
+                    font-size: 12px;
+                    padding-bottom: 12px;
+                    margin-bottom: 12px;
+                    border-bottom: 1px dashed var(--border-color);
+                }
+                .aop-meta-label {
+                    color: var(--text-muted);
+                    font-size: 10px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    margin-bottom: 2px;
+                }
+                .aop-meta-val {
+                    color: var(--text-secondary);
+                    font-weight: 500;
+                }
+                .aop-logistics-path {
+                    background: rgba(0,0,0,0.2);
+                    border-radius: 8px;
+                    padding: 10px;
+                    margin-bottom: 16px;
+                }
+                .aop-party {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: 12px;
+                }
+                .aop-party-icon {
+                    font-size: 14px;
+                }
+                .aop-action-bar {
+                    margin-top: auto;
+                    display: flex;
+                    gap: 8px;
+                }
+                .aop-select {
+                    flex: 1;
+                    background: var(--bg-input);
+                    border: 1px solid var(--border-color);
+                    color: var(--text-primary);
+                    padding: 8px 12px;
+                    border-radius: 8px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    outline: none;
+                    cursor: pointer;
+                    appearance: none;
+                }
+                .aop-select:focus { border-color: #3B82F6; }
+                .aop-empty {
+                    text-align: center;
+                    padding: 80px 20px;
+                    color: var(--text-muted);
+                    background: var(--bg-card);
+                    border: 1px dashed var(--border-color);
+                    border-radius: 16px;
+                    font-size: 15px;
+                }
+            `}</style>
 
-            <div className="gov-items-toolbar" style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
-                <input className="gov-input" style={{ flex: 1 }} placeholder="Search by Order ID, Product, or Buyer..." value={q} onChange={e => setQ(e.target.value)} />
-                <button className="gov-btn gov-btn-outline" onClick={loadOrders}>Refresh</button>
+            <div className="aop-header">
+                <h1 className="aop-title">Order Dispatch Engine</h1>
+                <p className="aop-subtitle">Globally track shipping channels, inspect items, and update logistics statuses in real-time.</p>
             </div>
 
-            <div className="gov-table-container">
-                <table className="gov-table">
-                    <thead><tr>
-                        <th>Order ID / Date</th>
-                        <th>Product Details</th>
-                        <th>Buyer & Seller</th>
-                        <th>Status</th>
-                        <th>Dispatch Actions</th>
-                    </tr></thead>
-                    <tbody>
-                        {loading && <tr><td colSpan={5}><div className="gov-empty-state">Loading dispatch vectors...</div></td></tr>}
-                        {!loading && filtered.map(o => {
-                            const buyer = usersMap[o.buyerUid] || {};
-                            const seller = usersMap[o.sellerUid] || {};
-                            return (
-                                <tr key={o.id}>
-                                    <td>
-                                        <div className="gov-mono-text" style={{ fontSize: 13, textTransform: 'uppercase' }}>{o.id.slice(0,10)}</div>
-                                        <div style={{ fontSize: 11, color: '#999' }}>{new Date(o.createdAt).toLocaleString()}</div>
-                                    </td>
-                                    <td>
-                                        <div style={{ fontWeight: 600 }}>{o.productName}</div>
-                                        <div style={{ color: 'var(--gov-success)', fontWeight: 700 }}>TZS {Number(o.price || 0).toLocaleString()}</div>
-                                    </td>
-                                    <td>
+            <div className="aop-search-bar">
+                <input 
+                    className="aop-search-input" 
+                    placeholder="Search by tracing ID, Product Name, or Buyer Name..." 
+                    value={q} 
+                    onChange={e => setQ(e.target.value)} 
+                />
+                <button 
+                    className="gov-btn" 
+                    style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                    onClick={loadOrders}
+                >
+                    <Icon d={icons.refresh} />
+                </button>
+            </div>
+
+            {loading ? (
+                <div className="aop-empty">
+                    <div className="g-spinner mx-auto mb-4" />
+                    Gathering dispatch logistics...
+                </div>
+            ) : filtered.length === 0 ? (
+                <div className="aop-empty">
+                    <span style={{ fontSize: 40, display: 'block', margin: '0 auto 12px auto' }}>🚀</span>
+                    No active product logistics paths established yet.
+                </div>
+            ) : (
+                <div className="aop-grid">
+                    {filtered.map(o => {
+                        const buyer = usersMap[o.buyerUid] || {};
+                        const seller = usersMap[o.sellerUid] || {};
+                        const productExt = productsMap[o.productId] || {};
+                        const img = productExt.image || productExt.imageB64 || null;
+                        
+                        return (
+                            <div key={o.id} className="aop-card">
+                                {img ? (
+                                    <img src={img} alt="Product Thumbnail" className="aop-card-image" />
+                                ) : (
+                                    <div className="aop-card-no-image">📦</div>
+                                )}
+                                
+                                <div className="aop-card-content">
+                                    <div className="aop-card-header">
                                         <div>
-                                            <span style={{ fontSize: 10,  color: '#999' }}>B:</span> {buyer.username || o.buyerName || o.buyerUid?.slice(0,6)} <br/>
-                                            <span style={{ fontSize: 10,  color: '#999' }}>S:</span> {seller.username || o.sellerUid?.slice(0,6)}
+                                            <h3 className="aop-card-title">{o.productName}</h3>
+                                            <div className="aop-card-price">TZS {Number(o.price || 0).toLocaleString()}</div>
                                         </div>
-                                    </td>
-                                    <td>
-                                        <span className={`gov-badge gov-badge-${{ pending: 'warning', confirmed: 'success', traveling: 'primary', completed: 'success', rejected: 'danger' }[o.status || 'pending']} `} style={{
-                                            background: { pending: '#fef3c7', confirmed: '#dcfce7', traveling: '#e0f2fe', completed: '#dcfce7', rejected: '#fee2e2' }[o.status || 'pending'],
-                                            color: { pending: '#d97706', confirmed: '#166534', traveling: '#0369a1', completed: '#166534', rejected: '#991b1b' }[o.status || 'pending'],
-                                            padding: '4px 10px', borderRadius: 4, fontWeight: 700, fontSize: 11
-                                        }}>
-                                            {(o.status || 'pending').toUpperCase()}
+                                        <span className={`aop-status-badge aop-badge-${o.status || 'pending'}`}>
+                                            {(o.status || 'pending')}
                                         </span>
-                                    </td>
-                                    <td>
-                                        <div className="gov-action-group">
-                                            <select 
-                                                className="gov-input" 
-                                                style={{ padding: '4px 8px', width: 140, fontSize: 12, height: 'auto' }}
-                                                value={o.status || 'pending'}
-                                                onChange={(e) => handleUpdateStatus(o.id, e.target.value)}
-                                            >
-                                                <option value="pending">Pending</option>
-                                                <option value="confirmed">Confirmed</option>
-                                                <option value="traveling">Traveling (Transit)</option>
-                                                <option value="completed">Completed</option>
-                                                <option value="rejected">Rejected / Cancelled</option>
-                                            </select>
+                                    </div>
+                                    
+                                    <div className="aop-meta-row">
+                                        <div>
+                                            <div className="aop-meta-label">ID TRACE</div>
+                                            <div className="aop-meta-val" style={{ fontFamily: 'monospace' }}>{o.id.slice(0,8).toUpperCase()}</div>
                                         </div>
-                                    </td>
-                                </tr>
-                            )
-                        })}
-                        {!loading && filtered.length === 0 && <tr><td colSpan={5}><div className="gov-empty-state">No active logistics routes found.</div></td></tr>}
-                    </tbody>
-                </table>
-            </div>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <div className="aop-meta-label">TIMESTAMP</div>
+                                            <div className="aop-meta-val">{new Date(o.createdAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="aop-logistics-path">
+                                        <div className="aop-party" style={{ marginBottom: 8 }}>
+                                            <span className="aop-party-icon">🛒</span>
+                                            <div>
+                                                <div className="aop-meta-label">PURCHASING ORIGIN</div>
+                                                <div className="aop-meta-val">{buyer.username || o.buyerName || o.buyerUid?.slice(0,8)}</div>
+                                            </div>
+                                        </div>
+                                        <div className="aop-party">
+                                            <span className="aop-party-icon">🏪</span>
+                                            <div>
+                                                <div className="aop-meta-label">SELLER DISPATCH</div>
+                                                <div className="aop-meta-val">{seller.username || (seller.fullName) || o.sellerUid?.slice(0,8)}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="aop-action-bar">
+                                        <select 
+                                            className="aop-select"
+                                            value={o.status || 'pending'}
+                                            onChange={(e) => handleUpdateStatus(o.id, e.target.value)}
+                                        >
+                                            <option value="pending" disabled>🚧 Pending</option>
+                                            <option value="confirmed">✅ Confirmed</option>
+                                            <option value="traveling">🚚 Assign Traveling</option>
+                                            <option value="completed">🎉 Mark Completed</option>
+                                            <option value="rejected">❌ Cancel Route</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 }
