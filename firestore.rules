@@ -67,7 +67,8 @@ service cloud.firestore {
     
     match /notifications/{notifId} {
       allow read, update: if request.auth != null && resource.data.uid == request.auth.uid;
-      allow create, delete: if isAdmin();
+      allow create: if request.auth != null && (request.resource.data.uid == request.auth.uid || isAdmin());
+      allow delete: if isAdmin();
     }
 
     match /withdrawals/{withdrawalId} {
@@ -104,6 +105,14 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && (resource.data.uid == request.auth.uid || isAdmin());
     }
     
+    // Business KYC Verification
+    // Users submit their own doc (docId == uid). Only admin can approve/reject (update status).
+    match /businessVerification/{uid} {
+      allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow create: if request.auth != null && request.auth.uid == uid;
+      allow update: if isAdmin();
+    }
+
     // Default fallback (block writes unless admin)
     match /{document=**} {
       allow read: if request.auth != null && isAdmin();
