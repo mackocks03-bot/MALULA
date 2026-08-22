@@ -29,6 +29,8 @@ export default function DeliveryTracker({ productName, amount, onClose, onComple
     // locating → zooming → routing → dispatching → ready
     const [distance, setDistance] = useState(null);
     const [statusMsg, setStatusMsg] = useState('ACQUIRING SATELLITE LOCK...');
+    const [buyerName, setBuyerName] = useState('Your Location');
+    const [sellerName, setSellerName] = useState('Seller');
 
     useEffect(() => {
         let mounted = true;
@@ -98,20 +100,47 @@ export default function DeliveryTracker({ productName, amount, onClose, onComple
             await new Promise(r => setTimeout(r, 4000)); // wait for fly-in
             if (!mounted) return;
 
-            // 6. Fetch REAL road route via OSRM (free, no API key)
+            // 6. Fetch REAL road route and Location Names
             if (mounted) { setPhase('routing'); setStatusMsg('CALCULATING ROAD ROUTE VIA SATELLITE...'); }
 
             let routeCoords = null;
+            let resolvedBuyerName = 'Your Location';
+            let resolvedSellerName = 'Seller';
+
             try {
-                const res = await fetch(
-                    `https://router.project-osrm.org/route/v1/driving/${sellerLng},${sellerLat};${buyerLng},${buyerLat}?overview=full&geometries=geojson`
-                );
-                const json = await res.json();
-                if (json.routes?.[0]) {
-                    routeCoords = json.routes[0].geometry.coordinates
-                        .map(([lng, lat]) => [lat, lng]); // OSRM gives [lng,lat], Leaflet wants [lat,lng]
+                // Fetch reverse geocoding in parallel (OSRM + Nominatim)
+                const [routeRes, buyerGeo, sellerGeo] = await Promise.allSettled([
+                    fetch(`https://router.project-osrm.org/route/v1/driving/${sellerLng},${sellerLat};${buyerLng},${buyerLat}?overview=full&geometries=geojson`),
+                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${buyerLat}&lon=${buyerLng}&zoom=14`),
+                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${sellerLat}&lon=${sellerLng}&zoom=14`)
+                ]);
+
+                if (routeRes.status === 'fulfilled') {
+                    const json = await routeRes.value.json();
+                    if (json.routes?.[0]) {
+                        routeCoords = json.routes[0].geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+                    }
                 }
-            } catch { /* fallback to straight line */ }
+
+                if (buyerGeo.status === 'fulfilled') {
+                    const bJson = await buyerGeo.value.json();
+                    const bAddr = bJson.address || {};
+                    resolvedBuyerName = bAddr.village || bAddr.suburb || bAddr.street || bAddr.town || bAddr.city || bAddr.county || 'Your Location';
+                    if (bAddr.state || bAddr.region) resolvedBuyerName += `, ${bAddr.state || bAddr.region}`;
+                    if (mounted) setBuyerName(`${resolvedBuyerName} (You)`);
+                }
+
+                if (sellerGeo.status === 'fulfilled') {
+                    const sJson = await sellerGeo.value.json();
+                    const sAddr = sJson.address || {};
+                    resolvedSellerName = sAddr.village || sAddr.suburb || sAddr.street || sAddr.town || sAddr.city || bAddr?.city || 'Seller Location';
+                    if (sAddr.state || sAddr.region) resolvedSellerName += `, ${sAddr.state || sAddr.region}`;
+                    if (mounted) setSellerName(`🏪 ${resolvedSellerName}`);
+                }
+
+            } catch (err) {
+                console.error(err);
+            }
 
             if (!mounted) return;
 
@@ -141,7 +170,7 @@ export default function DeliveryTracker({ productName, amount, onClose, onComple
                 iconAnchor: [9, 9],
             });
             L.marker([sellerLat, sellerLng], { icon: sellerIcon }).addTo(map)
-                .bindPopup('<b>🏪 Seller</b>').openPopup();
+                .bindPopup(`<b>${resolvedSellerName} (Seller)</b>`).openPopup();
 
             // Buyer marker (cyan)
             const buyerIcon = window.L.divIcon({
@@ -150,7 +179,7 @@ export default function DeliveryTracker({ productName, amount, onClose, onComple
                 iconAnchor: [9, 9],
             });
             L.marker([buyerLat, buyerLng], { icon: buyerIcon }).addTo(map)
-                .bindPopup('<b>📍 Your Location</b>');
+                .bindPopup(`<b>${resolvedBuyerName} (You)</b>`);
 
             // Fit both markers in view
             map.fitBounds(L.latLngBounds(routeCoords), { padding: [30, 30] });
@@ -208,29 +237,38 @@ export default function DeliveryTracker({ productName, amount, onClose, onComple
 
     return (
         <div style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)',
-            backdropFilter: 'blur(10px)', zIndex: 9999,
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 16
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+            backdropFilter: 'blur(5px)', zIndex: 9999,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end',
+            animation: 'fadeInBg 0.3s'
         }}>
             <div style={{
-                background: 'var(--bg-card)', border: `1px solid ${color}44`,
-                borderRadius: 16, width: '100%', maxWidth: 500, overflow: 'hidden',
-                boxShadow: `0 0 40px ${color}22`,
+                background: 'var(--bg-card)', borderTop: `1px solid ${color}44`,
+                width: '100%', maxWidth: 600, overflow: 'hidden',
+                boxShadow: `0 -10px 40px ${color}22`,
+                borderTopLeftRadius: 20, borderTopRightRadius: 20,
+                animation: 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                paddingBottom: 'env(safe-area-inset-bottom)'
             }}>
+                {/* Drag handle */}
+                <div style={{ width: '100%', display: 'flex', justifyContent: 'center', padding: '10px 0 6px', background: 'var(--bg-card)' }}>
+                    <div style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--border-color)' }} />
+                </div>
+
                 {/* Header */}
-                <div style={{ padding: '12px 16px', background: 'var(--bg-input)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ padding: '4px 20px 14px', background: 'var(--bg-card)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                        <div style={{ color, fontWeight: 700, fontSize: 12, letterSpacing: 2 }}>🛰️ DELIVERY TRACKING SYSTEM</div>
-                        <div style={{ color: 'var(--text-secondary)', fontSize: 11, marginTop: 2 }}>{productName}</div>
+                        <div style={{ color, fontWeight: 700, fontSize: 13, letterSpacing: 1.5 }}>🛰️ SYSTEM DISPATCH</div>
+                        <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginTop: 3 }}>{productName}</div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg-input)', padding: '6px 10px', borderRadius: 20 }}>
                         <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, animation: 'dtPulse 1s ease-in-out infinite' }} />
                         <span style={{ fontSize: 10, color, fontWeight: 700 }}>{phase.toUpperCase()}</span>
                     </div>
                 </div>
 
                 {/* Map */}
-                <div style={{ height: 300, position: 'relative', background: '#0d1420' }}>
+                <div style={{ height: 280, position: 'relative', background: '#0d1420' }}>
                     <div ref={mapDivRef} style={{ height: '100%', width: '100%' }} />
                     {phase === 'locating' && (
                         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', background: 'rgba(10,15,28,0.8)' }}>
@@ -284,6 +322,8 @@ export default function DeliveryTracker({ productName, amount, onClose, onComple
             <style>{`
                 @keyframes dtSpin    { 100% { transform: rotate(360deg); } }
                 @keyframes dtPulse   { 0%,100% { opacity:1; } 50% { opacity:0.25; } }
+                @keyframes slideUp   { from { transform: translateY(100%); } to { transform: translateY(0); } }
+                @keyframes fadeInBg  { from { background: rgba(0,0,0,0); } to { background: rgba(0,0,0,0.7); } }
             `}</style>
         </div>
     );

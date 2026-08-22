@@ -999,8 +999,16 @@ export default function Shop() {
                                             : <div style={{ width: '100%', height: 100, background: 'var(--bg-input)', borderRadius: 8, marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>📦</div>
                                         }
                                         <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
-                                        <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                                            by {p.sellerName}
+                                        {p.desc && (
+                                            <div style={{ fontSize: 11, color: 'var(--text-secondary)', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', margin: '2px 0 6px', lineHeight: 1.3 }}>
+                                                {p.desc}
+                                            </div>
+                                        )}
+                                        <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, flexWrap: 'wrap' }}>
+                                            <span style={{ background: 'var(--bg-card)', padding: '2px 6px', borderRadius: 4, fontSize: 9, letterSpacing: 0.5, border: '1px solid var(--border-color)', textTransform: 'uppercase' }}>
+                                                {p.category || 'OTHER'}
+                                            </span>
+                                            <span>by {p.sellerName}</span>
                                             {p.isVerifiedSeller && <VerifiedBadge size={12} />}
                                         </div>
                                         <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-gold)', margin: '4px 0' }}>{formatCurrency(p.price || 0, currency)}</div>
