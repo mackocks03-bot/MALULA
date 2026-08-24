@@ -214,22 +214,22 @@ export function initConsoleHijack() {
             // Keep console dynamically clear of other errors or logs
             originalClear.call(console);
 
-            // Palette of colorful themes for sections
+            // Palette of deep, rich colorful themes for sections
             const palettes = [
-                { header: '#ff7675', text: '#ffb8b8' }, // Rose/Red
-                { header: '#00cec9', text: '#81ecec' }, // Teal
-                { header: '#fdcb6e', text: '#ffeaa7' }, // Gold/Yellow
-                { header: '#0984e3', text: '#74b9ff' }, // Blue
-                { header: '#e84393', text: '#fd79a8' }, // Pink
-                { header: '#00b894', text: '#55efc4' }, // Green
-                { header: '#6c5ce7', text: '#a29bfe' }, // Purple
-                { header: '#e17055', text: '#fab1a0' }  // Orange
+                { header: '#00acc1', text: '#00bcd4' }, // Deep Cyan
+                { header: '#c0ca33', text: '#cddc39' }, // Deep Lime
+                { header: '#f9a825', text: '#fbc02d' }, // Deep Amber
+                { header: '#1565c0', text: '#1976d2' }, // Deep Blue
+                { header: '#6a1b9a', text: '#7b1fa2' }, // Deep Purple
+                { header: '#2e7d32', text: '#388e3c' }, // Deep Green
+                { header: '#00838f', text: '#0097a7' }, // Deep Teal
+                { header: '#e65100', text: '#f57c00' }  // Deep Orange
             ];
 
             let sectionIndex = -1; // -1 for main headers before Section 1
 
             function getColors() {
-                if (sectionIndex === -1) return { header: '#E2B63E', text: '#D1D5DB' };
+                if (sectionIndex === -1) return { header: '#d4a017', text: '#b0b8c1' };
                 return palettes[sectionIndex % palettes.length];
             }
 
@@ -244,7 +244,7 @@ export function initConsoleHijack() {
 
                 if (line.startsWith('# ')) { 
                     // Main title
-                    originalLog.call(console, '%c' + line.substring(2), "color: #FFD700; font-size: 16px; font-weight: bold; text-decoration: underline; padding-bottom: 5px;");
+                    originalLog.call(console, '%c' + line.substring(2), "color: #d4a017; font-size: 17px; font-weight: 900; text-decoration: underline; letter-spacing: 1px;");
                 } else if (line.startsWith('## ')) { 
                     // Section header
                     sectionIndex++;
@@ -256,7 +256,7 @@ export function initConsoleHijack() {
                     originalLog.call(console, '%c' + line.substring(4), `color: ${c.header}; font-size: 13px; font-weight: bold; font-style: italic; margin-top: 8px; margin-bottom: 2px;`);
                 } else if (line.startsWith('! ')) { 
                     // Important block
-                    originalLog.call(console, '%c' + line.substring(2), "color: #ffffff; font-size: 12px; font-weight: bold; background: #ef4444; padding: 6px; border-radius: 4px; line-height: 1.5;");
+                    originalLog.call(console, '%c' + line.substring(2), "color: #ffffff; font-size: 12px; font-weight: bold; background: #000000; padding: 8px 12px; border-radius: 4px; line-height: 1.5; border-left: 4px solid #f9a825;");
                 } else if (line.startsWith('- ')) { 
                     // List item
                     const c = getColors();
