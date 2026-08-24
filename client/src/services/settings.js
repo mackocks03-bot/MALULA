@@ -11,7 +11,7 @@ import { db, doc, getDoc, setDoc } from './firebase-config.js';
 
 const DEFAULT_SETTINGS = {
     // Native Activation Fees
-    activationFees: { TZS: 14500, KES: 650, UGX: 18500, MWK: 15000, ZMW: 150, RWF: 6000, BIF: 15000, CDF: 15000 },
+    activationFees: { TZS: 15500, KES: 650, UGX: 18500, MWK: 15000, ZMW: 160, RWF: 6000, BIF: 26000, CDF: 28000 },
     
     // Welcome Bonuses (native)
     welcomeBonuses: { TZS: 10000, KES: 500, UGX: 15000, MWK: 10000, ZMW: 100, RWF: 5000, BIF: 10000, CDF: 10000 },
@@ -37,7 +37,19 @@ const DEFAULT_SETTINGS = {
     // Base limits in TZS for Task Wallets
     taskMinWithdrawalsBase: { tiktok: 200000, chat: 300000, welcomeBonus: 50000, youtube: 100000, facebook: 100000, whatsapp: 100000, ads: 100000 },
     
-    // Commission Structure
+    // Per-currency native commission amounts (fixed amounts per referral level)
+    commissions: {
+        TZS: { level1: 10000, level2: 3500, level3: 1000 },
+        BIF: { level1: 9000,  level2: 4000, level3: 1500 },
+        CDF: { level1: 10000, level2: 3500, level3: 1000 },
+        ZMW: { level1: 80,    level2: 30,   level3: 10   },
+        KES: { level1: 650,   level2: 250,  level3: 100  },
+        UGX: { level1: 18000, level2: 6000, level3: 2000 },
+        MWK: { level1: 6000,  level2: 2000, level3: 700  },
+        RWF: { level1: 3500,  level2: 1200, level3: 400  }
+    },
+    
+    // Legacy flat commission rates (fallback)
     commissionLevel1: 10,
     commissionLevel2: 5,
     commissionLevel3: 2
@@ -183,8 +195,17 @@ export async function getTaskWithdrawLimits(walletType, currency = 'TZS') {
 /**
  * Get commission structure
  */
-export async function getCommissionStructure() {
+export async function getCommissionStructure(currency = null) {
     const settings = await getSettings();
+    
+    // If a currency is given, try per-currency native commission amounts first
+    if (currency) {
+        const perCurrency = (settings.commissions || DEFAULT_SETTINGS.commissions)[currency]
+            || DEFAULT_SETTINGS.commissions[currency];
+        if (perCurrency) return perCurrency;
+    }
+    
+    // Fallback to legacy flat values
     return {
         level1: settings.commissionLevel1 || DEFAULT_SETTINGS.commissionLevel1,
         level2: settings.commissionLevel2 || DEFAULT_SETTINGS.commissionLevel2,

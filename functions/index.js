@@ -197,7 +197,7 @@ export const sweepStuckTasks = onSchedule(
                 const data = doc.data();
                 // Skip if already processed to avoid double spend
                 if (data.taskProcessed === true || data.taskProcessed === 'processing') continue;
-                
+
                 logger.info(`Sweeper retrying stuck task: ${doc.id}`);
                 await runTaskProcessing(db, doc.id, data);
                 processedCount++;
@@ -226,7 +226,7 @@ export const onUserRegistered = onDocumentCreated(
         // Trigger only for Tanzanian users
         if (user.country === 'TZ' || user.currency === 'TZS') {
             const username = user.username || 'User';
-            const message = `Welcome to NEW HOPE, ${username}! Your account has been successfully created. Please activate your account for 14500 TSH to start earning by chatting with foreigners.`;
+            const message = `Welcome to NEW HOPE, ${username}! Your account has been successfully created. Please activate your account for 15,500 TSH to start earning by chatting with foreigners.`;
 
             try {
                 if (user.phone) {

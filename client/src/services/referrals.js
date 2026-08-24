@@ -173,6 +173,10 @@ function mapUserDoc(d) {
     fullName: data.fullName,
     phone: data.phone,
     createdAt: data.createdAt,
+    country: data.country || data.countryCode || 'TZ',
+    countryCode: data.countryCode || data.country || 'TZ',
+    countryName: data.countryName || null,
+    currency: data.currency || 'TZS',
     isActive: data.activationStatus === 'approved' || Boolean(data.isActive)
   };
 }

@@ -1,0 +1,95 @@
+﻿274: Open = 1 | <div className="auth-container">
+275: Open = 2 | <div className="auth-card" style={{ maxWidth: 520, position: 'relative', overflow: 'hidden', paddingBottom: '24px' }}>
+280: Open = 3 | <div className="stat-card" style={{ marginBottom: 20, textAlign: 'center' }}>
+283: Open = 2 | </div>
+286: Open = 3 | <div style={{
+292: Open = 4 | <div style={{
+301: Open = 3 | </div>
+302: Open = 4 | <div style={{ color: '#10B981', fontWeight: 800, fontSize: 22, animation: 'fadeInUp 0.5s ease', marginBottom: 8 }}>
+304: Open = 3 | </div>
+305: Open = 4 | <div style={{ color: 'var(--text-secondary)', fontSize: 15, animation: 'fadeInUp 0.7s ease', display: 'flex', alignItems: 'center', gap: 6 }}>
+307: Open = 3 | </div>
+308: Open = 2 | </div>
+312: Open = 3 | <div className="alert alert-error visible" style={{ marginBottom: 16 }}>
+314: Open = 2 | </div>
+320: Open = 3 | <div style={{ textAlign: 'center', padding: '40px 0' }}>
+322: Open = 2 | </div>
+328: Open = 3 | <div className="deposit-payment-info" style={{ marginBottom: 16 }}>
+329: Open = 4 | <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+331: Open = 5 | <div>
+333: Open = 6 | <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+335: Open = 5 | </div>
+336: Open = 4 | </div>
+337: Open = 3 | </div>
+338: Open = 2 | </div>
+341: Open = 3 | <div className="form-group">
+343: Open = 4 | <div className="phone-input-group">
+352: Open = 3 | </div>
+353: Open = 2 | </div>
+355: Open = 3 | <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 14, marginBottom: 20, marginTop: 4 }}>
+356: Open = 4 | <div style={{ background: '#E60000', padding: '4px 6px', borderRadius: 6, display: 'flex', alignItems: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.05)', height: 26, width: 44, justifyContent: 'center' }}>
+361: Open = 3 | </div>
+362: Open = 4 | <div style={{ background: '#0033A0', padding: '4px 6px', borderRadius: 6, display: 'flex', alignItems: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.05)', height: 26, width: 44, justifyContent: 'center' }}>
+366: Open = 3 | </div>
+367: Open = 4 | <div style={{ background: '#FF0000', padding: '4px 6px', borderRadius: 6, display: 'flex', alignItems: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.05)', height: 26, width: 44, justifyContent: 'center' }}>
+371: Open = 3 | </div>
+372: Open = 4 | <div style={{ background: '#F86704', padding: '4px 6px', borderRadius: 6, display: 'flex', alignItems: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.05)', height: 26, width: 44, justifyContent: 'center' }}>
+377: Open = 3 | </div>
+378: Open = 2 | </div>
+405: Open = 3 | <div style={{ textAlign: 'center', padding: '24px 16px' }}>
+427: Open = 2 | </div>
+436: Open = 3 | <div style={{ textAlign: 'center', padding: '40px 16px', background: 'var(--background-secondary)', borderRadius: 16, border: '1px solid var(--border-color)', margin: '20px 0' }}>
+437: Open = 4 | <div style={{ fontSize: 44, marginBottom: 16, color: 'var(--color-gold)' }}>
+439: Open = 3 | </div>
+444: Open = 2 | </div>
+447: Open = 3 | <div style={{ marginBottom: 24 }}>
+452: Open = 4 | <div style={{
+485: Open = 5 | <div style={{
+497: Open = 4 | </div>
+507: Open = 3 | </div>
+508: Open = 2 | </div>
+523: Open = 3 | <div
+538: Open = 4 | <div style={{
+548: Open = 5 | <div style={{ width: 40, height: 4, background: 'var(--border-color)', borderRadius: 2, margin: '0 auto 16px auto' }} />
+549: Open = 6 | <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+553: Open = 7 | <div style={{ width: 40, height: 40, borderRadius: '50%', background: `${selectedNetworkDetails?.color || 'var(--color-gold)'}20`, color: selectedNetworkDetails?.color || 'var(--color-gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
+555: Open = 6 | </div>
+557: Open = 7 | <div>
+560: Open = 6 | </div>
+561: Open = 5 | </div>
+562: Open = 6 | <div style={{ background: 'var(--background-secondary)', borderRadius: 16, padding: '16px', marginBottom: 16 }}>
+563: Open = 7 | <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+564: Open = 8 | <div>
+567: Open = 7 | </div>
+571: Open = 6 | </div>
+572: Open = 7 | <div style={{ height: 1, background: 'var(--border-color)', marginBottom: 12 }} />
+573: Open = 8 | <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+574: Open = 9 | <div>
+578: Open = 8 | </div>
+582: Open = 7 | </div>
+583: Open = 6 | </div>
+584: Open = 7 | <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+592: Open = 6 | </div>
+593: Open = 5 | </div>
+596: Open = 6 | <div style={{
+606: Open = 7 | <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+609: Open = 6 | </div>
+633: Open = 7 | <div className="form-group" style={{ marginBottom: 12 }}>
+635: Open = 8 | <div className="phone-input-group">
+638: Open = 7 | </div>
+639: Open = 6 | </div>
+640: Open = 7 | <div className="form-group" style={{ marginBottom: 12 }}>
+643: Open = 6 | </div>
+644: Open = 7 | <div className="form-group" style={{ marginBottom: 24 }}>
+646: Open = 8 | <div style={{ border: '2px dashed var(--border-color)', borderRadius: 12, padding: proofPreviewUrl ? '8px' : '32px 16px', textAlign: 'center', position: 'relative', cursor: 'pointer', background: 'var(--background-secondary)', transition: 'all 0.2s', overflow: 'hidden' }}>
+655: Open = 9 | <div style={{ position: 'relative' }}>
+658: Open = 8 | </div>
+660: Open = 9 | <div style={{ color: 'var(--text-muted)' }}>
+664: Open = 8 | </div>
+666: Open = 7 | </div>
+667: Open = 6 | </div>
+668: Open = 7 | <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+674: Open = 6 | </div>
+676: Open = 5 | </div>
+680: Open = 4 | </div>
+681: Open = 3 | </div>

@@ -60,14 +60,14 @@ export default function Affiliate() {
     useEffect(() => {
         // Hardcoded commission matrix — mirrors functions/lib/referralCommissions.js exactly
         const COMMISSIONS = {
-            TZS: { level1: 9000,  level2: 3000, level3: 1000 },
+            TZS: { level1: 10000,  level2: 3500, level3: 1000 },
             KES: { level1: 500,   level2: 150,  level3: 50 },
             UGX: { level1: 13500, level2: 4500, level3: 1500 },
             MWK: { level1: 6300,  level2: 2100, level3: 700 },
             RWF: { level1: 5000,  level2: 1500, level3: 500 },
-            ZMW: { level1: 100,   level2: 30,   level3: 10 },
-            BIF: { level1: 10500, level2: 3500, level3: 1100 },
-            CDF: { level1: 10500, level2: 3500, level3: 1100 },
+            ZMW: { level1: 80,    level2: 30,   level3: 10 },
+            BIF: { level1: 9000,  level2: 4000, level3: 1500 },
+            CDF: { level1: 10000, level2: 3500, level3: 1000 },
             MZN: { level1: 250,   level2: 80,   level3: 25 },
         };
         const userCurrency = userData?.currency || 'TZS';
@@ -205,18 +205,17 @@ export default function Affiliate() {
                         ) : (
                             referrals.map((r, i) => {
                                 const rCountryCode = (r.country || r.countryCode || 'TZ').toLowerCase();
-                                const rCurrency = r.currency || 'TZS';
-                                const rSymbol = CURRENCY_SYMBOLS[rCurrency] || rCurrency;
 
-                                // Hardcoded commission matrix (same as backend)
+                                // Commission is always earned in the REFERRER'S (logged-in user's) currency
+                                const mySymbol = CURRENCY_SYMBOLS[currency] || currency;
                                 const COMMISSION_MATRIX = {
-                                    TZS: [9000, 3000, 1000], KES: [500, 150, 50],
+                                    TZS: [10000, 3500, 1000], KES: [500, 150, 50],
                                     UGX: [13500, 4500, 1500], MWK: [6300, 2100, 700],
-                                    RWF: [5000, 1500, 500], ZMW: [100, 30, 10],
-                                    BIF: [10500, 3500, 1100], CDF: [10500, 3500, 1100], MZN: [250, 80, 25],
+                                    RWF: [5000, 1500, 500], ZMW: [80, 30, 10],
+                                    BIF: [9000, 4000, 1500], CDF: [10000, 3500, 1000], MZN: [250, 80, 25],
                                 };
                                 const levelIndex = (r._level || 1) - 1;
-                                const commissions = COMMISSION_MATRIX[rCurrency] || COMMISSION_MATRIX.TZS;
+                                const commissions = COMMISSION_MATRIX[currency] || COMMISSION_MATRIX.TZS;
                                 const rCommission = commissions[levelIndex] ?? commissions[0];
 
                                 return (
@@ -277,7 +276,7 @@ export default function Affiliate() {
                                                         color: 'var(--color-gold)',
                                                         padding: '0 5px', borderRadius: 4, fontWeight: 600
                                                     }}>
-                                                        +{rSymbol} {Number(rCommission).toLocaleString()}
+                                                        +{mySymbol} {Number(rCommission).toLocaleString()}
                                                     </span>
                                                 </div>
                                             </div>

@@ -578,6 +578,7 @@ export function AdminPayments() {
     const [processing, setProcessing] = useState(false);
     const [modal, setModal] = useState(null);
     const [q, setQ] = useState('');
+    const [proofPreview, setProofPreview] = useState(null);
 
     const load = useCallback(() => {
         Promise.all([getDocs(collection(db, 'activationPayments')), getDocs(collection(db, 'users'))]).then(([pSnap, uSnap]) => {
@@ -602,14 +603,15 @@ export function AdminPayments() {
         setModal({
             action, id: p.id,
             title: action === 'approve' ? 'Approve Payment' : action === 'reject' ? 'Reject Payment' : 'Delete Record',
-            subtitle: `Action required for invoice ${p.reference || p.transactionId || p.id}`,
+            subtitle: `Action required for invoice ${p.reference || p.transactionId || p.transactionHash || p.id}`,
             details: [
                 { label: 'Client ID', value: p.uid },
                 { label: 'Username', value: u.username || u.fullName || '—' },
                 { label: 'Amount', value: amountDisplay },
-                { label: 'Method', value: p.method || p.channel || 'PalmPesa' },
+                { label: 'Method', value: p.method || p.network || p.channel || 'PalmPesa' },
                 { label: 'Phone', value: p.phone || p.phoneNumber || '—' },
-                { label: 'Dated', value: p.createdAt ? new Date(p.createdAt).toLocaleString() : '—' }
+                { label: 'Dated', value: p.createdAt ? new Date(p.createdAt).toLocaleString() : '—' },
+                ...(p.transactionHash ? [{ label: 'Txn Hash', value: <span style={{fontFamily:'monospace', color:'var(--gov-blue)'}}>{p.transactionHash}</span> }] : [])
             ],
             reason: 'Verification failed', setReason: (r) => setModal(m => ({ ...m, reason: r }))
         });
@@ -631,6 +633,51 @@ export function AdminPayments() {
 
     return (
         <div>
+            {/* Proof image lightbox */}
+            {proofPreview && (
+                <div
+                    onClick={() => setProofPreview(null)}
+                    style={{
+                        position: 'fixed', inset: 0, zIndex: 9999,
+                        background: 'rgba(0,0,0,0.85)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        padding: 24, cursor: 'zoom-out'
+                    }}
+                >
+                    <div style={{ 
+                        position: 'relative', 
+                        maxWidth: 500, 
+                        width: '100%',
+                        background: 'var(--background-card, #ffffff)',
+                        padding: 16,
+                        borderRadius: 16,
+                        boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        maxHeight: '90vh'
+                    }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                            <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-primary, #111)' }}>Payment Proof</h3>
+                            <button
+                                onClick={() => setProofPreview(null)}
+                                style={{
+                                    background: 'var(--background-secondary, #f3f4f6)', border: 'none', borderRadius: '50%',
+                                    width: 32, height: 32, cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontSize: 20, color: 'var(--text-muted, #6b7280)'
+                                }}
+                            >×</button>
+                        </div>
+                        <div style={{ flex: 1, overflowY: 'auto', borderRadius: 8, display: 'flex', justifyContent: 'center' }}>
+                            <img
+                                src={proofPreview}
+                                alt="Payment proof"
+                                style={{ maxWidth: '100%', objectFit: 'contain', borderRadius: 8 }}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
             <ConfirmModal modal={modal} onClose={() => setModal(null)} onConfirm={handleConfirm} processing={processing} />
             <h1 className="gov-title">Payment Logs</h1>
             <p className="gov-subtitle">Official treasury incoming logs & verification queue</p>
@@ -645,9 +692,9 @@ export function AdminPayments() {
                     <tbody>
                         {filtered.map(p => {
                             const u = usersMap[p.uid] || {};
-                            const cCode = (u.countryCode || 'TZ').toLowerCase();
+                            const cCode = (p.countryCode || u.countryCode || u.country || 'TZ').toLowerCase();
                             const rate = u.exchangeRate || 2600;
-                            const currency = u.currency || 'TSh';
+                            const currency = u.currency || p.nativeCurrency || 'TZS';
                             return (
                                 <tr key={p.id}>
                                     <td>
@@ -659,7 +706,24 @@ export function AdminPayments() {
                                             </div>
                                         </div>
                                     </td>
-                                    <td><b>{p.method || p.channel || 'PalmPesa'}</b></td>
+                                    <td>
+                                        <b>{p.method || p.network || p.channel || 'PalmPesa'}</b>
+                                        {p.screenshotUrl && (
+                                            <button
+                                                onClick={() => setProofPreview(p.screenshotUrl)}
+                                                style={{
+                                                    display: 'flex', alignItems: 'center', gap: 4,
+                                                    fontSize: 10, color: '#16a34a', marginTop: 4,
+                                                    background: 'rgba(22,163,74,0.08)',
+                                                    border: '1px solid rgba(22,163,74,0.25)',
+                                                    borderRadius: 4, padding: '2px 6px',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                <i className="fas fa-image" /> View Proof
+                                            </button>
+                                        )}
+                                    </td>
                                     <td className="gov-amount-highlight">
                                         {(() => {
                                             const nativeAmt = p.amountTZS || p.nativeAmount || p.amount || 0;
@@ -1422,14 +1486,18 @@ export function AdminShop() {
 export function AdminSettings() {
     const { showToast } = useToast();
     const [settings, setSettings] = useState({
-        activationFees: { TZS: 14500, KES: 650, UGX: 18500 },
+        activationFees: { TZS: 15500, KES: 650, UGX: 18500, MWK: 15000, ZMW: 160, RWF: 6000, BIF: 26000, CDF: 28000 },
         minWithdrawals: { TZS: 10000, KES: 500, UGX: 15000 },
         withdrawFeePercent: 13,
         taskMinWithdrawalsBase: { tiktok: 200000, chat: 300000, welcomeBonus: 50000, youtube: 100000, facebook: 100000, whatsapp: 100000, ads: 100000 }
     });
     const [rates, setRates] = useState({ TZS: 2500, KES: 130, UGX: 3700, MWK: 1750, ZMW: 27, RWF: 1350, BIF: 2900, CDF: 2800, MZN: 65 });
-    const [commissions, setCommissions] = useState({ level1: 9000, level2: 3000, level3: 1000 });
-    const [loading, setLoading] = useState({ fees: false, withdrawals: false, taskLimits: false, rates: false, commissions: false });
+    const [commissions, setCommissions] = useState({ level1: 10000, level2: 3500, level3: 1000 });
+    // paymentTargets: { [countryCode]: { [networkId]: { number: string, name: string } } }
+    const [paymentTargets, setPaymentTargets] = useState({
+        ZM: {}, BI: {}, CD: {}, KE: {}, UG: {}, MW: {}, RW: {}
+    });
+    const [loading, setLoading] = useState({ fees: false, withdrawals: false, taskLimits: false, rates: false, commissions: false, paymentTargets: false });
 
     useEffect(() => {
         getDocs(collection(db, 'settings')).then(snap => {
@@ -1452,6 +1520,26 @@ export function AdminSettings() {
             if (Object.keys(ratesDoc).length) {
                 setRates(r => ({ ...r, ...ratesDoc }));
             }
+        });
+        // Load manual payment targets
+        import('../../services/firebase-config.js').then(async m => {
+            try {
+                const snap = await m.getDoc(m.doc(db, 'settings', 'activation'));
+                if (snap.exists()) {
+                    const raw = snap.data()?.paymentNumbers || {};
+                    // Directly assign whatever is in Firestore — new nested schema
+                    // { cc: { networkId: { number, name } } }
+                    setPaymentTargets(prev => {
+                        const merged = { ...prev };
+                        Object.entries(raw).forEach(([cc, val]) => {
+                            if (val && typeof val === 'object') {
+                                merged[cc] = { ...(merged[cc] || {}), ...val };
+                            }
+                        });
+                        return merged;
+                    });
+                }
+            } catch (e) { console.error('Failed to load payment targets', e); }
         });
     }, []);
 
@@ -1616,6 +1704,68 @@ export function AdminSettings() {
                         }}
                     >
                         {loading.commissions ? 'Saving...' : 'Save Referral Commissions'}
+                    </button>
+                </div>
+
+                {/* -- Manual Activation Payment Details -- */}
+                <div className="gov-panel" style={{ padding: 24, gridColumn: '1 / -1' }}>
+                    <h3 style={{ marginTop: 0, marginBottom: 6 }}>Manual Activation — Payment Numbers per Network</h3>
+                    <p style={{ fontSize: 12, color: 'var(--gov-text-muted)', marginBottom: 24 }}>
+                        Set the payment number and account name for each network per country. Users see the correct number when they select a network during activation. Tanzania uses PalmPesa automatically.
+                    </p>
+                    {[
+                        { cc: 'ZM', label: 'Zambia (ZMW)', networks: [{ id: 'mtn', name: 'MTN Mobile Money' }, { id: 'airtel', name: 'Airtel Money' }, { id: 'zamtel', name: 'Zamtel Kwacha' }] },
+                        { cc: 'BI', label: 'Burundi (BIF)', networks: [{ id: 'lumitel', name: 'Lumicash' }, { id: 'econet', name: 'EcoCash' }] },
+                        { cc: 'CD', label: 'DR Congo (CDF)', networks: [{ id: 'airtel', name: 'Airtel Money' }, { id: 'orange', name: 'Orange Money' }, { id: 'vodacom', name: 'M-Pesa (Vodacom)' }] },
+                        { cc: 'KE', label: 'Kenya (KES)', networks: [{ id: 'mpesa', name: 'M-PESA' }, { id: 'airtel', name: 'Airtel Money' }] },
+                        { cc: 'UG', label: 'Uganda (UGX)', networks: [{ id: 'mtn', name: 'MTN Mobile Money' }, { id: 'airtel', name: 'Airtel Money' }] },
+                        { cc: 'MW', label: 'Malawi (MWK)', networks: [{ id: 'airtel', name: 'Airtel Money' }, { id: 'tnm', name: 'TNM Mpamba' }] },
+                        { cc: 'RW', label: 'Rwanda (RWF)', networks: [{ id: 'mtn', name: 'MTN Mobile Money' }, { id: 'airtel', name: 'Airtel Money' }] },
+                    ].map(({ cc, label, networks }) => (
+                        <div key={cc} style={{ marginBottom: 28 }}>
+                            <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--gov-blue)', marginBottom: 12, paddingBottom: 6, borderBottom: '2px solid var(--gov-border)' }}>
+                                🌍 {label}
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+                                {networks.map(net => (
+                                    <div key={net.id} style={{ background: 'rgba(99,102,241,0.04)', borderRadius: 10, padding: '12px 14px', border: '1px solid var(--gov-border)' }}>
+                                        <div style={{ fontWeight: 600, fontSize: 12, marginBottom: 10, color: 'var(--gov-text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                            {net.name}
+                                        </div>
+                                        <input className="gov-input" type="text" placeholder="Payment Number"
+                                            value={paymentTargets[cc]?.[net.id]?.number || ''}
+                                            onChange={e => setPaymentTargets(prev => ({
+                                                ...prev,
+                                                [cc]: { ...prev[cc], [net.id]: { ...(prev[cc]?.[net.id] || {}), number: e.target.value } }
+                                            }))}
+                                            style={{ margin: '0 0 8px 0', width: '100%', boxSizing: 'border-box' }}
+                                        />
+                                        <input className="gov-input" type="text" placeholder="Account Name"
+                                            value={paymentTargets[cc]?.[net.id]?.name || ''}
+                                            onChange={e => setPaymentTargets(prev => ({
+                                                ...prev,
+                                                [cc]: { ...prev[cc], [net.id]: { ...(prev[cc]?.[net.id] || {}), name: e.target.value } }
+                                            }))}
+                                            style={{ margin: 0, width: '100%', boxSizing: 'border-box' }}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                    <button className="gov-btn gov-btn-primary" disabled={loading.paymentTargets}
+                        style={{ marginTop: 8, width: '100%' }}
+                        onClick={async () => {
+                            setLoading(prev => ({ ...prev, paymentTargets: true }));
+                            try {
+                                const { setDoc, doc: _d } = await import('../../services/firebase-config.js');
+                                await setDoc(_d(db, 'settings', 'activation'), { paymentNumbers: paymentTargets }, { merge: true });
+                                showToast('Payment details saved successfully.', 'success');
+                            } catch { showToast('Failed to save payment details.', 'error'); }
+                            setLoading(prev => ({ ...prev, paymentTargets: false }));
+                        }}
+                    >
+                        {loading.paymentTargets ? 'Saving...' : '💾 Save All Payment Numbers'}
                     </button>
                 </div>
 

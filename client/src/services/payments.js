@@ -18,15 +18,18 @@ import { db, doc, getDoc, getDocs, updateDoc, addDoc, collection, query, where }
  */
 export async function processActivationPayment(uid, paymentData) {
   try {
-    const { method, phoneNumber, transactionId, amount, currency } = paymentData;
+    const { method, phoneNumber, transactionId, amount, currency, screenshotUrl, countryCode } = paymentData;
 
     const paymentRef = await addDoc(collection(db, 'activationPayments'), {
       uid,
       method,
       phoneNumber: phoneNumber || '',
       transactionId: transactionId || '',
+      transactionHash: transactionId || '',
       amount: amount || 0,
       currency: currency || 'TZS',
+      screenshotUrl: screenshotUrl || '',
+      countryCode: countryCode || 'TZ',
       status: 'pending',
       createdAt: Date.now(),
       referenceCode: `NH-${Date.now().toString().slice(-6)}`
@@ -120,23 +123,47 @@ export async function getActivationStatus(uid) {
 export function getPaymentMethods(countryCode) {
   const methods = {
     'TZ': [
-      { id: 'vodacom', name: 'Vodacom M-Pesa', icon: '📱', ussd: '*150*00#' },
-      { id: 'airtel', name: 'Airtel Money', icon: '📱', ussd: '*150*60#' },
-      { id: 'halopesa', name: 'Halopesa', icon: '📱', ussd: '*150*88#' },
+      { id: 'vodacom', name: 'Vodacom M-Pesa', image: '/assets/images/tanzania/vodacom.png', ussd: '*150*00#' },
+      { id: 'airtel', name: 'Airtel Money', image: '/assets/images/tanzania/airtel.png', ussd: '*150*60#' },
+      { id: 'halopesa', name: 'Halopesa', image: '/assets/images/tanzania/halopesa.png', ussd: '*150*88#' },
+      { id: 'tigo', name: 'Tigo Pesa', image: '/assets/images/tanzania/mixx.png', ussd: '*150*01#' },
       { id: 'crdb', name: 'CRDB Bank', icon: '🏦', ussd: '*150*03#' }
     ],
     'KE': [
-      { id: 'mpesa', name: 'M-PESA', icon: '📱', ussd: '*234#' },
-      { id: 'airtel', name: 'Airtel Money', icon: '📱', ussd: '*150*00#' }
+      { id: 'mpesa', name: 'M-PESA', image: '/assets/images/kenya/vodacom.png', ussd: '*234#' },
+      { id: 'airtel', name: 'Airtel Money', image: '/assets/images/kenya/airtel.png', ussd: '*150*00#' }
     ],
     'UG': [
-      { id: 'mtn', name: 'MTN Mobile Money', icon: '📱', ussd: '*165#' },
-      { id: 'airtel', name: 'Airtel Money', icon: '📱', ussd: '*185#' }
+      { id: 'mtn', name: 'MTN Mobile Money', image: '/assets/images/uganda/mtn.png', ussd: '*165#' },
+      { id: 'airtel', name: 'Airtel Money', image: '/assets/images/uganda/airtel.png', ussd: '*185#' }
+    ],
+    'ZM': [
+      { id: 'mtn', name: 'MTN Mobile Money', image: '/assets/images/zambia/mtn.png', color: '#ffcc00' },
+      { id: 'airtel', name: 'Airtel Money', image: '/assets/images/zambia/airtel.png', color: '#ff0000' },
+      { id: 'zamtel', name: 'Zamtel Kwacha', icon: '📱', color: '#00cc00' }
+    ],
+    'BI': [
+      { id: 'lumitel', name: 'Lumicash', image: '/assets/images/burundi/lumicash.png', color: '#ff9900' },
+      { id: 'econet', name: 'EcoCash', icon: '📱', color: '#0066cc' }
+    ],
+    'CD': [
+      { id: 'airtel', name: 'Airtel Money', image: '/assets/images/drc/airtel.png', color: '#ff0000' },
+      { id: 'orange', name: 'Orange Money', icon: '📱', color: '#ff6600' },
+      { id: 'vodacom', name: 'M-Pesa (Vodacom)', image: '/assets/images/drc/vodacom.png', color: '#e60000' }
+    ],
+    'MW': [
+      { id: 'airtel', name: 'Airtel Money', image: '/assets/images/malawi/airtel.png', color: '#ff0000' },
+      { id: 'tnm', name: 'TNM Mpamba', image: '/assets/images/malawi/tnm.png', color: '#009933' }
+    ],
+    'RW': [
+      { id: 'mtn', name: 'MTN Mobile Money', image: '/assets/images/rwanda/mtn.png', color: '#ffcc00' },
+      { id: 'airtel', name: 'Airtel Money', image: '/assets/images/rwanda/airtel.png', color: '#ff0000' }
     ]
   };
   
   return methods[countryCode] || methods['TZ'];
 }
+
 
 // ============================================================
 // EXPORT
