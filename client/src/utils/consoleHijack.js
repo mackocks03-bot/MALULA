@@ -214,6 +214,25 @@ export function initConsoleHijack() {
             // Keep console dynamically clear of other errors or logs
             originalClear.call(console);
 
+            // Palette of colorful themes for sections
+            const palettes = [
+                { header: '#ff7675', text: '#ffb8b8' }, // Rose/Red
+                { header: '#00cec9', text: '#81ecec' }, // Teal
+                { header: '#fdcb6e', text: '#ffeaa7' }, // Gold/Yellow
+                { header: '#0984e3', text: '#74b9ff' }, // Blue
+                { header: '#e84393', text: '#fd79a8' }, // Pink
+                { header: '#00b894', text: '#55efc4' }, // Green
+                { header: '#6c5ce7', text: '#a29bfe' }, // Purple
+                { header: '#e17055', text: '#fab1a0' }  // Orange
+            ];
+
+            let sectionIndex = -1; // -1 for main headers before Section 1
+
+            function getColors() {
+                if (sectionIndex === -1) return { header: '#E2B63E', text: '#D1D5DB' };
+                return palettes[sectionIndex % palettes.length];
+            }
+
             // Print the terms text line by line with styling rules
             const lines = termsText.trim().split('\n');
             
@@ -225,22 +244,27 @@ export function initConsoleHijack() {
 
                 if (line.startsWith('# ')) { 
                     // Main title
-                    originalLog.call(console, '%c' + line.substring(2), "color: #E2B63E; font-size: 16px; font-weight: bold; text-decoration: underline; padding-bottom: 5px;");
+                    originalLog.call(console, '%c' + line.substring(2), "color: #FFD700; font-size: 16px; font-weight: bold; text-decoration: underline; padding-bottom: 5px;");
                 } else if (line.startsWith('## ')) { 
                     // Section header
-                    originalLog.call(console, '%c' + line.substring(3), "color: #E2B63E; font-size: 14px; font-weight: bold; text-decoration: underline; margin-top: 10px; margin-bottom: 4px;");
+                    sectionIndex++;
+                    const c = getColors();
+                    originalLog.call(console, '%c' + line.substring(3), `color: ${c.header}; font-size: 14px; font-weight: bold; text-decoration: underline; margin-top: 10px; margin-bottom: 4px;`);
                 } else if (line.startsWith('### ')) { 
                     // Sub-section header
-                    originalLog.call(console, '%c' + line.substring(4), "color: #FBBF24; font-size: 13px; font-weight: bold; margin-top: 8px; margin-bottom: 2px;");
+                    const c = getColors();
+                    originalLog.call(console, '%c' + line.substring(4), `color: ${c.header}; font-size: 13px; font-weight: bold; font-style: italic; margin-top: 8px; margin-bottom: 2px;`);
                 } else if (line.startsWith('! ')) { 
                     // Important block
-                    originalLog.call(console, '%c' + line.substring(2), "color: #ef4444; font-size: 12px; font-weight: bold; background: rgba(239, 68, 68, 0.1); padding: 6px; border-radius: 4px; line-height: 1.5;");
+                    originalLog.call(console, '%c' + line.substring(2), "color: #ffffff; font-size: 12px; font-weight: bold; background: #ef4444; padding: 6px; border-radius: 4px; line-height: 1.5;");
                 } else if (line.startsWith('- ')) { 
                     // List item
-                    originalLog.call(console, '%c• ' + line.substring(2), "color: #9CA3AF; font-size: 12px; margin-left: 12px; line-height: 1.5;");
+                    const c = getColors();
+                    originalLog.call(console, '%c• ' + line.substring(2), `color: ${c.text}; font-size: 12px; margin-left: 12px; line-height: 1.5;`);
                 } else { 
                     // Normal text
-                    originalLog.call(console, '%c' + line, "color: #D1D5DB; font-size: 12px; line-height: 1.5;");
+                    const c = getColors();
+                    originalLog.call(console, '%c' + line, `color: ${c.text}; font-size: 12px; line-height: 1.5;`);
                 }
             }
         } catch (e) {
