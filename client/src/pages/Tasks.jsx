@@ -112,9 +112,32 @@ export default function Tasks() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [watching, videoPlaying, watchSeconds, isDone]);
 
-    // YouTube IFrame API: listen for play/pause postMessages
+    // YouTube IFrame API: send 'listening' handshake + handle play/pause state changes
     useEffect(() => {
         if (!watching) return;
+
+        // For YouTube: send the 'listening' command so the iframe starts emitting events.
+        // We retry a few times to account for iframe load time.
+        let attempts = 0;
+        const handshake = setInterval(() => {
+            const iframe = ytIframeRef.current;
+            if (iframe?.contentWindow) {
+                try {
+                    iframe.contentWindow.postMessage(
+                        JSON.stringify({ event: 'listening', id: 1 }),
+                        '*'
+                    );
+                } catch { /* cross-origin is fine, YouTube handles it */ }
+            }
+            if (++attempts >= 5) clearInterval(handshake);
+        }, 600);
+
+        // For embed iframes with autoplay=1: assume video starts playing after ~1.5s.
+        // YouTube will override this via postMessage if the user pauses.
+        let autoStartTimer;
+        if (embedUrl) {
+            autoStartTimer = setTimeout(() => setVideoPlaying(true), 1500);
+        }
 
         const handleMessage = (event) => {
             try {
@@ -122,17 +145,22 @@ export default function Tasks() {
                 if (data?.event === 'onStateChange') {
                     // YT.PlayerState: 1 = playing, 2 = paused, 0 = ended, 3 = buffering
                     if (data.info === 1 || data.info === 3) {
-                        setVideoPlaying(true);   // playing or buffering = count
-                    } else {
-                        setVideoPlaying(false);  // paused / ended / unstarted
+                        setVideoPlaying(true);
+                    } else if (data.info === 2 || data.info === 0) {
+                        setVideoPlaying(false);  // paused or ended
                     }
                 }
             } catch { /* non-JSON messages are fine to ignore */ }
         };
 
         window.addEventListener('message', handleMessage);
-        return () => window.removeEventListener('message', handleMessage);
-    }, [watching]);
+        return () => {
+            clearInterval(handshake);
+            clearTimeout(autoStartTimer);
+            window.removeEventListener('message', handleMessage);
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [watching, embedUrl]);
 
     const completeItem = async () => {
         if (todayTask.link || isDone) return;
