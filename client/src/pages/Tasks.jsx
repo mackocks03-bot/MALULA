@@ -73,6 +73,31 @@ export default function Tasks() {
     const taskKey = `task_${todayKey}_${new Date().toISOString().split('T')[0]}`;
     const scheduledId = `scheduled_${todayKey}`;
 
+    // Build the video embed URL from admin-uploaded videoUrl
+    const isYouTube = (url) => url && (url.includes('youtube.com') || url.includes('youtu.be'));
+
+    const getEmbedUrl = (url) => {
+        if (!url) return null;
+        try {
+            if (url.includes('youtube.com/watch')) {
+                const u = new URL(url);
+                // enablejsapi=1 enables postMessage state-change events
+                return `https://www.youtube.com/embed/${u.searchParams.get('v')}?autoplay=1&controls=1&rel=0&enablejsapi=1`;
+            }
+            if (url.includes('youtu.be/')) {
+                const id = url.split('youtu.be/')[1].split('?')[0];
+                return `https://www.youtube.com/embed/${id}?autoplay=1&controls=1&rel=0&enablejsapi=1`;
+            }
+            if (url.includes('tiktok.com')) return null;
+            if (url.includes('facebook.com/')) {
+                return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&autoplay=true&show_text=false`;
+            }
+        } catch {}
+        return null;
+    };
+
+    const embedUrl = getEmbedUrl(todayTask.videoUrl);
+
     // Compute progress variables early — used by useEffects below
     const completed = taskProgress?.completed || 0;
     const total = todayTask?.totalItems || 1;
@@ -205,31 +230,6 @@ export default function Tasks() {
     const toggleVideoPlaying = () => {
         setVideoPlaying(p => !p);
     };
-
-    // Build the video embed URL from admin-uploaded videoUrl
-    const isYouTube = (url) => url && (url.includes('youtube.com') || url.includes('youtu.be'));
-
-    const getEmbedUrl = (url) => {
-        if (!url) return null;
-        try {
-            if (url.includes('youtube.com/watch')) {
-                const u = new URL(url);
-                // enablejsapi=1 enables postMessage state-change events
-                return `https://www.youtube.com/embed/${u.searchParams.get('v')}?autoplay=1&controls=1&rel=0&enablejsapi=1`;
-            }
-            if (url.includes('youtu.be/')) {
-                const id = url.split('youtu.be/')[1].split('?')[0];
-                return `https://www.youtube.com/embed/${id}?autoplay=1&controls=1&rel=0&enablejsapi=1`;
-            }
-            if (url.includes('tiktok.com')) return null;
-            if (url.includes('facebook.com/')) {
-                return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&autoplay=true&show_text=false`;
-            }
-        } catch {}
-        return null;
-    };
-
-    const embedUrl = getEmbedUrl(todayTask.videoUrl);
 
     // Currency symbol helper
     const currSym = CURRENCY_SYMBOLS[currency] || currency;
