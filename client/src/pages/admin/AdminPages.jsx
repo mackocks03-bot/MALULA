@@ -52,6 +52,7 @@ const adminLinks = [
     { to: '/admin/palmpesa-ledger', label: 'PalmPesa Ledger', icon: 'ledger' },
     { to: '/admin/withdrawals', label: 'Withdrawal Queue', icon: 'withdraw' },
     { to: '/admin/referrals', label: 'Referral Tracking', icon: 'referrals' },
+    { to: '/admin/upliner', label: 'Upliner Editor', icon: 'referrals' },
     { to: '/admin/tasks', label: 'Task Config', icon: 'tasks' },
     { to: '/admin/task-monitor', label: 'Daily Task Logs', icon: 'tasks' },
     { to: '/admin/shop', label: 'Vendor Management', icon: 'shop' },
@@ -3025,6 +3026,400 @@ export function AdminOrders() {
                     })}
                 </div>
             )}
+        </div>
+    );
+}
+/* ═══════════════════════════════════════════════════════════
+   ADMIN UPLINER EDITOR
+═══════════════════════════════════════════════════════════ */
+export function AdminUplinerEditor() {
+    const { user: adminUser } = useAuth();
+    const { showToast } = useToast();
+
+    // ── State ──────────────────────────────────────────────
+    const [allUsers, setAllUsers] = useState([]);
+    const [usersMap, setUsersMap] = useState({});      // uid → userData
+    const [loginIndex, setLoginIndex] = useState({});  // username.lowercase → uid
+    const [loadingUsers, setLoadingUsers] = useState(true);
+
+    // Target user (the one to re-assign)
+    const [targetQuery, setTargetQuery] = useState('');
+    const [targetUser, setTargetUser] = useState(null);
+
+    // New upliner
+    const [newUplinerQuery, setNewUplinerQuery] = useState('');
+    const [newUplinerUser, setNewUplinerUser] = useState(null);
+    const [uplinerSearchStatus, setUplinerSearchStatus] = useState(''); // '', 'found', 'not-found', 'searching'
+
+    // UI
+    const [saving, setSaving] = useState(false);
+    const [circularWarning, setCircularWarning] = useState('');
+
+    // Audit history
+    const [auditLog, setAuditLog] = useState([]);
+    const [loadingAudit, setLoadingAudit] = useState(true);
+
+    // ── Load all users ─────────────────────────────────────
+    const loadUsers = useCallback(() => {
+        setLoadingUsers(true);
+        getDocs(collection(db, 'users')).then(snap => {
+            const users = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+            const map = {};
+            const idx = {};
+            users.forEach(u => {
+                map[u.uid] = u;
+                if (u.username) idx[u.username.toLowerCase()] = u.uid;
+            });
+            setAllUsers(users);
+            setUsersMap(map);
+            setLoginIndex(idx);
+            setLoadingUsers(false);
+        }).catch(() => setLoadingUsers(false));
+    }, []);
+
+    // ── Load audit log ─────────────────────────────────────
+    const loadAudit = useCallback(() => {
+        setLoadingAudit(true);
+        getDocs(collection(db, 'uplinerChanges')).then(snap => {
+            const entries = snap.docs
+                .map(d => ({ id: d.id, ...d.data() }))
+                .sort((a, b) => (b.changedAt || 0) - (a.changedAt || 0))
+                .slice(0, 50);
+            setAuditLog(entries);
+            setLoadingAudit(false);
+        }).catch(() => setLoadingAudit(false));
+    }, []);
+
+    useEffect(() => { loadUsers(); loadAudit(); }, [loadUsers, loadAudit]);
+
+    // ── Filtered target user suggestions ──────────────────
+    const targetSuggestions = targetQuery.length >= 2 && !targetUser
+        ? allUsers.filter(u => {
+              const q = targetQuery.toLowerCase();
+              return u.username?.toLowerCase().includes(q)
+                  || u.email?.toLowerCase().includes(q)
+                  || u.uid?.toLowerCase().includes(q)
+                  || u.phone?.includes(q);
+          }).slice(0, 8)
+        : [];
+
+    // ── Circular reference guard ───────────────────────────
+    const checkCircular = (target, proposedUpliner, uMap, idx) => {
+        if (!target || !proposedUpliner) return '';
+        if (proposedUpliner.uid === target.uid) return '⚠️ Cannot assign a user as their own upliner.';
+        let current = proposedUpliner;
+        for (let i = 0; i < 12; i++) {
+            if (!current.referrer) break;
+            const upUid = idx[current.referrer.toLowerCase()] || Object.values(uMap).find(u => u.username === current.referrer)?.uid;
+            if (!upUid) break;
+            if (upUid === target.uid) {
+                return `⚠️ Circular reference! ${proposedUpliner.username} is a downline of ${target.username}. This would create an infinite commission loop.`;
+            }
+            current = uMap[upUid] || {};
+        }
+        return '';
+    };
+
+    // ── Search new upliner ────────────────────────────────
+    const searchNewUpliner = async () => {
+        const q = newUplinerQuery.trim();
+        if (!q) return;
+        setUplinerSearchStatus('searching');
+        setNewUplinerUser(null);
+        setCircularWarning('');
+
+        const uid = loginIndex[q.toLowerCase()];
+        let found = uid ? usersMap[uid] : null;
+
+        if (!found) {
+            // Fallback: fetch loginIndex doc directly
+            try {
+                const { getDoc: gd, doc: d2, db: fdb } = await import('../../services/firebase-config.js');
+                const snap = await gd(d2(fdb, 'loginIndex', q));
+                if (snap.exists()) {
+                    const fUid = snap.data().uid;
+                    found = usersMap[fUid];
+                }
+            } catch { /* ignore */ }
+        }
+
+        if (found) {
+            setNewUplinerUser(found);
+            setUplinerSearchStatus('found');
+            setCircularWarning(checkCircular(targetUser, found, usersMap, loginIndex));
+        } else {
+            setUplinerSearchStatus('not-found');
+        }
+    };
+
+    // ── Save upliner change ────────────────────────────────
+    const handleSave = async () => {
+        if (!targetUser || !newUplinerUser) return;
+        if (circularWarning) { showToast('Fix the circular reference issue first.', 'error'); return; }
+        if (targetUser.uid === newUplinerUser.uid) { showToast('Cannot assign self as upliner.', 'error'); return; }
+
+        setSaving(true);
+        try {
+            const oldUplinerUsername = targetUser.referrer || null;
+            const newUplinerUsername = newUplinerUser.username;
+            const now = Date.now();
+
+            // 1. Update target user's referrer
+            await updateDoc(doc(db, 'users', targetUser.uid), { referrer: newUplinerUsername });
+
+            // 2. Remove from old upliner's embedded referrals.level1 array (if present)
+            if (oldUplinerUsername) {
+                const oldUid = loginIndex[oldUplinerUsername.toLowerCase()]
+                    || Object.values(usersMap).find(u => u.username === oldUplinerUsername)?.uid;
+                if (oldUid && usersMap[oldUid]) {
+                    const oldData = usersMap[oldUid];
+                    const oldL1 = (oldData.referrals?.level1 || []).filter(uid => uid !== targetUser.uid);
+                    if (oldL1.length !== (oldData.referrals?.level1 || []).length) {
+                        await updateDoc(doc(db, 'users', oldUid), { 'referrals.level1': oldL1 });
+                    }
+                }
+            }
+
+            // 3. Add to new upliner's embedded referrals.level1 array (if they use it)
+            const newUplinerData = usersMap[newUplinerUser.uid];
+            const existingL1 = newUplinerData?.referrals?.level1 || [];
+            if (existingL1.length > 0 && !existingL1.includes(targetUser.uid)) {
+                await updateDoc(doc(db, 'users', newUplinerUser.uid), {
+                    'referrals.level1': [...existingL1, targetUser.uid]
+                });
+            }
+
+            // 4. Write audit record
+            await addDoc(collection(db, 'uplinerChanges'), {
+                targetUid: targetUser.uid,
+                targetUsername: targetUser.username || '',
+                oldUpliner: oldUplinerUsername || 'none',
+                newUpliner: newUplinerUsername,
+                changedBy: adminUser?.uid || 'admin',
+                changedAt: now
+            });
+
+            showToast(`✅ ${targetUser.username} is now under ${newUplinerUsername}. Affiliate page will reflect this immediately.`, 'success');
+
+            // Reset
+            setTargetUser(null); setTargetQuery('');
+            setNewUplinerUser(null); setNewUplinerQuery('');
+            setUplinerSearchStatus(''); setCircularWarning('');
+            loadUsers(); loadAudit();
+        } catch (e) {
+            showToast(`Failed: ${e.message}`, 'error');
+        }
+        setSaving(false);
+    };
+
+    const codeOf = u => (u?.countryCode || u?.country || 'TZ').toLowerCase();
+
+    return (
+        <div>
+            <h1 className="gov-title">Upliner Editor</h1>
+            <p className="gov-subtitle">Reassign a user's referral upliner. The Affiliate page reflects changes immediately. Past commissions are not reversed — only future activations flow to the new upliner.</p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20, marginBottom: 24 }}>
+
+                {/* ── Step 1: Select Target User ── */}
+                <div className="gov-panel">
+                    <div className="gov-panel-header">
+                        <div className="gov-panel-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ background: 'var(--gov-blue)', color: '#fff', borderRadius: '50%', width: 22, height: 22, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>1</span>
+                            Select User to Reassign
+                        </div>
+                    </div>
+                    <div className="gov-panel-body" style={{ padding: 16 }}>
+                        <input
+                            className="gov-input"
+                            placeholder="Search username, phone, email, UID..."
+                            value={targetQuery}
+                            onChange={e => { setTargetQuery(e.target.value); setTargetUser(null); setNewUplinerUser(null); setCircularWarning(''); setUplinerSearchStatus(''); }}
+                            style={{ marginBottom: 8 }}
+                        />
+                        {targetSuggestions.length > 0 && (
+                            <div style={{ border: '1px solid #E2E8F0', borderRadius: 6, overflow: 'hidden', marginBottom: 8, maxHeight: 240, overflowY: 'auto' }}>
+                                {targetSuggestions.map(u => (
+                                    <div
+                                        key={u.uid}
+                                        onClick={() => { setTargetUser(u); setTargetQuery(u.username || u.uid); }}
+                                        style={{ padding: '10px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, borderBottom: '1px solid #F1F5F9', background: '#fff' }}
+                                        onMouseEnter={e => e.currentTarget.style.background = '#F8FAFC'}
+                                        onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+                                    >
+                                        <img src={`https://flagcdn.com/w40/${codeOf(u)}.png`} alt="" style={{ width: 22, height: 15, borderRadius: 2, objectFit: 'cover' }} />
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontWeight: 700, fontSize: 13 }}>{u.username}</div>
+                                            <div style={{ fontSize: 11, color: '#94A3B8' }}>{u.email || u.phone}</div>
+                                        </div>
+                                        <StatusBadge status={u.isActive ? 'active' : 'pending'} />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {targetUser && (
+                            <div style={{ background: '#F0F9FF', border: '1px solid #BAE6FD', borderRadius: 8, padding: 12 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                                    <img src={`https://flagcdn.com/w40/${codeOf(targetUser)}.png`} alt="" style={{ width: 28, height: 18, borderRadius: 3, objectFit: 'cover' }} />
+                                    <div>
+                                        <div style={{ fontWeight: 700 }}>{targetUser.username}</div>
+                                        <div style={{ fontSize: 11, color: '#64748B', fontFamily: 'monospace' }}>{targetUser.uid}</div>
+                                    </div>
+                                </div>
+                                <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+                                    <tbody>
+                                        <tr><td style={{ padding: '4px 0', color: '#64748B', fontWeight: 600 }}>Current Upliner</td><td style={{ textAlign: 'right', fontWeight: 700, color: targetUser.referrer ? '#0288D1' : '#999', fontFamily: 'monospace' }}>{targetUser.referrer || '— None'}</td></tr>
+                                        <tr><td style={{ padding: '4px 0', color: '#64748B', fontWeight: 600 }}>Status</td><td style={{ textAlign: 'right' }}><StatusBadge status={targetUser.isActive ? 'active' : 'pending'} /></td></tr>
+                                        <tr><td style={{ padding: '4px 0', color: '#64748B', fontWeight: 600 }}>Currency</td><td style={{ textAlign: 'right' }}>{targetUser.currency || 'TZS'}</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                        {loadingUsers && <div style={{ color: '#94A3B8', fontSize: 13, marginTop: 8 }}>Loading users...</div>}
+                    </div>
+                </div>
+
+                {/* ── Step 2: New Upliner ── */}
+                <div className="gov-panel">
+                    <div className="gov-panel-header">
+                        <div className="gov-panel-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ background: 'var(--gov-blue)', color: '#fff', borderRadius: '50%', width: 22, height: 22, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>2</span>
+                            Set New Upliner
+                        </div>
+                    </div>
+                    <div className="gov-panel-body" style={{ padding: 16 }}>
+                        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                            <input
+                                className="gov-input"
+                                placeholder="Exact username..."
+                                value={newUplinerQuery}
+                                onChange={e => { setNewUplinerQuery(e.target.value); setNewUplinerUser(null); setUplinerSearchStatus(''); setCircularWarning(''); }}
+                                onKeyDown={e => e.key === 'Enter' && searchNewUpliner()}
+                                style={{ flex: 1 }}
+                                disabled={!targetUser}
+                            />
+                            <button
+                                className="gov-btn gov-btn-primary"
+                                onClick={searchNewUpliner}
+                                disabled={!targetUser || !newUplinerQuery.trim() || uplinerSearchStatus === 'searching'}
+                                style={{ padding: '0 14px', whiteSpace: 'nowrap' }}
+                            >
+                                {uplinerSearchStatus === 'searching' ? '...' : 'Find'}
+                            </button>
+                        </div>
+
+                        {!targetUser && <div style={{ color: '#94A3B8', fontSize: 12, textAlign: 'center', padding: '12px 0' }}>← Select a target user first</div>}
+
+                        {uplinerSearchStatus === 'not-found' && (
+                            <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 8, padding: 10, color: '#DC2626', fontSize: 13 }}>
+                                ❌ Username not found. Check spelling (case-sensitive).
+                            </div>
+                        )}
+
+                        {newUplinerUser && (
+                            <div style={{ background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: 8, padding: 12 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                                    <img src={`https://flagcdn.com/w40/${codeOf(newUplinerUser)}.png`} alt="" style={{ width: 28, height: 18, borderRadius: 3, objectFit: 'cover' }} />
+                                    <div>
+                                        <div style={{ fontWeight: 700, color: '#16A34A' }}>✓ {newUplinerUser.username}</div>
+                                        <div style={{ fontSize: 11, color: '#64748B', fontFamily: 'monospace' }}>{newUplinerUser.uid}</div>
+                                    </div>
+                                </div>
+                                <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+                                    <tbody>
+                                        <tr><td style={{ padding: '4px 0', color: '#64748B', fontWeight: 600 }}>Their Upliner</td><td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{newUplinerUser.referrer || '— Top Level'}</td></tr>
+                                        <tr><td style={{ padding: '4px 0', color: '#64748B', fontWeight: 600 }}>Status</td><td style={{ textAlign: 'right' }}><StatusBadge status={newUplinerUser.isActive ? 'active' : 'pending'} /></td></tr>
+                                        <tr><td style={{ padding: '4px 0', color: '#64748B', fontWeight: 600 }}>Currency</td><td style={{ textAlign: 'right' }}>{newUplinerUser.currency || 'TZS'}</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+
+                        {circularWarning && (
+                            <div style={{ background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: 8, padding: 10, color: '#92400E', fontSize: 13, marginTop: 8 }}>
+                                {circularWarning}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* ── Step 3: Confirm ── */}
+            {targetUser && newUplinerUser && !circularWarning && (
+                <div className="gov-panel" style={{ marginBottom: 24 }}>
+                    <div className="gov-panel-header">
+                        <div className="gov-panel-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ background: '#2E7D32', color: '#fff', borderRadius: '50%', width: 22, height: 22, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>3</span>
+                            Confirm Change
+                        </div>
+                    </div>
+                    <div className="gov-panel-body" style={{ padding: 16 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
+                            <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, padding: '10px 16px', textAlign: 'center' }}>
+                                <div style={{ fontSize: 11, color: '#64748B', fontWeight: 600, marginBottom: 2 }}>USER</div>
+                                <div style={{ fontWeight: 700 }}>{targetUser.username}</div>
+                            </div>
+                            <div style={{ flex: 1, minWidth: 160, textAlign: 'center' }}>
+                                <div style={{ fontSize: 11, color: '#94A3B8', marginBottom: 6 }}>UPLINER CHANGES</div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                    <span style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 6, padding: '4px 10px', fontWeight: 700, color: '#DC2626', fontFamily: 'monospace', fontSize: 13 }}>
+                                        {targetUser.referrer || 'none'}
+                                    </span>
+                                    <span style={{ color: '#94A3B8' }}>→</span>
+                                    <span style={{ background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: 6, padding: '4px 10px', fontWeight: 700, color: '#16A34A', fontFamily: 'monospace', fontSize: 13 }}>
+                                        {newUplinerUser.username}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div style={{ background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: 6, padding: '8px 12px', fontSize: 12, color: '#92400E', marginBottom: 12 }}>
+                            ⚠️ Past commissions already paid are NOT reversed. Affiliate page will update instantly for both old and new upliners.
+                        </div>
+                        <button className="gov-btn gov-btn-success" onClick={handleSave} disabled={saving} style={{ minWidth: 200 }}>
+                            {saving ? 'Saving...' : '✅ Confirm & Save Upliner Change'}
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Audit Log ── */}
+            <div className="gov-panel">
+                <div className="gov-panel-header">
+                    <div className="gov-panel-title">Upliner Change History</div>
+                    <button className="gov-btn gov-btn-outline" style={{ padding: '4px 10px', fontSize: 11 }} onClick={loadAudit}>↻ Refresh</button>
+                </div>
+                <div className="gov-table-container">
+                    <table className="gov-table">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Old Upliner</th>
+                                <th>New Upliner</th>
+                                <th>Timestamp</th>
+                                <th>Admin UID</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {loadingAudit && <tr><td colSpan={5} style={{ textAlign: 'center', padding: 24, color: '#94A3B8' }}>Loading...</td></tr>}
+                            {!loadingAudit && auditLog.length === 0 && (
+                                <tr><td colSpan={5}><div className="gov-empty-state">No upliner changes recorded yet.</div></td></tr>
+                            )}
+                            {auditLog.map(entry => (
+                                <tr key={entry.id}>
+                                    <td>
+                                        <div style={{ fontWeight: 700 }}>{entry.targetUsername || entry.targetUid?.slice(0, 10)}</div>
+                                        <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#94A3B8' }}>{entry.targetUid?.slice(0, 14)}...</div>
+                                    </td>
+                                    <td><span style={{ fontFamily: 'monospace', color: '#DC2626', fontWeight: 600 }}>{entry.oldUpliner || '—'}</span></td>
+                                    <td><span style={{ fontFamily: 'monospace', color: '#16A34A', fontWeight: 600 }}>{entry.newUpliner}</span></td>
+                                    <td style={{ fontSize: 12 }}>{entry.changedAt ? new Date(entry.changedAt).toLocaleString() : '—'}</td>
+                                    <td style={{ fontSize: 11, fontFamily: 'monospace', color: '#94A3B8' }}>{entry.changedBy?.slice(0, 12) || '—'}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     );
 }

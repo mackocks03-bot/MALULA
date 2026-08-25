@@ -23,7 +23,7 @@ import AdminLogin from './pages/admin/AdminLogin.jsx';
 import AdminLayout, {
     AdminDashboard, AdminUsers, AdminPayments, AdminWithdrawals,
     AdminReferrals, AdminTasks, AdminTasksMonitor, AdminShop, AdminSettings, AdminShopDeposits,
-    AdminPalmpesaLedger, AdminKycReview, AdminOrders
+    AdminPalmpesaLedger, AdminKycReview, AdminOrders, AdminUplinerEditor
 } from './pages/admin/AdminPages.jsx';
 
 export default function App() {
@@ -61,6 +61,7 @@ export default function App() {
                 <Route path="palmpesa-ledger" element={<AdminPalmpesaLedger />} />
                 <Route path="withdrawals" element={<AdminWithdrawals />} />
                 <Route path="referrals" element={<AdminReferrals />} />
+                <Route path="upliner" element={<AdminUplinerEditor />} />
                 <Route path="tasks" element={<AdminTasks />} />
                 <Route path="task-monitor" element={<AdminTasksMonitor />} />
                 <Route path="shop" element={<AdminShop />} />

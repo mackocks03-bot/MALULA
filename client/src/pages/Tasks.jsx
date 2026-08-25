@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import DashboardLayout from '../components/DashboardLayout.jsx';
 import CinematicLoader from '../components/CinematicLoader.jsx';
@@ -48,9 +48,11 @@ export default function Tasks() {
     const { showToast } = useToast();
     const [taskProgress, setTaskProgress] = useState(null);
     const [completing, setCompleting] = useState(false);
-    const [watching, setWatching] = useState(false);
+    const [watching, setWatching] = useState(false);      // iframe/box is shown
+    const [videoPlaying, setVideoPlaying] = useState(false); // countdown only ticks while true
     const [watchSeconds, setWatchSeconds] = useState(0);
     const [adminSettings, setAdminSettings] = useState({});
+    const ytIframeRef = useRef(null);  // ref to YouTube iframe for postMessage
 
     const todayKey = DAY_KEYS[new Date().getDay()];
     const todayFallback = FALLBACK_DAY_TASKS[todayKey] || {};
@@ -96,9 +98,11 @@ export default function Tasks() {
         return () => unsub();
     }, [user, taskKey]);
 
+    // Countdown: only ticks while videoPlaying AND watching AND not done
     useEffect(() => {
-        if (!watching || isDone) return;
+        if (!watching || !videoPlaying || isDone) return;
         if (watchSeconds >= 15) {
+            setVideoPlaying(false);
             setWatching(false);
             completeItem();
             return;
@@ -106,7 +110,29 @@ export default function Tasks() {
         const timer = setInterval(() => setWatchSeconds(s => s + 1), 1000);
         return () => clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [watching, watchSeconds, isDone]);
+    }, [watching, videoPlaying, watchSeconds, isDone]);
+
+    // YouTube IFrame API: listen for play/pause postMessages
+    useEffect(() => {
+        if (!watching) return;
+
+        const handleMessage = (event) => {
+            try {
+                const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+                if (data?.event === 'onStateChange') {
+                    // YT.PlayerState: 1 = playing, 2 = paused, 0 = ended, 3 = buffering
+                    if (data.info === 1 || data.info === 3) {
+                        setVideoPlaying(true);   // playing or buffering = count
+                    } else {
+                        setVideoPlaying(false);  // paused / ended / unstarted
+                    }
+                }
+            } catch { /* non-JSON messages are fine to ignore */ }
+        };
+
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, [watching]);
 
     const completeItem = async () => {
         if (todayTask.link || isDone) return;
@@ -144,24 +170,32 @@ export default function Tasks() {
     const startVideoWatch = () => {
         if (watching || isDone) return;
         setWatching(true);
+        setVideoPlaying(false); // wait for video to actually start playing
         setWatchSeconds(0);
     };
 
+    const toggleVideoPlaying = () => {
+        setVideoPlaying(p => !p);
+    };
+
     // Build the video embed URL from admin-uploaded videoUrl
+    const isYouTube = (url) => url && (url.includes('youtube.com') || url.includes('youtu.be'));
+
     const getEmbedUrl = (url) => {
         if (!url) return null;
         try {
             if (url.includes('youtube.com/watch')) {
                 const u = new URL(url);
-                return `https://www.youtube.com/embed/${u.searchParams.get('v')}?autoplay=1&controls=0&rel=0`;
+                // enablejsapi=1 enables postMessage state-change events
+                return `https://www.youtube.com/embed/${u.searchParams.get('v')}?autoplay=1&controls=1&rel=0&enablejsapi=1`;
             }
             if (url.includes('youtu.be/')) {
                 const id = url.split('youtu.be/')[1].split('?')[0];
-                return `https://www.youtube.com/embed/${id}?autoplay=1&controls=0&rel=0`;
+                return `https://www.youtube.com/embed/${id}?autoplay=1&controls=1&rel=0&enablejsapi=1`;
             }
-            if (url.includes('tiktok.com')) return null; // TikTok embeds don't support iframe well
+            if (url.includes('tiktok.com')) return null;
             if (url.includes('facebook.com/')) {
-                return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&autoplay=true`;
+                return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&autoplay=true&show_text=false`;
             }
         } catch {}
         return null;
@@ -237,25 +271,79 @@ export default function Tasks() {
                                                 {embedUrl ? (
                                                     <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', marginBottom: 12, background: '#000', paddingTop: '56.25%' }}>
                                                         <iframe
+                                                            ref={isYouTube(todayTask.videoUrl) ? ytIframeRef : null}
                                                             src={embedUrl}
                                                             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}
                                                             allow="autoplay; encrypted-media"
                                                             allowFullScreen
                                                             title="Task Video"
                                                         />
+                                                        {/* For non-YouTube iframes (Facebook etc.), show a manual play/pause overlay button */}
+                                                        {!isYouTube(todayTask.videoUrl) && (
+                                                            <button
+                                                                onClick={toggleVideoPlaying}
+                                                                title={videoPlaying ? 'Pause countdown' : 'Resume countdown'}
+                                                                style={{
+                                                                    position: 'absolute', bottom: 10, right: 10,
+                                                                    background: videoPlaying ? 'rgba(239,68,68,0.9)' : 'rgba(34,197,94,0.9)',
+                                                                    border: 'none', borderRadius: 8,
+                                                                    color: '#fff', fontWeight: 700, fontSize: 13,
+                                                                    padding: '7px 14px', cursor: 'pointer',
+                                                                    display: 'flex', alignItems: 'center', gap: 6,
+                                                                    backdropFilter: 'blur(4px)',
+                                                                    boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                                                                    zIndex: 10
+                                                                }}
+                                                            >
+                                                                {videoPlaying ? '⏸ Pause Timer' : '▶ Video Playing'}
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 ) : (
-                                                    <div style={{ background: '#111', borderRadius: 12, height: 180, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+                                                    /* Fallback: no embed — show dark box with manual play/pause controls */
+                                                    <div style={{ background: '#111', borderRadius: 12, height: 180, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 12, gap: 14 }}>
                                                         <TaskIcon cat={cat} size={36} />
-                                                        <div style={{ color: '#fff', marginTop: 8, fontSize: 14 }}>Watching... {watchSeconds}s / 15s</div>
+                                                        <div style={{ color: '#fff', fontSize: 14 }}>
+                                                            {videoPlaying ? `Playing... ${watchSeconds}s / 15s` : '⏸ Paused'}
+                                                        </div>
+                                                        <button
+                                                            onClick={toggleVideoPlaying}
+                                                            style={{
+                                                                background: videoPlaying ? 'rgba(239,68,68,0.85)' : 'rgba(34,197,94,0.85)',
+                                                                border: 'none', borderRadius: 8,
+                                                                color: '#fff', fontWeight: 700, fontSize: 14,
+                                                                padding: '8px 22px', cursor: 'pointer'
+                                                            }}
+                                                        >
+                                                            {videoPlaying ? '⏸ Pause' : '▶ Play'}
+                                                        </button>
                                                     </div>
                                                 )}
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 10, background: 'var(--color-gold-soft)', border: '1px solid var(--border-hover)', marginBottom: 8 }}>
-                                                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                                                        {watchSeconds < 15
-                                                            ? `Watching... ${15 - watchSeconds}s remaining`
-                                                            : 'Processing reward…'
+
+                                                {/* Countdown status bar */}
+                                                <div style={{
+                                                    display: 'flex', alignItems: 'center', gap: 10,
+                                                    padding: '10px 14px', borderRadius: 10,
+                                                    background: videoPlaying ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
+                                                    border: `1px solid ${videoPlaying ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
+                                                    marginBottom: 8
+                                                }}>
+                                                    <span style={{ fontSize: 16 }}>{videoPlaying ? '▶' : '⏸'}</span>
+                                                    <span style={{ fontSize: 12, color: 'var(--text-secondary)', flex: 1 }}>
+                                                        {watchSeconds >= 15
+                                                            ? 'Processing reward…'
+                                                            : videoPlaying
+                                                                ? `Countdown: ${15 - watchSeconds}s remaining`
+                                                                : isYouTube(todayTask.videoUrl)
+                                                                    ? 'Timer paused — play the video to continue'
+                                                                    : 'Timer paused — tap ▶ when video is playing'
                                                         }
+                                                    </span>
+                                                    <span style={{
+                                                        fontWeight: 700, fontSize: 13, minWidth: 36, textAlign: 'right',
+                                                        color: videoPlaying ? 'var(--color-green)' : '#ef4444'
+                                                    }}>
+                                                        {watchSeconds}s
                                                     </span>
                                                 </div>
                                             </>
