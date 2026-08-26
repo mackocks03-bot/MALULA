@@ -218,6 +218,7 @@ function DashDonut({ pct = 0, color = '#4318ff', size = 56, stroke = 5 }) {
 
 export function AdminDashboard() {
     const [stats, setStats] = useState({ users: 0, active: 0, payments: 0, pendingPayments: 0, withdrawals: 0, pendingWithdrawals: 0 });
+    const [countryUsers, setCountryUsers] = useState([]);
     const [activity, setActivity] = useState([]);
     const [busy, setBusy] = useState(true);
 
@@ -233,10 +234,19 @@ export function AdminDashboard() {
             if (!usersSnap.empty) {
                 const uVals = usersSnap.docs.map(d => ({ uid: d.id, ...d.data() }));
                 setStats(s => ({ ...s, users: uVals.length }));
+                // build country breakdown
+                const cMap = {};
                 uVals.forEach(u => {
                     if (u.isActive) active++;
                     if (u.createdAt) acts.push({ type: 'user', title: 'System Registration', sub: `User: ${u.uid?.slice(0, 8)}`, time: u.createdAt });
+                    const cc = (u.countryCode || 'tz').toLowerCase();
+                    const cn = u.countryName || u.country || cc.toUpperCase();
+                    if (!cMap[cc]) cMap[cc] = { code: cc, name: cn, total: 0, active: 0 };
+                    cMap[cc].total++;
+                    if (u.isActive) cMap[cc].active++;
                 });
+                const sorted = Object.values(cMap).sort((a, b) => b.total - a.total);
+                setCountryUsers(sorted);
             }
             if (!paymentsSnap.empty) {
                 const pVals = paymentsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -316,6 +326,70 @@ export function AdminDashboard() {
                     </div>
                 ))}
             </section>
+
+            {/* ── COUNTRY USER CARDS ── */}
+            {countryUsers.length > 0 && (
+                <section style={{ marginBottom: 24 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                        <i className="fas fa-earth-africa" style={{ color: '#4318ff', fontSize: 17 }} />
+                        <span style={{ fontWeight: 700, fontSize: 15, color: '#2b3674' }}>Users by Country</span>
+                        <span style={{ fontSize: 11, color: '#8f9bba', marginLeft: 4 }}>{countryUsers.length} regions</span>
+                    </div>
+                    <div className="pf-dash-country-grid">
+                        {countryUsers.map(c => {
+                            const actPct = c.total ? Math.round((c.active / c.total) * 100) : 0;
+                            const topTotal = countryUsers[0]?.total || 1;
+                            const sharePct = Math.round((c.total / topTotal) * 100);
+                            return (
+                                <div key={c.code} className="pf-dash-country-card">
+                                    <div className="pf-dash-cc-top">
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <img src={`https://flagcdn.com/w40/${c.code}.png`} alt={c.code}
+                                                style={{ width: 28, height: 18, objectFit: 'cover', borderRadius: 3, flexShrink: 0 }} />
+                                            <div>
+                                                <div style={{ fontWeight: 700, fontSize: 12, color: '#2b3674' }}>{c.name}</div>
+                                                <div style={{ fontSize: 10, color: '#8f9bba' }}>{actPct}% active</div>
+                                            </div>
+                                        </div>
+                                        <div style={{ position: 'relative', width: 46, height: 46 }}>
+                                            <DashDonut pct={actPct} color="#05cd99" size={46} stroke={4} />
+                                            <div style={{
+                                                position: 'absolute', inset: 0, display: 'flex',
+                                                alignItems: 'center', justifyContent: 'center',
+                                                fontSize: 9, fontWeight: 700, color: '#05cd99'
+                                            }}>{actPct}%</div>
+                                        </div>
+                                    </div>
+                                    <div className="pf-dash-cc-rows">
+                                        <div className="pf-dash-cc-row">
+                                            <span><i className="fas fa-users" style={{ color: '#4318ff', marginRight: 5 }} />Total Users</span>
+                                            <strong style={{ color: '#4318ff' }}>{c.total.toLocaleString()}</strong>
+                                        </div>
+                                        <div className="pf-dash-cc-row">
+                                            <span><i className="fas fa-user-check" style={{ color: '#05cd99', marginRight: 5 }} />Active</span>
+                                            <strong style={{ color: '#05cd99' }}>{c.active.toLocaleString()}</strong>
+                                        </div>
+                                        <div className="pf-dash-cc-row">
+                                            <span><i className="fas fa-user-xmark" style={{ color: '#ff5630', marginRight: 5 }} />Inactive</span>
+                                            <strong style={{ color: '#ff5630' }}>{(c.total - c.active).toLocaleString()}</strong>
+                                        </div>
+                                        {/* mini share bar */}
+                                        <div style={{ marginTop: 8 }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#8f9bba', marginBottom: 4 }}>
+                                                <span>Share of total users</span>
+                                                <span>{sharePct}%</span>
+                                            </div>
+                                            <div style={{ height: 5, borderRadius: 10, background: 'rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+                                                <div style={{ height: '100%', width: `${sharePct}%`, background: 'linear-gradient(90deg, #4318ff, #868cff)', borderRadius: 10, transition: 'width 0.6s ease' }} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </section>
+            )}
 
             {/* ── ACTIVITY LOG ── */}
             <div className="pf-dash-panel">

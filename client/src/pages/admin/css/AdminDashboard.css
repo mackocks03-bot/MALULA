@@ -165,6 +165,46 @@
 .pf-dash-activity-sub { font-size: 11px; color: #8f9bba; margin-top: 2px; font-family: monospace; }
 .pf-dash-activity-time { font-size: 11px; color: #8f9bba; white-space: nowrap; }
 
+/* ── COUNTRY USER CARDS ── */
+.pf-dash-country-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+}
+
+.pf-dash-country-card {
+    background: rgba(255,255,255,0.75);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.8);
+    padding: 16px;
+    box-shadow: 0px 18px 40px rgba(112,144,176,0.12);
+    transition: transform 0.2s;
+}
+.pf-dash-country-card:hover { transform: translateY(-2px); }
+
+.pf-dash-cc-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.pf-dash-cc-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.pf-dash-cc-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 500;
+    color: #2b3674;
+}
+
 /* ── RESPONSIVE ── */
 @media (max-width: 1024px) {
     .pf-dash-grid { grid-template-columns: repeat(2, 1fr); }
