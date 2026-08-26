@@ -239,8 +239,8 @@ export function AdminDashboard() {
                 uVals.forEach(u => {
                     if (u.isActive) active++;
                     if (u.createdAt) acts.push({ type: 'user', title: 'System Registration', sub: `User: ${u.uid?.slice(0, 8)}`, time: u.createdAt });
-                    const cc = (u.countryCode || 'tz').toLowerCase();
-                    const cn = u.countryName || u.country || cc.toUpperCase();
+                    const cc = (u.countryCode || u.country || 'tz').toLowerCase();
+                    const cn = u.countryName || u.countryCode || u.country || cc.toUpperCase();
                     if (!cMap[cc]) cMap[cc] = { code: cc, name: cn, total: 0, active: 0 };
                     cMap[cc].total++;
                     if (u.isActive) cMap[cc].active++;

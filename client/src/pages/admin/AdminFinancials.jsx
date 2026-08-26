@@ -111,7 +111,7 @@ export default function AdminFinancials() {
                 const p = d.data();
                 if (!['approved', 'completed', 'success'].includes(p.status)) return;
                 const u = usersMap[p.uid] || {};
-                const cc = (u.countryCode || p.countryCode || 'tz').toLowerCase();
+                const cc = (u.countryCode || u.country || p.countryCode || 'tz').toLowerCase();
                 const cur = u.currency || p.nativeCurrency || 'TZS';
                 const cn = u.countryName || u.country || cc.toUpperCase();
                 ensureCountry(cc, cn, cur);
@@ -127,7 +127,7 @@ export default function AdminFinancials() {
                 const p = d.data();
                 if (!['approved', 'completed', 'success'].includes(p.status)) return;
                 const u = usersMap[p.uid] || {};
-                const cc = (u.countryCode || p.countryCode || 'tz').toLowerCase();
+                const cc = (u.countryCode || u.country || p.countryCode || 'tz').toLowerCase();
                 const cur = u.currency || p.nativeCurrency || 'TZS';
                 const cn = u.countryName || u.country || cc.toUpperCase();
                 ensureCountry(cc, cn, cur);
@@ -143,7 +143,7 @@ export default function AdminFinancials() {
                 const p = d.data();
                 if (!['approved', 'completed', 'COMPLETED', 'success'].includes(p.status)) return;
                 const u = usersMap[p.uid] || {};
-                const cc = (u.countryCode || p.countryCode || 'tz').toLowerCase();
+                const cc = (u.countryCode || u.country || p.countryCode || 'tz').toLowerCase();
                 const cur = u.currency || 'TZS';
                 const cn = u.countryName || u.country || cc.toUpperCase();
                 ensureCountry(cc, cn, cur);
@@ -158,7 +158,7 @@ export default function AdminFinancials() {
             cSnap.forEach(d => {
                 const c = d.data();
                 const u = usersMap[c.uid] || {};
-                const cc = (u.countryCode || 'tz').toLowerCase();
+                const cc = (u.countryCode || u.country || 'tz').toLowerCase();
                 const cn = u.countryName || u.country || cc.toUpperCase();
                 const cur = u.currency || c.currency || 'TZS';
                 ensureCountry(cc, cn, cur);
