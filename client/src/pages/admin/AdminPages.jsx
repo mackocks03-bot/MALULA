@@ -58,6 +58,7 @@ const adminLinks = [
     { to: '/admin/shop', label: 'Vendor Management', icon: 'shop' },
     { to: '/admin/settings', label: 'System Parameters', icon: 'settings' },
     { to: '/admin/orders', label: 'Order Dispatch', icon: 'shop' },
+    { to: '/admin/financials', label: 'Financial Analysis', icon: 'ledger' },
 ];
 
 /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Shared components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */

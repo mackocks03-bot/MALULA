@@ -25,6 +25,7 @@ import AdminLayout, {
     AdminReferrals, AdminTasks, AdminTasksMonitor, AdminShop, AdminSettings, AdminShopDeposits,
     AdminPalmpesaLedger, AdminKycReview, AdminOrders, AdminUplinerEditor
 } from './pages/admin/AdminPages.jsx';
+import AdminFinancials from './pages/admin/AdminFinancials.jsx';
 
 export default function App() {
     return (
@@ -67,6 +68,7 @@ export default function App() {
                 <Route path="shop" element={<AdminShop />} />
                 <Route path="kyc-review" element={<AdminKycReview />} />
                 <Route path="orders" element={<AdminOrders />} />
+                <Route path="financials" element={<AdminFinancials />} />
                 <Route path="settings" element={<AdminSettings />} />
             </Route>
 
