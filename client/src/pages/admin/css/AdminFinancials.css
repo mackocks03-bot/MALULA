@@ -51,11 +51,11 @@
   gap: 16px;
 }
 
-/* METRICS GRID */
+/* METRICS GRID — 6 columns for summary cards */
 .payflow-ui .pf-metrics-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 14px;
   margin-bottom: 24px;
 }
 
@@ -64,24 +64,24 @@
   backdrop-filter: blur(20px);
   border-radius: var(--pf-radius-lg);
   border: 1px solid var(--pf-border-color);
-  padding: 20px;
+  padding: 18px 16px;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  gap: 14px;
   box-shadow: var(--pf-shadow-soft);
 }
 
 .payflow-ui .pf-metric-info p {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--pf-text-muted);
   font-weight: 500;
   margin: 0;
 }
 
 .payflow-ui .pf-metric-info h3 {
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 700;
-  margin: 6px 0 10px 0;
+  margin: 5px 0 6px 0;
   color: var(--pf-text-main);
 }
 
@@ -93,20 +93,72 @@
   gap: 4px;
 }
 
-.payflow-ui .pf-trend.positive { color: #05cd99; }
-.payflow-ui .pf-trend span { color: var(--pf-text-muted); font-weight: 400; }
-
-.payflow-ui .pf-metric-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: var(--pf-accent-light-blue);
+/* REFRESH BUTTON */
+.payflow-ui .pf-refresh-btn {
+  border: none;
+  background: linear-gradient(135deg, #4318ff, #868cff);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 30px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  color: var(--pf-accent-blue);
-  font-size: 16px;
+  gap: 8px;
+  box-shadow: 0 8px 20px rgba(67,24,255,0.25);
+  transition: opacity 0.2s;
 }
+.payflow-ui .pf-refresh-btn:hover { opacity: 0.85; }
+
+/* COUNTRY CARDS GRID */
+.payflow-ui .pf-country-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.payflow-ui .pf-country-card {
+  background: var(--pf-card-bg);
+  backdrop-filter: blur(20px);
+  border-radius: var(--pf-radius-lg);
+  border: 1px solid var(--pf-border-color);
+  padding: 18px;
+  box-shadow: var(--pf-shadow-soft);
+}
+
+.payflow-ui .pf-country-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.payflow-ui .pf-country-card-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.payflow-ui .pf-cc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--pf-text-main);
+}
+
+.payflow-ui .pf-cc-divider {
+  border-top: 1px solid rgba(0,0,0,0.05);
+  margin: 4px 0;
+}
+
+.payflow-ui .pf-cc-profit {
+  font-size: 13px;
+  font-weight: 700;
+}
+
 
 /* CHARTS SECTION */
 .payflow-ui .pf-charts-grid {
