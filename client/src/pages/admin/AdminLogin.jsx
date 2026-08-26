@@ -26,7 +26,6 @@ export default function AdminLogin() {
                 setLoading(false);
                 return;
             }
-            sessionStorage.setItem('adminAuth', JSON.stringify({ ...userData, uid: result.user.uid }));
             navigate('/admin/dashboard');
         } catch {
             showToast('Login failed', 'error');

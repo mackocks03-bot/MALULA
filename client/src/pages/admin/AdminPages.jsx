@@ -146,13 +146,12 @@ export default function AdminLayout() {
 
     useEffect(() => {
         if (loading) return;
-        if (!user) { navigate('/admin/login'); return; }
-        if (userData?.role === 'admin') { setVerified(true); return; }
-        const stored = sessionStorage.getItem('adminAuth');
-        if (stored) {
-            try { if (JSON.parse(stored).role === 'admin') { setVerified(true); return; } } catch { }
+        if (!user || userData?.role !== 'admin') {
+            setVerified(false);
+            navigate('/admin/login');
+            return;
         }
-        navigate('/admin/login');
+        setVerified(true);
     }, [user, userData, loading, navigate]);
 
     if (!verified) return null;
