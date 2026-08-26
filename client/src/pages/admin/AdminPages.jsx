@@ -199,9 +199,23 @@ export default function AdminLayout() {
     );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ══════════════════════════════════════════════════════════
    DASHBOARD
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+═══════════════════════════════════════════════════════════ */
+function DashDonut({ pct = 0, color = '#4318ff', size = 56, stroke = 5 }) {
+    const r = (size - stroke * 2) / 2;
+    const circ = 2 * Math.PI * r;
+    const dash = (Math.min(pct, 100) / 100) * circ;
+    return (
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ display: 'block', flexShrink: 0 }}>
+            <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth={stroke} />
+            <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke}
+                strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
+                transform={`rotate(-90 ${size / 2} ${size / 2})`} />
+        </svg>
+    );
+}
+
 export function AdminDashboard() {
     const [stats, setStats] = useState({ users: 0, active: 0, payments: 0, pendingPayments: 0, withdrawals: 0, pendingWithdrawals: 0 });
     const [activity, setActivity] = useState([]);
@@ -221,7 +235,7 @@ export function AdminDashboard() {
                 setStats(s => ({ ...s, users: uVals.length }));
                 uVals.forEach(u => {
                     if (u.isActive) active++;
-                    if (u.createdAt) acts.push({ type: 'user', title: `System Registration`, sub: `User: ${u.uid?.slice(0, 8)}`, time: u.createdAt });
+                    if (u.createdAt) acts.push({ type: 'user', title: 'System Registration', sub: `User: ${u.uid?.slice(0, 8)}`, time: u.createdAt });
                 });
             }
             if (!paymentsSnap.empty) {
@@ -229,7 +243,7 @@ export function AdminDashboard() {
                 setStats(s => ({ ...s, payments: pVals.length }));
                 pVals.forEach(p => {
                     if (p.status === 'pending') pendingP++;
-                    if (p.createdAt) acts.push({ type: 'payment', title: `Payment Logged`, sub: `Ref: ${p.reference || 'N/A'}`, time: p.createdAt });
+                    if (p.createdAt) acts.push({ type: 'payment', title: 'Payment Logged', sub: `Ref: ${p.reference || 'N/A'}`, time: p.createdAt });
                 });
             }
             if (!withdrawalsSnap.empty) {
@@ -237,54 +251,96 @@ export function AdminDashboard() {
                     const w = wDoc.data();
                     totalW++;
                     if (w.status === 'pending') pendingW++;
-                    if (w.createdAt) acts.push({ type: 'withdraw', title: `Withdrawal Req`, sub: `$${(w.amountUSD || w.amount || 0).toFixed(2)}`, time: w.createdAt });
+                    if (w.createdAt) acts.push({ type: 'withdraw', title: 'Withdrawal Request', sub: `${(w.nativeAmount || w.amount || 0).toLocaleString()}`, time: w.createdAt });
                 });
             }
 
             setStats(s => ({ ...s, active, pendingPayments: pendingP, withdrawals: totalW, pendingWithdrawals: pendingW }));
-            setActivity(acts.sort((a, b) => b.time - a.time).slice(0, 10));
+            setActivity(acts.sort((a, b) => b.time - a.time).slice(0, 12));
             setBusy(false);
         });
     }, []);
 
+    const activePct = stats.users ? Math.round((stats.active / stats.users) * 100) : 0;
+    const pendPmtPct = stats.payments ? Math.round((stats.pendingPayments / stats.payments) * 100) : 0;
+    const pendWPct = stats.withdrawals ? Math.round((stats.pendingWithdrawals / stats.withdrawals) * 100) : 0;
+
     const cards = [
-        { label: 'Registered Citizens', value: stats.users, icon: <i className="fas fa-users" /> },
-        { label: 'Active Personnel', value: stats.active, icon: <i className="fas fa-user-check" /> },
-        { label: 'Total Invoices', value: stats.payments, icon: <i className="fas fa-file-invoice" /> },
-        { label: 'Pending Deposits', value: stats.pendingPayments, icon: <i className="fas fa-clock" /> },
-        { label: 'Total Disbursements', value: stats.withdrawals, icon: <i className="fas fa-money-bill-transfer" /> },
-        { label: 'Pending Payouts', value: stats.pendingWithdrawals, icon: <i className="fas fa-triangle-exclamation" /> },
+        { label: 'Registered Users', value: stats.users, icon: 'fa-users', color: '#4318ff', bg: '#e9eefd', pct: 100, sub: 'Total platform accounts' },
+        { label: 'Active Personnel', value: stats.active, icon: 'fa-user-check', color: '#05cd99', bg: '#e6f9f0', pct: activePct, sub: `${activePct}% activation rate` },
+        { label: 'Total Invoices', value: stats.payments, icon: 'fa-file-invoice-dollar', color: '#ffb800', bg: '#fff8e6', pct: 100 - pendPmtPct, sub: `${stats.payments - stats.pendingPayments} processed` },
+        { label: 'Pending Deposits', value: stats.pendingPayments, icon: 'fa-clock', color: '#ff5630', bg: '#ffe7e3', pct: pendPmtPct, sub: 'Awaiting review' },
+        { label: 'Total Disbursements', value: stats.withdrawals, icon: 'fa-money-bill-transfer', color: '#868cff', bg: '#f0eeff', pct: 100 - pendWPct, sub: `${stats.withdrawals - stats.pendingWithdrawals} completed` },
+        { label: 'Pending Payouts', value: stats.pendingWithdrawals, icon: 'fa-triangle-exclamation', color: '#f6ad55', bg: '#fff7ed', pct: pendWPct, sub: 'Requires action' },
     ];
 
-    return (
-        <div>
-            <h1 className="gov-title">System Overview</h1>
-            <p className="gov-subtitle">Executive summary of platform metrics</p>
+    const activityColors = { user: '#4318ff', payment: '#05cd99', withdraw: '#ff5630' };
+    const activityIcons = { user: 'fa-user-plus', payment: 'fa-file-invoice-dollar', withdraw: 'fa-money-bill-transfer' };
 
-            <div className="gov-dash-grid">
+    return (
+        <div className="pf-dash-root">
+            {/* ── HEADER ── */}
+            <header className="pf-dash-header">
+                <div>
+                    <h1 className="pf-dash-title">
+                        <i className="fas fa-border-all" style={{ marginRight: 10, color: '#4318ff' }} />
+                        System Overview
+                    </h1>
+                    <p className="pf-dash-subtitle">Executive summary of all platform metrics</p>
+                </div>
+                <button className="pf-dash-refresh" onClick={() => window.location.reload()}>
+                    <i className="fas fa-arrows-rotate" /> Refresh
+                </button>
+            </header>
+
+            {/* ── STAT CARDS ── */}
+            <section className="pf-dash-grid">
                 {cards.map((c, i) => (
-                    <div key={i} className="gov-stat-card">
-                        <div className="gov-stat-icon">{c.icon}</div>
-                        <div className="gov-stat-content">
-                            <div className="gov-stat-label">{c.label}</div>
-                            <div className="gov-stat-value">{busy ? '—' : c.value}</div>
+                    <div key={i} className="pf-dash-card">
+                        <div style={{ position: 'relative', width: 56, height: 56, flexShrink: 0 }}>
+                            <DashDonut pct={busy ? 0 : c.pct} color={c.color} />
+                            <div style={{
+                                position: 'absolute', inset: 0, display: 'flex',
+                                alignItems: 'center', justifyContent: 'center',
+                                background: c.bg, borderRadius: '50%',
+                                margin: 5, color: c.color, fontSize: 16
+                            }}>
+                                <i className={`fas ${c.icon}`} />
+                            </div>
+                        </div>
+                        <div className="pf-dash-card-info">
+                            <p className="pf-dash-card-label">{c.label}</p>
+                            <h3 className="pf-dash-card-value">{busy ? '—' : c.value.toLocaleString()}</h3>
+                            <span className="pf-dash-card-sub" style={{ color: c.color }}>{c.sub}</span>
                         </div>
                     </div>
                 ))}
-            </div>
+            </section>
 
-            <div className="gov-panel" style={{ maxWidth: 600 }}>
-                <div className="gov-panel-header"><div className="gov-panel-title">System Activity Log</div></div>
-                <div className="gov-panel-body">
-                    {busy ? <div style={{ padding: 24, textAlign: 'center', color: '#666' }}>Querying logs...</div> : (
+            {/* ── ACTIVITY LOG ── */}
+            <div className="pf-dash-panel">
+                <div className="pf-dash-panel-header">
+                    <i className="fas fa-wave-square" style={{ color: '#4318ff', marginRight: 8 }} />
+                    <span>Live Activity Feed</span>
+                </div>
+                <div className="pf-dash-panel-body">
+                    {busy ? (
+                        <div className="pf-dash-loading">
+                            <i className="fas fa-spinner fa-spin" /> Querying system logs...
+                        </div>
+                    ) : activity.length === 0 ? (
+                        <div className="pf-dash-loading">No activity records found.</div>
+                    ) : (
                         activity.map((a, i) => (
-                            <div className="gov-activity-item" key={i}>
-                                <div style={{ width: 10, height: 10, borderRadius: '50%', background: a.type === 'user' ? '#0288D1' : a.type === 'payment' ? '#2E7D32' : '#ED6C02' }}></div>
-                                <div className="gov-activity-text">
-                                    <div className="gov-activity-title">{a.title}</div>
-                                    <div className="gov-activity-sub">{a.sub}</div>
+                            <div key={i} className="pf-dash-activity-item">
+                                <div className="pf-dash-activity-dot" style={{ background: activityColors[a.type] }}>
+                                    <i className={`fas ${activityIcons[a.type]}`} style={{ fontSize: 9, color: '#fff' }} />
                                 </div>
-                                <div className="gov-activity-time">{new Date(a.time).toLocaleString()}</div>
+                                <div className="pf-dash-activity-text">
+                                    <div className="pf-dash-activity-title">{a.title}</div>
+                                    <div className="pf-dash-activity-sub">{a.sub}</div>
+                                </div>
+                                <div className="pf-dash-activity-time">{new Date(a.time).toLocaleString()}</div>
                             </div>
                         ))
                     )}
