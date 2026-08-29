@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { db, doc, collection, getDocs, updateDoc, deleteDoc, addDoc } from '../../services/firebase-config.js';
-import { approveActivation, rejectActivation, deleteActivation, cleanupStaleActivations } from '../../services/activation.js';
+import { approveActivation, rejectActivation, deleteActivation } from '../../services/activation.js';
 import { approveWithdrawal, rejectWithdrawal, deleteWithdrawal } from '../../services/withdraw.js';
 import { approveShopDeposit, rejectShopDeposit, deleteShopDeposit } from '../../services/shopDeposits.js';
 import { useToast } from '../../contexts/ToastContext.jsx';
@@ -712,16 +712,14 @@ export function AdminPayments() {
     const [proofPreview, setProofPreview] = useState(null);
 
     const load = useCallback(() => {
-        cleanupStaleActivations().then(() => {
-            Promise.all([getDocs(collection(db, 'activationPayments')), getDocs(collection(db, 'users'))]).then(([pSnap, uSnap]) => {
-                if (!uSnap.empty) {
-                    const uMap = {};
-                    uSnap.docs.forEach(d => uMap[d.id] = d.data());
-                    setUsersMap(uMap);
-                }
-                setPayments(!pSnap.empty ? pSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)) : []);
-            });
-        }).catch(err => console.error(err));
+        Promise.all([getDocs(collection(db, 'activationPayments')), getDocs(collection(db, 'users'))]).then(([pSnap, uSnap]) => {
+            if (!uSnap.empty) {
+                const uMap = {};
+                uSnap.docs.forEach(d => uMap[d.id] = d.data());
+                setUsersMap(uMap);
+            }
+            setPayments(!pSnap.empty ? pSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)) : []);
+        });
     }, []);
 
     useEffect(() => { load(); }, [load]);

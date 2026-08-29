@@ -210,6 +210,57 @@ export const sweepStuckTasks = onSchedule(
 );
 
 /**
+ * Scheduled Cron Job: Clean up stale pending manual activation requests
+ * Runs every 5 minutes to sweep 'activationPayments' that have been
+ * pending for more than 15 minutes, allowing users to try again.
+ */
+export const sweepStaleActivations = onSchedule(
+    { schedule: 'every 5 minutes', region: RTDB_REGION, timeoutSeconds: 60, memory: '256MiB' },
+    async (event) => {
+        const db = getFirestore();
+        logger.info('Starting stale activations sweeper...');
+        try {
+            const snapshot = await db.collection('activationPayments')
+                .where('status', '==', 'pending')
+                .get();
+
+            if (snapshot.empty) {
+                logger.info('No pending activations found.');
+                return;
+            }
+
+            const now = Date.now();
+            const fifteenMins = 15 * 60 * 1000;
+            let cleanedCount = 0;
+
+            for (const docSnap of snapshot.docs) {
+                const data = docSnap.data();
+                if (data.createdAt && (now - data.createdAt > fifteenMins)) {
+                    // 1. Reset user status
+                    if (data.uid) {
+                        try {
+                            await db.collection('users').doc(data.uid).update({
+                                activationStatus: 'inactive',
+                                activationPaymentId: null
+                            });
+                        } catch (err) {
+                            logger.warn(`Failed to reset user ${data.uid}`, err);
+                        }
+                    }
+                    // 2. Delete the payment record
+                    logger.info(`Deleting stale activation payment: ${docSnap.id}`);
+                    await db.collection('activationPayments').doc(docSnap.id).delete();
+                    cleanedCount++;
+                }
+            }
+            logger.info(`Sweeper finished. Cleaned ${cleanedCount} stale activations.`);
+        } catch (error) {
+            logger.error('Stale activations sweeper failed', error);
+        }
+    }
+);
+
+/**
  * Trigger SMS notification on user registration for Tanzanian users
  */
 export const onUserRegistered = onDocumentCreated(

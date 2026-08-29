@@ -141,37 +141,7 @@ export async function getPendingActivations() {
     }
 }
 
-// ============================================================
-// CLEANUP STALE ACTIVATIONS (> 15 MINS)
-// ============================================================
-export async function cleanupStaleActivations() {
-    try {
-        const snapshot = await getDocs(collection(db, 'activationPayments'));
-        if (snapshot.empty) return;
-        
-        const now = Date.now();
-        const fifteenMins = 15 * 60 * 1000;
-        
-        let cleaned = 0;
-        for (const docSnap of snapshot.docs) {
-            const data = docSnap.data();
-            if (data.status === 'pending' && data.createdAt) {
-                if (now - data.createdAt > fifteenMins) {
-                    await deleteActivation(docSnap.id);
-                    cleaned++;
-                }
-            }
-        }
-        
-        if (cleaned > 0) {
-            console.log(`🧹 Cleaned up ${cleaned} stale activation payments.`);
-        }
-        
-        return { success: true, cleaned };
-    } catch (error) {
-        console.error('❌ Error cleaning up stale activations:', error);
-    }
-}
+
 
 // ============================================================
 // DELETE ACTIVATION
