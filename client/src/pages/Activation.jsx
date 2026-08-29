@@ -42,6 +42,7 @@ export default function Activation() {
     const [showProofPopup, setShowProofPopup] = useState(false);
     const [proofFile, setProofFile] = useState(null);
     const [proofPreviewUrl, setProofPreviewUrl] = useState('');
+    const [useManualTZ, setUseManualTZ] = useState(false);
 
     const [palmpesaEnabled, setPalmpesaEnabled] = useState(null); // null = loading
     const [palmpesaAmountTZS, setPalmpesaAmountTZS] = useState(null);
@@ -321,19 +322,37 @@ export default function Activation() {
                                     <span className="spinner" style={{ display: 'inline-block', width: 24, height: 24, border: '2px solid var(--border-color)', borderTopColor: 'var(--color-gold)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
                                 </div>
                             )}
-                            {isTanzania && palmpesaEnabled !== null && (
+                            {isTanzania && palmpesaEnabled !== null && !useManualTZ && (
                                 <>
                                     {showPalmpesa ? (
                                 <>
                                     <div className="deposit-payment-info" style={{ marginBottom: 16 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                            <span style={{ fontSize: 24 }}><i className="fas fa-mobile-screen-button" style={{ color: 'var(--color-gold)' }}></i></span>
-                                            <div>
-                                                <strong style={{ color: 'var(--color-gold)' }}>PalmPesa</strong>
-                                                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                                                    {translate('activation.palmpesaHint') || 'Instant activation — M-Pesa, Airtel, Halopesa & more'}
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                <span style={{ fontSize: 24 }}><i className="fas fa-mobile-screen-button" style={{ color: 'var(--color-gold)' }}></i></span>
+                                                <div>
+                                                    <strong style={{ color: 'var(--color-gold)' }}>PalmPesa</strong>
+                                                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                                                        {translate('activation.palmpesaHint') || 'Instant activation — M-Pesa, Airtel, Halopesa & more'}
+                                                    </div>
                                                 </div>
                                             </div>
+                                            <button 
+                                                onClick={() => setUseManualTZ(true)}
+                                                type="button"
+                                                style={{
+                                                    background: 'var(--background-secondary)',
+                                                    border: '1px solid var(--border-color)',
+                                                    color: 'var(--text-primary)',
+                                                    borderRadius: '8px',
+                                                    padding: '4px 10px',
+                                                    fontSize: '11px',
+                                                    fontWeight: 'bold',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                USSD
+                                            </button>
                                         </div>
                                     </div>
 
@@ -432,7 +451,7 @@ export default function Activation() {
                 </>
             )}
 
-            {!isTanzania && (status === 'pending' || status === 'rejected') && (
+            {(!isTanzania || useManualTZ) && (status === 'pending' || status === 'rejected') && (
                         <>
                             {(status === 'pending' && userData?.activationPaymentId) ? (
                                 <div style={{ textAlign: 'center', padding: '40px 16px', background: 'var(--background-secondary)', borderRadius: 16, border: '1px solid var(--border-color)', margin: '20px 0' }}>

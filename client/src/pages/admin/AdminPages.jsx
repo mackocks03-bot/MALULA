@@ -1842,9 +1842,10 @@ export function AdminSettings() {
                 <div className="gov-panel" style={{ padding: 24, gridColumn: '1 / -1' }}>
                     <h3 style={{ marginTop: 0, marginBottom: 6 }}>Manual Activation — Payment Numbers per Network</h3>
                     <p style={{ fontSize: 12, color: 'var(--gov-text-muted)', marginBottom: 24 }}>
-                        Set the payment number and account name for each network per country. Users see the correct number when they select a network during activation. Tanzania uses PalmPesa automatically.
+                        Set the payment number and account name for each network per country. Users see the correct number when they select a network during activation.
                     </p>
                     {[
+                        { cc: 'TZ', label: 'Tanzania (TZS)', networks: [{ id: 'lipa_namba', name: 'USSD (MIXX BY YAS)' }] },
                         { cc: 'ZM', label: 'Zambia (ZMW)', networks: [{ id: 'mtn', name: 'MTN Mobile Money' }, { id: 'airtel', name: 'Airtel Money' }, { id: 'zamtel', name: 'Zamtel Kwacha' }] },
                         { cc: 'BI', label: 'Burundi (BIF)', networks: [{ id: 'lumitel', name: 'Lumicash' }, { id: 'econet', name: 'EcoCash' }] },
                         { cc: 'CD', label: 'DR Congo (CDF)', networks: [{ id: 'airtel', name: 'Airtel Money' }, { id: 'orange', name: 'Orange Money' }, { id: 'vodacom', name: 'M-Pesa (Vodacom)' }] },

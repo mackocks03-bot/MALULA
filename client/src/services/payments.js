@@ -123,11 +123,7 @@ export async function getActivationStatus(uid) {
 export function getPaymentMethods(countryCode) {
   const methods = {
     'TZ': [
-      { id: 'vodacom', name: 'Vodacom M-Pesa', image: '/assets/images/tanzania/vodacom.png', ussd: '*150*00#' },
-      { id: 'airtel', name: 'Airtel Money', image: '/assets/images/tanzania/airtel.png', ussd: '*150*60#' },
-      { id: 'halopesa', name: 'Halopesa', image: '/assets/images/tanzania/halopesa.png', ussd: '*150*88#' },
-      { id: 'tigo', name: 'Tigo Pesa', image: '/assets/images/tanzania/mixx.png', ussd: '*150*01#' },
-      { id: 'crdb', name: 'CRDB Bank', icon: '🏦', ussd: '*150*03#' }
+      { id: 'lipa_namba', name: 'USSD (Lipa Namba: MIXX BY YAS)', icon: '📱', color: '#ff0000', ussd: '*150*01#' }
     ],
     'KE': [
       { id: 'mpesa', name: 'M-PESA', image: '/assets/images/kenya/vodacom.png', ussd: '*234#' },
