@@ -275,7 +275,34 @@ export default function Activation() {
             <div className="auth-container">
                 <div className="auth-card" style={{ maxWidth: 520, position: 'relative', overflow: 'hidden', paddingBottom: '24px' }}>
                     <Logo />
-                    <h1 className="auth-title">{translate('activation.title') || 'Account Activation'}</h1>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '8px' }}>
+                        <h1 className="auth-title" style={{ marginBottom: 0 }}>{translate('activation.title') || 'Account Activation'}</h1>
+                        {isTanzania && (status === 'pending' || status === 'rejected') && !isSuccess && (
+                            <button 
+                                onClick={() => setUseManualTZ(!useManualTZ)}
+                                type="button"
+                                title={useManualTZ ? "Switch to PalmPesa Auto" : "Manual USSD Payment"}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: '36px',
+                                    height: '36px',
+                                    background: 'linear-gradient(135deg, #1E88E5, #42A5F5)',
+                                    border: 'none',
+                                    color: '#ffffff',
+                                    borderRadius: '50%',
+                                    cursor: 'pointer',
+                                    boxShadow: '0 4px 10px rgba(30, 136, 229, 0.4)',
+                                    transition: 'transform 0.2s',
+                                }}
+                                onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                                onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                            >
+                                <i className="fas fa-phone-alt" style={{ fontSize: '16px' }}></i>
+                            </button>
+                        )}
+                    </div>
                     <p className="auth-subtitle">{translate('activation.subtitle') || 'Pay the opening fee to activate your account'}</p>
 
                     <div className="stat-card" style={{ marginBottom: 20, textAlign: 'center' }}>
@@ -327,32 +354,14 @@ export default function Activation() {
                                     {showPalmpesa ? (
                                 <>
                                     <div className="deposit-payment-info" style={{ marginBottom: 16 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                <span style={{ fontSize: 24 }}><i className="fas fa-mobile-screen-button" style={{ color: 'var(--color-gold)' }}></i></span>
-                                                <div>
-                                                    <strong style={{ color: 'var(--color-gold)' }}>PalmPesa</strong>
-                                                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                                                        {translate('activation.palmpesaHint') || 'Instant activation — M-Pesa, Airtel, Halopesa & more'}
-                                                    </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                            <span style={{ fontSize: 24 }}><i className="fas fa-mobile-screen-button" style={{ color: 'var(--color-gold)' }}></i></span>
+                                            <div>
+                                                <strong style={{ color: 'var(--color-gold)' }}>PalmPesa</strong>
+                                                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                                                    {translate('activation.palmpesaHint') || 'Instant activation — M-Pesa, Airtel, Halopesa & more'}
                                                 </div>
                                             </div>
-                                            <button 
-                                                onClick={() => setUseManualTZ(true)}
-                                                type="button"
-                                                style={{
-                                                    background: 'var(--background-secondary)',
-                                                    border: '1px solid var(--border-color)',
-                                                    color: 'var(--text-primary)',
-                                                    borderRadius: '8px',
-                                                    padding: '4px 10px',
-                                                    fontSize: '11px',
-                                                    fontWeight: 'bold',
-                                                    cursor: 'pointer'
-                                                }}
-                                            >
-                                                USSD
-                                            </button>
                                         </div>
                                     </div>
 
@@ -471,15 +480,18 @@ export default function Activation() {
                                             {translate('activation.selectNetwork') || 'Select Payment Network'}
                                         </h3>
                                         <div style={{ 
-                                            display: 'grid', 
-                                            gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', 
-                                            gap: 12 
+                                            display: 'flex', 
+                                            flexWrap: 'wrap',
+                                            justifyContent: 'center',
+                                            gap: '12px' 
                                         }}>
                                     {methods.map(m => (
                                         <button 
                                             key={m.id}
                                             type="button" 
                                             style={{
+                                                flex: '1 1 130px',
+                                                maxWidth: '180px',
                                                 background: selectedMethod === m.id ? 'var(--background-secondary)' : 'var(--background-card)',
                                                 border: `1.5px solid ${selectedMethod === m.id ? (m.color || 'var(--color-gold)') : 'var(--border-color)'}`,
                                                 borderRadius: 16,

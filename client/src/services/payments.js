@@ -123,7 +123,7 @@ export async function getActivationStatus(uid) {
 export function getPaymentMethods(countryCode) {
   const methods = {
     'TZ': [
-      { id: 'lipa_namba', name: 'USSD (Lipa Namba: MIXX BY YAS)', icon: '📱', color: '#ff0000', ussd: '*150*01#' }
+      { id: 'lipa_namba', name: 'USSD (Lipa Namba: MIXX BY YAS)', image: '/assets/images/tanzania/mixx.png', color: '#ff0000', ussd: '*150*01#' }
     ],
     'KE': [
       { id: 'mpesa', name: 'M-PESA', image: '/assets/images/kenya/vodacom.png', ussd: '*234#' },
