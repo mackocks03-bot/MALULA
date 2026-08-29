@@ -277,7 +277,7 @@ export default function Activation() {
                     <Logo />
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '8px' }}>
                         <h1 className="auth-title" style={{ marginBottom: 0 }}>{translate('activation.title') || 'Account Activation'}</h1>
-                        {isTanzania && (status === 'pending' || status === 'rejected') && !isSuccess && (
+                        {(isTanzania && (status === 'pending' || status === 'rejected' || status === 'inactive') && !isSuccess) && (
                             <button 
                                 onClick={() => setUseManualTZ(!useManualTZ)}
                                 type="button"
@@ -342,7 +342,7 @@ export default function Activation() {
                         </div>
                     )}
 
-                    {!isSuccess && (status === 'pending' || status === 'rejected') && (
+                    {!isSuccess && (status === 'pending' || status === 'rejected' || status === 'inactive') && (
                         <>
                             {isTanzania && palmpesaEnabled === null && (
                                 <div style={{ textAlign: 'center', padding: '40px 0' }}>
@@ -460,7 +460,7 @@ export default function Activation() {
                 </>
             )}
 
-            {(!isTanzania || useManualTZ) && (status === 'pending' || status === 'rejected') && (
+            {(!isTanzania || useManualTZ) && (status === 'pending' || status === 'rejected' || status === 'inactive') && (
                         <>
                             {(status === 'pending' && userData?.activationPaymentId) ? (
                                 <div style={{ textAlign: 'center', padding: '40px 16px', background: 'var(--background-secondary)', borderRadius: 16, border: '1px solid var(--border-color)', margin: '20px 0' }}>
