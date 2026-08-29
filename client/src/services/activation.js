@@ -106,6 +106,14 @@ export async function rejectActivation(paymentId, reason = 'Payment not verified
             createdAt: Date.now()
         });
         
+        // Update user status
+        if (payment.uid) {
+            await updateDoc(doc(db, 'users', payment.uid), {
+                activationStatus: 'rejected',
+                activationPaymentId: null
+            });
+        }
+        
         return { success: true, message: 'Activation rejected' };
         
     } catch (error) {
@@ -138,7 +146,22 @@ export async function getPendingActivations() {
 // ============================================================
 export async function deleteActivation(paymentId) {
     try {
-        await deleteDoc(doc(db, 'activationPayments', paymentId));
+        const paymentRef = doc(db, 'activationPayments', paymentId);
+        const paymentSnap = await getDoc(paymentRef);
+        
+        if (paymentSnap.exists()) {
+            const payment = paymentSnap.data();
+            
+            // If the payment is tied to a user, clear their pending status so they aren't stuck
+            if (payment.uid) {
+                await updateDoc(doc(db, 'users', payment.uid), {
+                    activationStatus: 'inactive',
+                    activationPaymentId: null
+                });
+            }
+        }
+        
+        await deleteDoc(paymentRef);
         return { success: true, message: 'Payment record deleted' };
     } catch (error) {
         console.error('❌ Error deleting activation:', error);
