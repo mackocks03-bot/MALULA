@@ -19,6 +19,7 @@ import {
     onSnapshot 
 } from './firebase-config.js';
 import { getUser, updateUser, addTransaction, addNotification } from './database.js';
+import { getReferralTree } from './referrals.js';
 import { getSettings, getWithdrawLimits, getTaskWithdrawLimits } from './settings.js';
 import { toLocalDisplay, formatCurrency } from './currency.js';
 
@@ -67,21 +68,33 @@ export async function requestWithdrawal(uid, withdrawalData) {
 
         // Get withdrawal boundaries mapping to the specific wallet
         const limits = await getWithdrawLimits(currency);
-        const minAmount = await getTaskWithdrawLimits(walletType, currency);
         const maxAmount = limits.max || 5000000;
-        
-        if (amount < minAmount) {
-            return { 
-                success: false, 
-                error: `Minimum withdrawal is ${formatCurrency(minAmount, currency)}` 
-            };
-        }
-        
-        if (amount > maxAmount) {
-            return { 
-                success: false, 
-                error: `Maximum withdrawal is ${formatCurrency(maxAmount, currency)}` 
-            };
+
+        if (walletType === 'welcomeBonus') {
+            // Welcome bonus: only requirement is 41 active Team One referrals
+            const TEAM_ONE_GOAL = 41;
+            const tree = await getReferralTree(uid);
+            const activeDirects = tree.level1.filter(r => r.isActive).length;
+            if (activeDirects < TEAM_ONE_GOAL) {
+                return {
+                    success: false,
+                    error: `Welcome Bonus requires ${TEAM_ONE_GOAL} active Team One referrals. You currently have ${activeDirects}.`
+                };
+            }
+        } else {
+            const minAmount = await getTaskWithdrawLimits(walletType, currency);
+            if (amount < minAmount) {
+                return { 
+                    success: false, 
+                    error: `Minimum withdrawal is ${formatCurrency(minAmount, currency)}` 
+                };
+            }
+            if (amount > maxAmount) {
+                return { 
+                    success: false, 
+                    error: `Maximum withdrawal is ${formatCurrency(maxAmount, currency)}` 
+                };
+            }
         }
         
         // Check balance

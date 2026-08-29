@@ -6,6 +6,7 @@ import { useToast } from '../contexts/ToastContext.jsx';
 import { formatCurrency } from '../utils/helpers.js';
 import { requestWithdrawal, listenToUserWithdrawals, getWithdrawalStats } from '../services/withdraw.js';
 import { getWithdrawLimits, getTaskWithdrawLimits } from '../services/settings.js';
+import { getReferralTree } from '../services/referrals.js';
 import { db, doc, onSnapshot } from '../services/firebase-config.js';
 
 /* ─── Confirmation Modal ─── */
@@ -229,7 +230,12 @@ export default function Withdraw() {
     const [errorData, setErrorData] = useState(null);
     const [amountError, setAmountError] = useState('');
     const [shaking, setShaking] = useState(false);
+    const [activeDirects, setActiveDirects] = useState(0);
     const amtRef = useRef(null);
+
+    const TEAM_ONE_GOAL = 41;
+    const isTeamOne = activeDirects >= TEAM_ONE_GOAL;
+    const isWelcomeBonus = wallet === 'welcomeBonus';
 
     useEffect(() => {
         if (!user) return;
@@ -260,6 +266,9 @@ export default function Withdraw() {
             if (result.success) setWithdrawals(result.data || []);
         });
         getWithdrawalStats(user.uid).then(r => { if (r.success) setStats(r.data); });
+        getReferralTree(user.uid).then(tree => {
+            setActiveDirects(tree.level1.filter(r => r.isActive).length);
+        });
         return () => { if (typeof unsub === 'function') unsub(); };
     }, [user]);
 
@@ -280,7 +289,7 @@ export default function Withdraw() {
         if (!amount) { setAmountError(''); return; }
         if (amt <= 0) {
             triggerShake('Enter a valid amount.');
-        } else if (limits.min > 0 && amt < limits.min) {
+        } else if (!isWelcomeBonus && limits.min > 0 && amt < limits.min) {
             triggerShake(`Minimum is ${formatCurrency(limits.min, currency)}`);
         } else if (limits.max > 0 && amt > limits.max) {
             triggerShake(`Maximum is ${formatCurrency(limits.max, currency)}`);
@@ -289,7 +298,7 @@ export default function Withdraw() {
         } else {
             setAmountError('');
         }
-    }, [amount, limits, availableBalance]);
+    }, [amount, limits, availableBalance, wallet]);
 
     const triggerShake = (msg) => {
         setAmountError(msg);
@@ -362,20 +371,48 @@ export default function Withdraw() {
                         <div className="label">{WALLET_LABELS[wallet] || 'Selected Wallet'}</div>
                     </div>
 
-                    <div className="dash-stats-grid">
-                        <div className="stat-card">
-                            <div className="amount">{formatCurrency(limits.min, currency)}</div>
-                            <div className="label">Minimum</div>
+                    {/* Stats row — hide min for welcome bonus, replace with referral requirement */}
+                    {isWelcomeBonus ? (
+                        <div style={{
+                            background: isTeamOne ? 'rgba(34,197,94,0.08)' : 'rgba(245,158,11,0.08)',
+                            border: `1px solid ${isTeamOne ? 'rgba(34,197,94,0.2)' : 'rgba(245,158,11,0.25)'}`,
+                            borderRadius: 14, padding: '14px 16px', marginBottom: 14,
+                            display: 'flex', alignItems: 'center', gap: 12
+                        }}>
+                            <div style={{ fontSize: 28 }}>{isTeamOne ? '✅' : '🔒'}</div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: 800, fontSize: 13, color: isTeamOne ? '#16a34a' : '#d97706' }}>
+                                    {isTeamOne ? 'Team One Qualified — You can withdraw!' : 'Team One Requirement'}
+                                </div>
+                                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>
+                                    {isTeamOne
+                                        ? 'Your welcome bonus is fully unlocked. No minimum limit.'
+                                        : `${activeDirects} / ${TEAM_ONE_GOAL} active direct referrals — need ${TEAM_ONE_GOAL - activeDirects} more to unlock.`
+                                    }
+                                </div>
+                                {!isTeamOne && (
+                                    <div style={{ marginTop: 8, height: 6, background: 'rgba(0,0,0,0.08)', borderRadius: 99, overflow: 'hidden' }}>
+                                        <div style={{ height: '100%', width: `${Math.min((activeDirects / TEAM_ONE_GOAL) * 100, 100)}%`, background: 'linear-gradient(90deg,#f59e0b,#d97706)', borderRadius: 99, transition: 'width 0.5s ease' }} />
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                        <div className="stat-card">
-                            <div className="amount">{formatCurrency(limits.max, currency)}</div>
-                            <div className="label">Maximum</div>
+                    ) : (
+                        <div className="dash-stats-grid">
+                            <div className="stat-card">
+                                <div className="amount">{formatCurrency(limits.min, currency)}</div>
+                                <div className="label">Minimum</div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="amount">{formatCurrency(limits.max, currency)}</div>
+                                <div className="label">Maximum</div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="amount">{limits.feePercent}%</div>
+                                <div className="label">Fee</div>
+                            </div>
                         </div>
-                        <div className="stat-card">
-                            <div className="amount">{limits.feePercent}%</div>
-                            <div className="label">Fee</div>
-                        </div>
-                    </div>
+                    )}
 
                     <form onSubmit={handleSubmit} className="withdraw-form">
 
@@ -400,7 +437,7 @@ export default function Withdraw() {
                             />
                         </div>
 
-                        {/* Amount with live validation */}
+                        {/* Amount placeholder / disabled when welcomeBonus + not qualified */}
                         <div className="form-group">
                             <label className="form-label">Amount ({currency})</label>
                             <input
@@ -410,8 +447,9 @@ export default function Withdraw() {
                                 className="form-control"
                                 value={amount}
                                 onChange={e => setAmount(e.target.value)}
-                                placeholder={`Min ${formatCurrency(limits.min, currency)}`}
-                                style={amountError ? { borderColor: '#ef4444' } : {}}
+                                disabled={isWelcomeBonus && !isTeamOne}
+                                placeholder={isWelcomeBonus && !isTeamOne ? 'Locked — need 41 active referrals' : isWelcomeBonus ? `Full balance: ${formatCurrency(availableBalance, currency)}` : `Min ${formatCurrency(limits.min, currency)}`}
+                                style={amountError ? { borderColor: '#ef4444' } : (isWelcomeBonus && !isTeamOne ? { opacity: 0.5, cursor: 'not-allowed' } : {})}
                             />
                             {amountError && (
                                 <div className={shaking ? 'wd-shake' : ''} style={{
@@ -444,8 +482,8 @@ export default function Withdraw() {
                             </select>
                         </div>
 
-                        <button type="submit" className="btn-primary-auth" disabled={loading || !!amountError || hasPendingWithdrawal}>
-                            {hasPendingWithdrawal ? 'Request Pending' : loading ? translate('app.processing') : 'Review & Request Withdrawal →'}
+                        <button type="submit" className="btn-primary-auth" disabled={loading || !!amountError || hasPendingWithdrawal || (isWelcomeBonus && !isTeamOne)}>
+                            {hasPendingWithdrawal ? 'Request Pending' : (isWelcomeBonus && !isTeamOne) ? `🔒 Unlock at ${TEAM_ONE_GOAL} referrals` : loading ? translate('app.processing') : 'Review & Request Withdrawal →'}
                         </button>
                     </form>
 

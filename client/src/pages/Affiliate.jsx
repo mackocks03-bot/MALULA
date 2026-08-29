@@ -9,11 +9,19 @@ import { db, doc, onSnapshot } from '../services/firebase-config.js';
 import dataStore from '../utils/dataStore.js';
 
 const TABS = [
-    { key: 'all',    label: 'All' },
     { key: 'level1', label: 'Level 1' },
     { key: 'level2', label: 'Level 2' },
     { key: 'level3', label: 'Level 3' },
 ];
+
+const TEAM_ONE_GOAL = 41;
+
+const VerifiedBadge = () => (
+    <svg style={{ marginLeft: 6, flexShrink: 0 }} width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path d="M10.5236 2.4593C11.3917 1.80806 12.6083 1.80806 13.4764 2.4593L15.1118 3.68593C15.4851 3.96594 15.9405 4.10398 16.4101 4.07609L18.4419 3.95543C19.524 3.89117 20.4709 4.67389 20.671 5.74868L21.0478 7.76106C21.1338 8.21989 21.3644 8.63661 21.7011 8.94821L23.1585 10.3065C23.9351 11.0264 23.9351 12.2479 23.1585 12.9678L21.7011 14.3262C21.3644 14.6378 21.1338 15.0545 21.0478 15.5133L20.671 17.5257C20.4709 18.6005 19.524 19.3832 18.4419 19.319L16.4101 19.1983C15.9405 19.1704 15.4851 19.3084 15.1118 19.5885L13.4764 20.8151C12.6083 21.4663 11.3917 21.4663 10.5236 20.8151L8.88819 19.5885C8.51486 19.3084 8.05947 19.1704 7.58992 19.1983L5.55811 19.319C4.47604 19.3832 3.5291 18.6005 3.32899 17.5257L2.95217 15.5133C2.86616 15.0545 2.63558 14.6378 2.29891 14.3262L0.841539 12.9678C0.0648873 12.2479 0.0648873 11.0264 0.841539 10.3065L2.29891 8.94821C2.63558 8.63661 2.86616 8.21989 2.95217 7.76106L3.32899 5.74868C3.5291 4.67389 4.47604 3.89117 5.55811 3.95543L7.58992 4.07609C8.05947 4.10398 8.51486 3.96594 8.88819 3.68593L10.5236 2.4593Z" fill="#3b82f6"/>
+        <path fillRule="evenodd" clipRule="evenodd" d="M16.9458 9.53981C17.3995 9.06014 17.3781 8.30396 16.8984 7.8503C16.4188 7.39665 15.6626 7.41801 15.2089 7.89768L10.3702 13.0135L8.76118 11.4727C8.28318 11.015 7.52656 11.0315 7.06886 11.5095C6.61117 11.9875 6.62762 12.7441 7.10562 13.2018L9.56947 15.561C9.79973 15.7815 10.108 15.9015 10.4261 15.8953C10.7443 15.8891 11.0478 15.7573 11.2697 15.5227L16.9458 9.53981Z" fill="white"/>
+    </svg>
+);
 
 function PhoneIcon() {
     return (
@@ -30,7 +38,7 @@ export default function Affiliate() {
     const [userData, setUserData] = useState(initialData);
     const [tree, setTree] = useState({ level1: [], level2: [], level3: [] });
     const [bonuses, setBonuses] = useState({ level1: 0, level2: 0, level3: 0 });
-    const [activeTab, setActiveTab] = useState('all');
+    const [activeTab, setActiveTab] = useState('level1');
     const [loading, setLoading] = useState(true);
 
     const currency = userData?.currency || 'TZS';
@@ -80,7 +88,10 @@ export default function Affiliate() {
         ...tree.level3.map(r => ({ ...r, _level: 3 })),
     ];
 
-    const referrals = activeTab === 'all' ? allReferrals : allReferrals.filter(r => `level${r._level}` === activeTab);
+    const referrals = allReferrals.filter(r => `level${r._level}` === activeTab);
+
+    const directCount = tree.level1.filter(r => r.isActive).length;
+    const directProgress = Math.min((directCount / TEAM_ONE_GOAL) * 100, 100);
 
     const activeCount = allReferrals.filter(r => r.isActive).length;
     const inactiveCount = allReferrals.filter(r => !r.isActive).length;
@@ -97,14 +108,15 @@ export default function Affiliate() {
     const shareWa = () => window.open(`https://wa.me/?text=${encodeURIComponent('Join NEWHOPE-CHAT: ' + referralLink)}`, '_blank');
     const shareFb = () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(referralLink)}`, '_blank');
 
-    const tabCount = (key) => (key === 'all' ? allReferrals.length : (tree[key] || []).length);
+    const tabCount = (key) => (tree[key] || []).length;
 
     return (
         <DashboardLayout>
             <div className="dashboard-container">
                 <div className="dashboard-content">
-                    <h2 className="page-title" style={{ textAlign: 'center', marginBottom: 16 }}>
+                    <h2 className="page-title" style={{ textAlign: 'center', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {translate('affiliate.title')}
+                        {directCount >= TEAM_ONE_GOAL && <VerifiedBadge />}
                     </h2>
 
                     {/* ── Giant Earnings Card Top & Centered ── */}
@@ -152,8 +164,64 @@ export default function Affiliate() {
                         </div>
                     </div>
 
+                    {/* ── Team One Progress Bar ── */}
+                    <div className="t1-card" style={{ margin: '16px 0 8px' }}>
+                        {/* Header row */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <div className="t1-icon-wrap">
+                                    <span style={{ fontSize: 18 }}>🎯</span>
+                                </div>
+                                <div>
+                                    <div style={{ color: '#2b3674', fontSize: 13, fontWeight: 800, letterSpacing: 0.2 }}>Team One Goal</div>
+                                    <div style={{ color: '#8f9bba', fontSize: 11, marginTop: 1 }}>Direct referrals · Level 1</div>
+                                </div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <div className="t1-count">
+                                    <span className="t1-count-num">{loading ? '–' : directCount}</span>
+                                    <span style={{ color: '#8f9bba', fontSize: 13, fontWeight: 500 }}>/{TEAM_ONE_GOAL}</span>
+                                </div>
+                                <div style={{ fontSize: 10, marginTop: 2 }}>
+                                    {!loading && (
+                                        directCount >= TEAM_ONE_GOAL
+                                            ? <span style={{ color: '#22c55e', fontWeight: 700 }}>✅ Achieved!</span>
+                                            : <span style={{ color: '#8f9bba' }}>{TEAM_ONE_GOAL - directCount} remaining</span>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Progress bar + pulse tip */}
+                        <div style={{ position: 'relative', marginBottom: 8 }}>
+                            <div className="t1-track">
+                                <div className="t1-fill" style={{ width: loading ? '0%' : `${directProgress}%` }}>
+                                    {!loading && directProgress > 2 && directProgress < 100 && (
+                                        <div className="t1-tip-pulse" />
+                                    )}
+                                </div>
+                            </div>
+                            {[25, 50, 75, 100].map(pct => {
+                                const reached = directProgress >= pct;
+                                return (
+                                    <div key={pct} className={`t1-milestone ${reached ? 't1-milestone--reached' : ''}`}
+                                        style={{ left: `${pct}%` }} />
+                                );
+                            })}
+                        </div>
+
+                        {/* Footer labels */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ color: '#8f9bba', fontSize: 10 }}>0</span>
+                            <div className="t1-pct-badge">
+                                {loading ? '…' : `${Math.round(directProgress)}% complete`}
+                            </div>
+                            <span style={{ color: '#8f9bba', fontSize: 10 }}>{TEAM_ONE_GOAL}</span>
+                        </div>
+                    </div>
+
                     {/* ── Bonus Levels ── */}
-                    <div className="bonus-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, margin: '16px 0' }}>
+                    <div className="bonus-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, margin: '8px 0 16px' }}>
                         {[1, 2, 3].map(level => (
                             <div key={level} className="stat-card" style={{ padding: '10px' }}>
                                 <div className="amount" style={{ fontSize: 14 }}>{formatCurrency(bonuses[`level${level}`], currency)}</div>
@@ -163,31 +231,29 @@ export default function Affiliate() {
                     </div>
 
                     {/* ── Tabs ── */}
-                    <div style={{
-                        display: 'flex', gap: 6, marginBottom: 12, borderBottom: '1px solid var(--color-border)', overflowX: 'auto', paddingBottom: 6
-                    }}>
+                    <div className="lvl-tab-tray">
                         {TABS.map(tab => {
                             const isActive = activeTab === tab.key;
+                            const lvNum = parseInt(tab.key.replace('level', ''));
+                            const lvColors = ['', '#4318ff', '#7551ff', '#868cff'];
                             return (
                                 <button
                                     key={tab.key}
                                     type="button"
                                     onClick={() => setActiveTab(tab.key)}
-                                    className={`btn ${isActive ? 'btn-primary' : 'btn-outline'}`}
-                                    style={{
-                                        padding: '8px 14px',
-                                        fontSize: 12,
-                                        display: 'flex', alignItems: 'center', gap: 6,
-                                        whiteSpace: 'nowrap'
-                                    }}
+                                    className={`lvl-tab-btn ${isActive ? 'lvl-tab-btn--active' : ''}`}
                                 >
-                                    {tab.label}
-                                    <span style={{
-                                        background: isActive ? 'rgba(255,255,255,0.2)' : 'var(--color-border)',
-                                        borderRadius: '99px', fontSize: 10, padding: '2px 6px', fontWeight: 700
-                                    }}>
-                                        {tabCount(tab.key)}
-                                    </span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        <span className={`lvl-tab-dot ${isActive ? 'lvl-tab-dot--active' : ''}`}
+                                            style={{ background: isActive ? '#fff' : lvColors[lvNum] }} />
+                                        <span className="lvl-tab-label">{tab.label}</span>
+                                        <span className={`lvl-tab-badge ${isActive ? 'lvl-tab-badge--active' : ''}`}>
+                                            {tabCount(tab.key)}
+                                        </span>
+                                    </div>
+                                    <div className="lvl-tab-commission">
+                                        +{formatCurrency(bonuses[tab.key], currency)}
+                                    </div>
                                 </button>
                             );
                         })}
@@ -253,16 +319,14 @@ export default function Affiliate() {
                                                     <span style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                         {r.username || r.fullName || 'User'}
                                                     </span>
-                                                    {activeTab === 'all' && (
-                                                        <span style={{
-                                                            background: ['', 'rgba(99,102,241,0.12)', 'rgba(168,85,247,0.12)', 'rgba(236,72,153,0.12)'][r._level || 1],
-                                                            color: ['', '#6366f1', '#a855f7', '#ec4899'][r._level || 1],
-                                                            padding: '1px 5px', borderRadius: 4, fontWeight: 700, fontSize: 10,
-                                                            flexShrink: 0
-                                                        }}>
-                                                            L{r._level}
-                                                        </span>
-                                                    )}
+                                                    <span style={{
+                                                        background: ['', 'rgba(99,102,241,0.12)', 'rgba(168,85,247,0.12)', 'rgba(236,72,153,0.12)'][r._level || 1],
+                                                        color: ['', '#6366f1', '#a855f7', '#ec4899'][r._level || 1],
+                                                        padding: '1px 5px', borderRadius: 4, fontWeight: 700, fontSize: 10,
+                                                        flexShrink: 0
+                                                    }}>
+                                                        L{r._level}
+                                                    </span>
                                                 </div>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
                                                     <img
@@ -310,9 +374,96 @@ export default function Affiliate() {
                     </div>
 
                     <style>{`
-                        @keyframes spin {
-                            to { transform: rotate(360deg); }
+                        @keyframes spin { to { transform: rotate(360deg); } }
+
+                        /* ══ Team One Card ══ */
+                        @keyframes t1Grow { from { width: 0% !important; } }
+                        @keyframes t1Shimmer {
+                            0%   { background-position: 0% 50%; }
+                            50%  { background-position: 100% 50%; }
+                            100% { background-position: 0% 50%; }
                         }
+                        @keyframes t1Pulse {
+                            0%, 100% { transform: scale(1); opacity: 0.9; box-shadow: 0 0 0 0 rgba(236,72,153,0.7); }
+                            50%       { transform: scale(1.25); opacity: 1; box-shadow: 0 0 0 6px rgba(236,72,153,0); }
+                        }
+                        @keyframes t1FadeIn {
+                            from { opacity: 0; transform: translateY(6px); }
+                            to   { opacity: 1; transform: translateY(0); }
+                        }
+                        .t1-card {
+                            background: rgba(255,255,255,0.75);
+                            backdrop-filter: blur(20px);
+                            border: 1px solid rgba(255,255,255,0.9);
+                            border-radius: 16px;
+                            padding: 14px 16px;
+                            box-shadow: 0 8px 32px rgba(112,144,176,0.13);
+                            animation: t1FadeIn 0.5s ease both;
+                        }
+                        .t1-icon-wrap {
+                            width: 34px; height: 34px; border-radius: 10px;
+                            display: flex; align-items: center; justify-content: center;
+                            background: linear-gradient(135deg, rgba(67,24,255,0.1), rgba(134,140,255,0.15));
+                            border: 1px solid rgba(67,24,255,0.12);
+                            flex-shrink: 0;
+                        }
+                        .t1-count { display: flex; align-items: baseline; gap: 1px; }
+                        .t1-count-num {
+                            font-size: 22px; font-weight: 900; letter-spacing: -0.5px;
+                            background: linear-gradient(135deg, #4318ff, #868cff);
+                            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+                            background-clip: text;
+                        }
+                        .t1-track {
+                            width: 100%; height: 8px;
+                            background: rgba(67,24,255,0.08);
+                            border-radius: 99px;
+                            overflow: visible;
+                            position: relative;
+                            border: 1px solid rgba(67,24,255,0.06);
+                        }
+                        .t1-fill {
+                            height: 100%; border-radius: 99px;
+                            background: linear-gradient(90deg, #4318ff, #7551ff, #868cff);
+                            background-size: 200% 100%;
+                            animation:
+                                t1Grow 1.4s cubic-bezier(0.34,1.56,0.64,1) both,
+                                t1Shimmer 4s ease infinite 1.4s;
+                            transition: width 1s cubic-bezier(0.34,1.56,0.64,1);
+                            box-shadow: 0 0 8px rgba(67,24,255,0.3), 0 0 20px rgba(134,140,255,0.2);
+                            position: relative;
+                        }
+                        .t1-tip-pulse {
+                            position: absolute; right: -4px; top: 50%;
+                            transform: translateY(-50%);
+                            width: 12px; height: 12px; border-radius: 50%;
+                            background: radial-gradient(circle, #fff 30%, #868cff 70%);
+                            box-shadow: 0 0 6px #4318ff, 0 0 12px rgba(134,140,255,0.5);
+                            animation: t1Pulse 1.4s ease-in-out infinite;
+                        }
+                        .t1-milestone {
+                            position: absolute; top: 50%;
+                            transform: translate(-50%, -50%);
+                            width: 5px; height: 5px; border-radius: 50%;
+                            background: rgba(67,24,255,0.15);
+                            border: 1px solid rgba(67,24,255,0.2);
+                            z-index: 2;
+                            transition: background 0.5s, box-shadow 0.5s;
+                        }
+                        .t1-milestone--reached {
+                            background: #4318ff;
+                            box-shadow: 0 0 5px rgba(67,24,255,0.5);
+                        }
+                        .t1-pct-badge {
+                            background: linear-gradient(90deg, rgba(67,24,255,0.08), rgba(134,140,255,0.1));
+                            border: 1px solid rgba(67,24,255,0.15);
+                            border-radius: 99px; padding: 2px 10px;
+                            font-size: 10px; font-weight: 700;
+                            color: #4318ff;
+                            letter-spacing: 0.3px;
+                        }
+
+                        /* ══ Referral rows ══ */
                         .compact-row {
                             background: var(--color-surface);
                             border: 1px solid var(--color-border);
@@ -330,14 +481,74 @@ export default function Affiliate() {
                             color: var(--color-green); text-decoration: none;
                             transition: all 0.2s;
                         }
-                        .btn-call-compact:hover {
-                            background: var(--color-green);
+                        .btn-call-compact:hover { background: var(--color-green); color: #fff; transform: scale(1.1); }
+                        .btn-call-compact:active { transform: scale(0.95); }
+
+                        /* ══ Level Tab Switcher ══ */
+                        @keyframes tabSlideIn {
+                            from { opacity: 0; transform: scale(0.95); }
+                            to   { opacity: 1; transform: scale(1); }
+                        }
+                        .lvl-tab-tray {
+                            display: grid;
+                            grid-template-columns: repeat(3, 1fr);
+                            gap: 6px;
+                            margin-bottom: 14px;
+                            background: rgba(255,255,255,0.55);
+                            backdrop-filter: blur(12px);
+                            border: 1px solid rgba(255,255,255,0.85);
+                            border-radius: 14px;
+                            padding: 5px;
+                            box-shadow: 0 4px 16px rgba(112,144,176,0.1);
+                        }
+                        .lvl-tab-btn {
+                            display: flex; flex-direction: column; align-items: center; justify-content: center;
+                            gap: 2px;
+                            padding: 10px 8px;
+                            border: none; cursor: pointer;
+                            border-radius: 10px;
+                            background: transparent;
+                            transition: background 0.25s, box-shadow 0.25s, transform 0.15s;
+                        }
+                        .lvl-tab-btn:hover:not(.lvl-tab-btn--active) {
+                            background: rgba(67,24,255,0.05);
+                            transform: translateY(-1px);
+                        }
+                        .lvl-tab-btn--active {
+                            background: linear-gradient(135deg, #4318ff, #7551ff);
+                            box-shadow: 0 4px 14px rgba(67,24,255,0.28);
+                            animation: tabSlideIn 0.25s ease both;
+                        }
+                        .lvl-tab-dot {
+                            width: 6px; height: 6px; border-radius: 50%;
+                            flex-shrink: 0;
+                            transition: background 0.25s, transform 0.2s;
+                        }
+                        .lvl-tab-dot--active { transform: scale(1.2); }
+                        .lvl-tab-label {
+                            font-size: 12px; font-weight: 700;
+                            color: #2b3674;
+                            transition: color 0.25s;
+                        }
+                        .lvl-tab-btn--active .lvl-tab-label { color: #fff; }
+                        .lvl-tab-badge {
+                            background: rgba(67,24,255,0.1);
+                            color: #4318ff;
+                            border-radius: 99px; padding: 1px 6px;
+                            font-size: 10px; font-weight: 800;
+                            transition: background 0.25s, color 0.25s;
+                        }
+                        .lvl-tab-badge--active {
+                            background: rgba(255,255,255,0.25);
                             color: #fff;
-                            transform: scale(1.1);
                         }
-                        .btn-call-compact:active {
-                            transform: scale(0.95);
+                        .lvl-tab-commission {
+                            font-size: 10px; font-weight: 600;
+                            color: #8f9bba;
+                            transition: color 0.25s;
+                            white-space: nowrap;
                         }
+                        .lvl-tab-btn--active .lvl-tab-commission { color: rgba(255,255,255,0.7); }
                     `}</style>
                 </div>
             </div>
