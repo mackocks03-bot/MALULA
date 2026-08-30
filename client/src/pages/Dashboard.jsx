@@ -160,28 +160,111 @@ export default function Dashboard() {
                     <div className="earnings-section">
                         <div className="section-title">{translate('dashboard.earnings')}</div>
                         {[
-                            { key: 'chat',     icon: '💭', label: translate('dashboard.chat')     || 'Chat Earnings' },
-                            { key: 'tiktok',   icon: '🎵', label: translate('dashboard.tiktok')   || 'TikTok Earnings' },
-                            { key: 'facebook', icon: '📘', label: translate('dashboard.facebook') || 'Facebook Earnings' },
-                            { key: 'youtube',  icon: '📺', label: translate('dashboard.youtube')  || 'YouTube Earnings' },
-                            { key: 'whatsapp', icon: '💬', label: translate('dashboard.whatsapp') || 'WhatsApp Earnings' },
-                            { key: 'ads',      icon: '📢', label: translate('dashboard.ads')      || 'Ad Earnings' },
+                            {
+                                key: 'chat',
+                                icon: (
+                                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" style={{ flexShrink: 0 }}>
+                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="#6C63FF" />
+                                        <circle cx="8" cy="10" r="1" fill="#fff"/><circle cx="12" cy="10" r="1" fill="#fff"/><circle cx="16" cy="10" r="1" fill="#fff"/>
+                                    </svg>
+                                ),
+                                label: translate('dashboard.chat') || 'Chat Earnings'
+                            },
+                            {
+                                key: 'tiktok',
+                                icon: (
+                                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" style={{ flexShrink: 0 }}>
+                                        <rect width="24" height="24" rx="6" fill="#010101"/>
+                                        <path d="M16.6 6.4a3.6 3.6 0 0 1-3.6-3.6v10.4a2.4 2.4 0 1 1-2.4-2.4c.22 0 .43.03.63.08V7.77a5.6 5.6 0 1 0 5.37 5.63V9.05a6.77 6.77 0 0 0 3.6 1.04V6.87a3.6 3.6 0 0 1-3.6-.47z" fill="white"/>
+                                        <path d="M15.4 5.6a3.6 3.6 0 0 0 3.6 3.47V5.87a3.6 3.6 0 0 1-2-.47 3.6 3.6 0 0 1-1.6-3.6V.8A3.6 3.6 0 0 0 12 4.4v9.43a2.4 2.4 0 0 1-1.77 2.31 2.4 2.4 0 0 1-3.03-2.31 2.4 2.4 0 0 1 2.4-2.4c.22 0 .43.03.63.08V8.37a5.6 5.6 0 1 0 5.37 5.63V5.6z" fill="#EE1D52"/>
+                                        <path d="M19 9.07a6.77 6.77 0 0 1-3.6-1.04v3.04a5.6 5.6 0 0 1-5.37 5.6 5.6 5.6 0 0 1-5.63-5.6 5.6 5.6 0 0 1 5.6-5.6c.22 0 .43.01.63.04V2.88a8.8 8.8 0 0 0-.63-.04A8.8 8.8 0 0 0 1.2 11.07a8.8 8.8 0 0 0 8.8 8.8 8.8 8.8 0 0 0 8.8-8.8V6.87A6.77 6.77 0 0 0 19 9.07z" fill="#69C9D0"/>
+                                    </svg>
+                                ),
+                                label: translate('dashboard.tiktok') || 'TikTok Earnings'
+                            },
+                            {
+                                key: 'facebook',
+                                icon: (
+                                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" style={{ flexShrink: 0 }}>
+                                        <rect width="24" height="24" rx="6" fill="#1877F2"/>
+                                        <path d="M16.5 12H13.5V21H10.5V12H8V9H10.5V7.5C10.5 5.57 11.57 4 13.5 4H16V7H14.5C14.22 7 14 7.23 14 7.5V9H16.5L16.5 12Z" fill="white"/>
+                                    </svg>
+                                ),
+                                label: translate('dashboard.facebook') || 'Facebook Earnings'
+                            },
+                            {
+                                key: 'youtube',
+                                icon: (
+                                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" style={{ flexShrink: 0 }}>
+                                        <rect width="24" height="24" rx="6" fill="#FF0000"/>
+                                        <path d="M21.5 7.5s-.2-1.4-.8-2c-.8-.8-1.6-.8-2-.9C16.3 4.5 12 4.5 12 4.5s-4.3 0-6.7.1c-.4.1-1.2.1-2 .9-.6.6-.8 2-.8 2S2.3 9.1 2.3 10.7v1.5c0 1.6.2 3.2.2 3.2s.2 1.4.8 2c.8.8 1.8.8 2.3.8C6.7 18.3 12 18.3 12 18.3s4.3 0 6.7-.2c.4-.1 1.2-.1 2-.9.6-.6.8-2 .8-2s.2-1.6.2-3.2v-1.5C21.7 9.1 21.5 7.5 21.5 7.5zM10 14.5v-5.5l5.5 2.75L10 14.5z" fill="white"/>
+                                    </svg>
+                                ),
+                                label: translate('dashboard.youtube') || 'YouTube Earnings'
+                            },
+                            {
+                                key: 'whatsapp',
+                                icon: (
+                                    <svg viewBox="0 0 48 48" width="22" height="22" style={{ flexShrink: 0 }}>
+                                        <rect width="48" height="48" rx="12" fill="#25D366"/>
+                                        <path d="M24 8C15.16 8 8 15.16 8 24c0 2.83.74 5.49 2.03 7.8L8 40l8.44-2.02A15.93 15.93 0 0 0 24 40c8.84 0 16-7.16 16-16S32.84 8 24 8z" fill="#fff"/>
+                                        <path d="M24 10.4c7.5 0 13.6 6.1 13.6 13.6 0 7.5-6.1 13.6-13.6 13.6-2.46 0-4.76-.66-6.74-1.8l-.48-.28-4.98 1.19 1.24-4.84-.32-.5A13.52 13.52 0 0 1 10.4 24c0-7.5 6.1-13.6 13.6-13.6z" fill="#25D366"/>
+                                        <path d="M19.06 16.4c-.3-.67-.62-.68-.91-.7-.23-.01-.5-.01-.77-.01-.27 0-.7.1-1.07.5-.37.4-1.4 1.37-1.4 3.33s1.44 3.86 1.64 4.13c.2.27 2.78 4.43 6.86 6.03 3.4 1.34 4.09 1.07 4.82 1 .74-.06 2.38-.97 2.72-1.91.34-.94.34-1.74.24-1.91-.1-.17-.37-.27-.77-.47s-2.38-1.17-2.75-1.3c-.37-.14-.64-.2-.91.2-.27.4-1.04 1.3-1.27 1.57-.23.27-.47.3-.87.1-.4-.2-1.7-.63-3.24-2-.12-.1-.23-.2-.35-.31-.97-.93-1.6-2.06-1.79-2.46-.2-.4-.02-.62.15-.82.15-.18.33-.47.5-.7.17-.23.23-.4.33-.67.1-.27.05-.5-.05-.7-.1-.2-.89-2.18-1.23-2.98z" fill="#fff"/>
+                                    </svg>
+                                ),
+                                label: translate('dashboard.whatsapp') || 'WhatsApp Earnings'
+                            },
+                            {
+                                key: 'ads',
+                                icon: (
+                                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" style={{ flexShrink: 0 }}>
+                                        <rect width="24" height="24" rx="6" fill="#FF6B35"/>
+                                        <path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm-5 14H8v-2h6v2zm2-4H8v-2h8v2zm0-4H8V7h8v2z" fill="white"/>
+                                    </svg>
+                                ),
+                                label: translate('dashboard.ads') || 'Ad Earnings'
+                            },
                         ].map(({ key, icon, label }) => {
                             const val = taskBalances[key] || earnings[key] || 0;
                             return (
                                 <div key={key} className="earning-item">
-                                    <div className="left"><span className="name">{icon} {label}</span></div>
+                                    <div className="left">
+                                        <span className="earning-icon">{icon}</span>
+                                        <span className="name">{label}</span>
+                                    </div>
                                     <span className="value" style={{ color: val > 0 ? 'var(--color-green)' : undefined }}>{formatCurrency(val, currency)}</span>
                                 </div>
                             );
                         })}
                         <div className="earning-item">
-                            <div className="left"><span className="name">🎰 {translate('dashboard.spinEarnings') || 'Spin Earnings'}</span></div>
+                            <div className="left">
+                                <span className="earning-icon">
+                                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" style={{ flexShrink: 0 }}>
+                                        <rect width="24" height="24" rx="6" fill="#7C3AED"/>
+                                        <path d="M12 5a7 7 0 1 0 7 7A7 7 0 0 0 12 5zm1 10H11v-2h2zm0-4H11V7h2z" fill="white" opacity="0.3"/>
+                                        <path d="M8 12l2.5 2.5L16 8" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                        <circle cx="12" cy="12" r="5" stroke="white" strokeWidth="1.5" fill="none" strokeDasharray="4 2"/>
+                                    </svg>
+                                </span>
+                                <span className="name">{translate('dashboard.spinEarnings') || 'Spin Earnings'}</span>
+                            </div>
                             <span className="value" style={{ color: spinEarnings > 0 ? 'var(--color-green)' : undefined }}>{formatCurrency(spinEarnings, currency)}</span>
                         </div>
                         {(userData?.welcomeBonus || 0) > 0 && (
                             <div className="earning-item">
-                                <div className="left"><span className="name">🎁 {translate('dashboard.welcomeBonus') || 'Welcome Bonus'}</span></div>
+                                <div className="left">
+                                    <span className="earning-icon">
+                                        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" style={{ flexShrink: 0 }}>
+                                            <rect width="24" height="24" rx="6" fill="#F59E0B"/>
+                                            <path d="M20 12v9H4v-9" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                            <path d="M22 7H2v5h20V7z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                            <path d="M12 22V7" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                            <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                            <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                    </span>
+                                    <span className="name">{translate('dashboard.welcomeBonus') || 'Welcome Bonus'}</span>
+                                </div>
                                 <span className="value" style={{ color: 'var(--color-green)' }}>{userData.welcomeBonus}</span>
                             </div>
                         )}

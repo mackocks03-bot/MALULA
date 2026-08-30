@@ -514,8 +514,9 @@ textarea.form-control { height: auto; min-height: 44px; padding: 10px 14px; resi
 .earnings-section .section-title { font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
 .earning-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border-color); }
 .earning-item:last-child { border-bottom: none; }
-.earning-item .left { display: flex; align-items: center; gap: 8px; }
-.earning-item .left svg { width: 16px; height: 16px; stroke: var(--text-muted); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.earning-item .left { display: flex; align-items: center; gap: 10px; }
+.earning-icon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.earning-icon svg { display: block; }
 .earning-item .left .name { font-size: var(--font-size-sm); color: var(--text-secondary); }
 .earning-item .value { font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); color: var(--text-primary); }
 .referral-section { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px; margin-bottom: 14px; }
