@@ -28,6 +28,7 @@ export default function Dashboard() {
     const [dashboardFees, setDashboardFees] = useState({ activation: 0, welcome: 0 });
     const [realWithdrawn, setRealWithdrawn] = useState(0);
     const [activeDirects, setActiveDirects] = useState(0);
+    const [totalActiveReferrals, setTotalActiveReferrals] = useState(0);
 
     useEffect(() => {
         if (!user) return;
@@ -40,7 +41,13 @@ export default function Dashboard() {
 
         const loadTree = async () => {
             const tree = await getReferralTree(user.uid);
-            setActiveDirects(tree.level1.filter(r => r.isActive).length);
+            const l1Active = tree.level1.filter(r => r.isActive).length;
+            setActiveDirects(l1Active);
+            setTotalActiveReferrals(
+                l1Active +
+                tree.level2.filter(r => r.isActive).length +
+                tree.level3.filter(r => r.isActive).length
+            );
         };
         loadTree();
 
@@ -184,8 +191,8 @@ export default function Dashboard() {
                     <div className="referral-section">
                         <div className="header">
                             <div>
-                                <div className="count">{userData?.referralCount || 0}</div>
-                                <div className="label">{translate('dashboard.referrals')}</div>
+                                <div className="count">{totalActiveReferrals}</div>
+                                <div className="label">Active Referrals</div>
                             </div>
                             <span className="badge" style={{ background: 'var(--color-gold)', color: 'var(--color-on-gold)', padding: '2px 10px', borderRadius: 'var(--radius-full)', fontSize: 11, fontWeight: 600 }}>REFERRAL LINK</span>
                         </div>

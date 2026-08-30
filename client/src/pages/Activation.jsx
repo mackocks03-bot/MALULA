@@ -43,6 +43,8 @@ export default function Activation() {
     const [proofFile, setProofFile] = useState(null);
     const [proofPreviewUrl, setProofPreviewUrl] = useState('');
     const [useManualTZ, setUseManualTZ] = useState(false);
+    const [showUssdInstructionsSheet, setShowUssdInstructionsSheet] = useState(false);
+    const [showUssdTooltip, setShowUssdTooltip] = useState(true);
 
     const [palmpesaEnabled, setPalmpesaEnabled] = useState(null); // null = loading
     const [palmpesaAmountTZS, setPalmpesaAmountTZS] = useState(null);
@@ -277,31 +279,6 @@ export default function Activation() {
                     <Logo />
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '8px' }}>
                         <h1 className="auth-title" style={{ marginBottom: 0 }}>{translate('activation.title') || 'Account Activation'}</h1>
-                        {(isTanzania && (status === 'pending' || status === 'rejected' || status === 'inactive') && !isSuccess) && (
-                            <button 
-                                onClick={() => setUseManualTZ(!useManualTZ)}
-                                type="button"
-                                title={useManualTZ ? "Switch to PalmPesa Auto" : "Manual USSD Payment"}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    width: '36px',
-                                    height: '36px',
-                                    background: 'linear-gradient(135deg, #1E88E5, #42A5F5)',
-                                    border: 'none',
-                                    color: '#ffffff',
-                                    borderRadius: '50%',
-                                    cursor: 'pointer',
-                                    boxShadow: '0 4px 10px rgba(30, 136, 229, 0.4)',
-                                    transition: 'transform 0.2s',
-                                }}
-                                onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-                                onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                            >
-                                <i className="fas fa-phone-alt" style={{ fontSize: '16px' }}></i>
-                            </button>
-                        )}
                     </div>
                     <p className="auth-subtitle">{translate('activation.subtitle') || 'Pay the opening fee to activate your account'}</p>
 
@@ -309,6 +286,100 @@ export default function Activation() {
                         <div className="amount">{activationAmountDisplay.formatted}</div>
                         <div className="label">{translate('dashboard.openingFee')}</div>
                     </div>
+
+                    {(isTanzania && (status === 'pending' || status === 'rejected' || status === 'inactive') && !isSuccess) && (
+                        <div style={{
+                            display: 'flex', background: 'var(--background-secondary)', padding: '5px',
+                            borderRadius: '14px', marginBottom: '24px', border: '1px solid var(--border-color)',
+                            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.03)'
+                        }}>
+                            <button
+                                type="button"
+                                onClick={() => setUseManualTZ(false)}
+                                style={{
+                                    flex: 1, padding: '12px', fontSize: 13, fontWeight: 700,
+                                    borderRadius: '10px', border: 'none', cursor: 'pointer',
+                                    transition: 'all 0.25s',
+                                    background: !useManualTZ ? 'linear-gradient(135deg, #1E88E5, #42A5F5)' : 'transparent',
+                                    color: !useManualTZ ? '#fff' : 'var(--text-muted)',
+                                    boxShadow: !useManualTZ ? '0 4px 12px rgba(30, 136, 229, 0.3)' : 'none'
+                                }}
+                            >
+                                <i className="fas fa-bolt" style={{ marginRight: 6 }}></i>
+                                Automatic
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setUseManualTZ(true)}
+                                style={{
+                                    flex: 1, padding: '12px', fontSize: 13, fontWeight: 700,
+                                    borderRadius: '10px', cursor: 'pointer',
+                                    transition: 'all 0.25s',
+                                    position: 'relative',
+                                    background: useManualTZ ? 'var(--color-surface)' : 'transparent',
+                                    color: useManualTZ ? 'var(--text-primary)' : 'var(--text-muted)',
+                                    boxShadow: useManualTZ ? '0 4px 12px rgba(0,0,0,0.06)' : 'none',
+                                    border: useManualTZ ? '1px solid var(--border-color)' : '1px solid transparent'
+                                }}
+                            >
+                                <i className="fas fa-mobile-screen-button" style={{ marginRight: 6 }}></i>
+                                USSD (Manual)
+                                {/* Animated Info Icon + Floating Tooltip */}
+                                <style>{`
+                                    @keyframes ussd-breathe {
+                                        0%, 100% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.7), 0 0 0 0 rgba(251, 146, 60, 0.4); transform: scale(1); }
+                                        50% { box-shadow: 0 0 0 5px rgba(251, 146, 60, 0.15), 0 0 0 9px rgba(251, 146, 60, 0.05); transform: scale(1.12); }
+                                    }
+                                    @keyframes ussd-tooltip-drop {
+                                        0% { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+                                        100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+                                    }
+                                    @keyframes ussd-tooltip-bob {
+                                        0%, 100% { transform: translateX(-50%) translateY(0px); }
+                                        50% { transform: translateX(-50%) translateY(-3px); }
+                                    }
+                                `}</style>
+                                <div
+                                    onClick={(e) => { e.stopPropagation(); setShowUssdTooltip(false); setShowUssdInstructionsSheet(true); }}
+                                    style={{
+                                        position: 'absolute', top: -10, right: -6,
+                                        width: 20, height: 20, borderRadius: '50%',
+                                        background: 'linear-gradient(135deg, #f97316, #fb923c)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        cursor: 'pointer', zIndex: 10,
+                                        animation: 'ussd-breathe 2s ease-in-out infinite',
+                                    }}
+                                >
+                                    <i className="fas fa-info" style={{ color: 'white', fontSize: 9, fontStyle: 'normal', fontWeight: 900 }}></i>
+                                    {/* Floating tooltip box */}
+                                    {showUssdTooltip && (
+                                        <div style={{
+                                            position: 'absolute', bottom: '130%', left: '50%',
+                                            transform: 'translateX(-50%)',
+                                            background: 'linear-gradient(135deg, #1e293b, #334155)',
+                                            color: '#fff', fontSize: 10, fontWeight: 700,
+                                            borderRadius: 8, padding: '5px 10px',
+                                            whiteSpace: 'nowrap', pointerEvents: 'none',
+                                            animation: 'ussd-tooltip-drop 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards, ussd-tooltip-bob 2s ease-in-out 0.5s infinite',
+                                            zIndex: 20,
+                                            boxShadow: '0 4px 14px rgba(0,0,0,0.25)'
+                                        }}>
+                                            📋 Info
+                                            {/* Arrow pointing down */}
+                                            <div style={{
+                                                position: 'absolute', top: '100%', left: '50%',
+                                                transform: 'translateX(-50%)',
+                                                width: 0, height: 0,
+                                                borderLeft: '5px solid transparent',
+                                                borderRight: '5px solid transparent',
+                                                borderTop: '6px solid #334155'
+                                            }} />
+                                        </div>
+                                    )}
+                                </div>
+                            </button>
+                        </div>
+                    )}
 
                     {isSuccess && (
                         <div style={{
@@ -477,7 +548,7 @@ export default function Activation() {
                                     <div style={{ marginBottom: 24 }}>
                                         <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
                                             <i className="fas fa-wallet" style={{ color: 'var(--color-gold)' }}></i>
-                                            {translate('activation.selectNetwork') || 'Select Payment Network'}
+                                            Select Payment Network
                                         </h3>
                                         <div style={{ 
                                             display: 'flex', 
@@ -490,6 +561,7 @@ export default function Activation() {
                                             key={m.id}
                                             type="button" 
                                             style={{
+                                                position: 'relative',
                                                 flex: '1 1 130px',
                                                 maxWidth: '180px',
                                                 background: selectedMethod === m.id ? 'var(--background-secondary)' : 'var(--background-card)',
@@ -512,6 +584,7 @@ export default function Activation() {
                                                 setShowAccountSheet(true);
                                             }}
                                         >
+
                                             {m.image ? (
                                                 <img src={m.image} alt={m.name} style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'contain' }} />
                                             ) : (
@@ -554,13 +627,13 @@ export default function Activation() {
                     <>
                         {/* Backdrop */}
                         <div
-                            onClick={() => { setShowAccountSheet(false); setShowProofPopup(false); }}
+                            onClick={() => { setShowAccountSheet(false); setShowProofPopup(false); setShowUssdInstructionsSheet(false); }}
                             style={{
                                 position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                                 background: 'rgba(0,0,0,0.65)',
                                 zIndex: 100,
-                                opacity: (showAccountSheet || showProofPopup) ? 1 : 0,
-                                pointerEvents: (showAccountSheet || showProofPopup) ? 'auto' : 'none',
+                                opacity: (showAccountSheet || showProofPopup || showUssdInstructionsSheet) ? 1 : 0,
+                                pointerEvents: (showAccountSheet || showProofPopup || showUssdInstructionsSheet) ? 'auto' : 'none',
                                 transition: 'opacity 0.35s ease',
                                 backdropFilter: 'blur(3px)',
                                 WebkitBackdropFilter: 'blur(3px)'
@@ -623,6 +696,77 @@ export default function Activation() {
                                     I Have Paid
                                 </button>
                             </div>
+                        </div>
+
+                        {/* USSD Instructions Sheet */}
+                        <div style={{
+                            position: 'fixed', bottom: 0, left: '50%',
+                            transform: `translateX(-50%) ${showUssdInstructionsSheet ? 'translateY(0)' : 'translateY(100%)'}`,
+                            width: '100vw', maxWidth: '100%',
+                            background: '#ffffff', borderTopLeftRadius: 28, borderTopRightRadius: 28,
+                            padding: '24px 20px', zIndex: 101,
+                            transition: 'transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                            boxShadow: '0 -10px 40px rgba(0,0,0,0.15)',
+                            pointerEvents: showUssdInstructionsSheet ? 'auto' : 'none'
+                        }} onClick={e => e.stopPropagation()}>
+                            <div style={{ width: 40, height: 4, background: 'var(--border-color)', borderRadius: 2, margin: '0 auto 20px auto' }} />
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                                <h3 style={{ margin: 0, fontSize: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10B981', width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <i className="fas fa-file-invoice-dollar" style={{ fontSize: 14 }}></i>
+                                    </div>
+                                    USSD Instructions
+                                </h3>
+                                <button onClick={() => setShowUssdInstructionsSheet(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: 20, cursor: 'pointer' }}><i className="fas fa-times"></i></button>
+                            </div>
+                            
+                            <div style={{ position: 'relative', paddingLeft: 26, paddingBottom: 16 }}>
+                                {/* Vertical Timeline Line */}
+                                <div style={{ position: 'absolute', left: 9, top: 4, bottom: 20, width: 2, background: 'var(--border-color)' }}></div>
+                                
+                                <div style={{ position: 'relative', marginBottom: 20 }}>
+                                    <div style={{ position: 'absolute', left: -26, top: 2, width: 18, height: 18, borderRadius: '50%', background: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 0 4px #ffffff' }}>
+                                        <i className="fas fa-check" style={{ color: 'white', fontSize: 10 }}></i>
+                                    </div>
+                                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>Copy Payment Number</div>
+                                    <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.4 }}>Select your payment method and tap the copy icon to get the recipient number.</div>
+                                </div>
+
+                                <div style={{ position: 'relative', marginBottom: 20 }}>
+                                    <div style={{ position: 'absolute', left: -26, top: 2, width: 18, height: 18, borderRadius: '50%', background: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 0 4px #ffffff' }}>
+                                        <i className="fas fa-check" style={{ color: 'white', fontSize: 10 }}></i>
+                                    </div>
+                                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>Go to Phone Dial Pad</div>
+                                    <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.4 }}>Open your phone's dial pad and dial the USSD code for your network.</div>
+                                </div>
+
+                                <div style={{ position: 'relative', marginBottom: 20 }}>
+                                    <div style={{ position: 'absolute', left: -26, top: 2, width: 18, height: 18, borderRadius: '50%', background: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 0 4px #ffffff' }}>
+                                        <i className="fas fa-check" style={{ color: 'white', fontSize: 10 }}></i>
+                                    </div>
+                                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>Enter Details</div>
+                                    <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.4 }}>Follow the prompt to enter the recipient number and the exact amount required.</div>
+                                </div>
+
+                                <div style={{ position: 'relative', marginBottom: 20 }}>
+                                    <div style={{ position: 'absolute', left: -26, top: 2, width: 18, height: 18, borderRadius: '50%', background: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 0 4px #ffffff' }}>
+                                        <i className="fas fa-check" style={{ color: 'white', fontSize: 10 }}></i>
+                                    </div>
+                                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>Confirm Payment</div>
+                                    <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.4 }}>Enter your secret PIN to confirm and authorize the transaction.</div>
+                                </div>
+
+                                <div style={{ position: 'relative' }}>
+                                    <div style={{ position: 'absolute', left: -26, top: 2, width: 18, height: 18, borderRadius: '50%', background: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 0 4px #ffffff' }}>
+                                        <i className="fas fa-check" style={{ color: 'white', fontSize: 10 }}></i>
+                                    </div>
+                                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>Save Transaction ID</div>
+                                    <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.4 }}>Once completed, copy the Transaction ID from the SMS receipt and submit it here.</div>
+                                </div>
+                            </div>
+                            <button className="btn-primary-auth" style={{ width: '100%', height: 44, fontSize: 14, borderRadius: 12, background: 'var(--background-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', fontWeight: '700' }} onClick={() => setShowUssdInstructionsSheet(false)}>
+                                I Understand
+                            </button>
                         </div>
 
                         {/* Proof Submission Sheet */}

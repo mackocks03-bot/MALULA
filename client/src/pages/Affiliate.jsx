@@ -40,6 +40,10 @@ export default function Affiliate() {
     const [bonuses, setBonuses] = useState({ level1: 0, level2: 0, level3: 0 });
     const [activeTab, setActiveTab] = useState('level1');
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [limit, setLimit] = useState(10);
+    const [currentPage, setCurrentPage] = useState(1);
 
     const currency = userData?.currency || 'TZS';
     const referralLink = `${window.location.origin}/register?ref=${userData?.username || 'user'}`;
@@ -89,6 +93,20 @@ export default function Affiliate() {
     ];
 
     const referrals = allReferrals.filter(r => `level${r._level}` === activeTab);
+
+    const filteredReferrals = referrals.filter(r => {
+        if (!searchQuery) return true;
+        const q = searchQuery.toLowerCase();
+        const username = (r.username || r.fullName || 'User').toLowerCase();
+        return username.includes(q);
+    });
+
+    const totalPages = Math.ceil(filteredReferrals.length / limit) || 1;
+    const paginatedReferrals = filteredReferrals.slice((currentPage - 1) * limit, currentPage * limit);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [activeTab, searchQuery, limit]);
 
     const directCount = tree.level1.filter(r => r.isActive).length;
     const directProgress = Math.min((directCount / TEAM_ONE_GOAL) * 100, 100);
@@ -259,6 +277,76 @@ export default function Affiliate() {
                         })}
                     </div>
 
+                    {/* ── Search Bar Toggle ── */}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+                        {!isSearchOpen && !searchQuery ? (
+                            <button
+                                type="button"
+                                onClick={() => setIsSearchOpen(true)}
+                                style={{
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    width: 44, height: 44, borderRadius: '50%',
+                                    background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+                                    color: '#4318ff', cursor: 'pointer',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                                    transition: 'all 0.2s', flexShrink: 0
+                                }}
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                            </button>
+                        ) : (
+                            <div style={{ position: 'relative', width: '100%', animation: 'searchFadeIn 0.2s ease-out' }}>
+                                <div style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#4318ff', pointerEvents: 'none', display: 'flex' }}>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    </svg>
+                                </div>
+                                <input
+                                    autoFocus
+                                    type="text"
+                                    placeholder={translate('affiliate.search') || "Search by username..."}
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '12px 42px 12px 44px',
+                                        borderRadius: 12,
+                                        border: '2px solid #4318ff',
+                                        background: 'var(--color-surface)',
+                                        color: 'var(--text-primary)',
+                                        outline: 'none',
+                                        fontSize: 14,
+                                        fontWeight: 500,
+                                        boxShadow: '0 0 0 4px rgba(67,24,255,0.15)',
+                                        transition: 'all 0.25s ease'
+                                    }}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsSearchOpen(false);
+                                        setSearchQuery('');
+                                    }}
+                                    style={{
+                                        position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                                        background: 'rgba(0,0,0,0.05)', border: 'none', borderRadius: '50%',
+                                        width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        color: 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s'
+                                    }}
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
                     {/* ── Compact 3D List Layout ── */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {loading ? (
@@ -266,10 +354,10 @@ export default function Affiliate() {
                                 <div style={{ fontSize: 24, marginBottom: 8, animation: 'spin 1s linear infinite', display: 'inline-block' }}>⏳</div>
                                 <div style={{ fontSize: 12 }}>Loading network...</div>
                             </div>
-                        ) : referrals.length === 0 ? (
-                            <p className="empty-state">{translate('affiliate.noReferrals') || 'Network is Empty'}</p>
+                        ) : filteredReferrals.length === 0 ? (
+                            <p className="empty-state">{searchQuery ? 'No matching referrals found.' : (translate('affiliate.noReferrals') || 'Network is Empty')}</p>
                         ) : (
-                            referrals.map((r, i) => {
+                            paginatedReferrals.map((r, i) => {
                                 const rCountryCode = (r.country || r.countryCode || 'TZ').toLowerCase();
 
                                 // Commission is always earned in the REFERRER'S (logged-in user's) currency
@@ -373,8 +461,71 @@ export default function Affiliate() {
                         )}
                     </div>
 
+                    {/* ── Pagination Controls ── */}
+                    {!loading && filteredReferrals.length > 0 && (
+                        <div style={{ marginTop: 16 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                <button
+                                    type="button"
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                    style={{
+                                        padding: '6px 12px', borderRadius: 8, border: 'none',
+                                        background: currentPage === 1 ? 'rgba(0,0,0,0.05)' : 'rgba(67,24,255,0.1)',
+                                        color: currentPage === 1 ? 'var(--text-muted)' : '#4318ff',
+                                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                                        fontWeight: 600, fontSize: 12,
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    Previous
+                                </button>
+                                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>
+                                    Page {currentPage} of {totalPages}
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={currentPage === totalPages}
+                                    style={{
+                                        padding: '6px 12px', borderRadius: 8, border: 'none',
+                                        background: currentPage === totalPages ? 'rgba(0,0,0,0.05)' : 'rgba(67,24,255,0.1)',
+                                        color: currentPage === totalPages ? 'var(--text-muted)' : '#4318ff',
+                                        cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                                        fontWeight: 600, fontSize: 12,
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    Next
+                                </button>
+                            </div>
+                            
+                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                                <span style={{ fontSize: 11, color: 'var(--text-muted)', marginRight: 4 }}>Per page:</span>
+                                {[10, 30, 50, 100].map(val => (
+                                    <button
+                                        key={val}
+                                        type="button"
+                                        onClick={() => setLimit(val)}
+                                        style={{
+                                            padding: '4px 10px', borderRadius: 6, border: 'none',
+                                            background: limit === val ? 'linear-gradient(135deg, #4318ff, #7551ff)' : 'rgba(0,0,0,0.05)',
+                                            color: limit === val ? '#fff' : 'var(--text-secondary)',
+                                            cursor: 'pointer', fontWeight: 700, fontSize: 11,
+                                            boxShadow: limit === val ? '0 2px 6px rgba(67,24,255,0.2)' : 'none',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        {val}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <style>{`
                         @keyframes spin { to { transform: rotate(360deg); } }
+                        @keyframes searchFadeIn { from { opacity: 0; transform: scaleX(0.85); transform-origin: right; } to { opacity: 1; transform: scaleX(1); transform-origin: right; } }
 
                         /* ══ Team One Card ══ */
                         @keyframes t1Grow { from { width: 0% !important; } }
