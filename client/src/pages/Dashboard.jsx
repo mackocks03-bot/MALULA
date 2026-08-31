@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useToast } from '../contexts/ToastContext.jsx';
 import { formatCurrency } from '../utils/helpers.js';
-import { db, doc, onSnapshot } from '../services/firebase-config.js';
+import { db, doc, onSnapshot, collection, query, where } from '../services/firebase-config.js';
 import dataStore from '../utils/dataStore.js';
 import { getActivationFee, getWelcomeBonus } from '../services/settings.js';
 import { getWithdrawalStats } from '../services/withdraw.js';
@@ -29,6 +29,10 @@ export default function Dashboard() {
     const [realWithdrawn, setRealWithdrawn] = useState(0);
     const [activeDirects, setActiveDirects] = useState(0);
     const [totalActiveReferrals, setTotalActiveReferrals] = useState(0);
+
+    // Admin message state — dismissed only for the current session (not persisted)
+    const [adminMsg, setAdminMsg] = useState(null);
+    const [msgDismissed, setMsgDismissed] = useState(false);
 
     useEffect(() => {
         if (!user) return;
@@ -57,6 +61,37 @@ export default function Dashboard() {
         });
         return () => unsub();
     }, [user]);
+
+    // Keep a ref to latest countryCode so the onSnapshot callback never needs to re-subscribe
+    const countryCodeRef = { current: null };
+
+    // Fetch Admin Messages — real-time listener, subscribes once per user
+    useEffect(() => {
+        if (!user) return;
+        const q = query(collection(db, 'adminMessages'), where('active', '==', true));
+        const unsub = onSnapshot(q, (snap) => {
+            const msgs = snap.docs.map(d => ({id: d.id, ...d.data()}));
+            msgs.sort((a,b) => b.createdAt - a.createdAt);
+            // Read country from ref so we don't need userData in dep array
+            const codeMatch = countryCodeRef.current || 'TZ';
+            const found = msgs.find(m =>
+                m.target === 'all' ||
+                m.target === `group:${codeMatch}` ||
+                m.target === `user:${user.uid}`
+            ) || null;
+            setAdminMsg(found);
+            if (found) setMsgDismissed(false); // only reset dismiss when a valid message arrives
+        }, e => console.error('Error fetching admin msg', e));
+        return () => unsub();
+    }, [user]); // stable — only re-subscribes if user changes
+
+    // Keep ref in sync with latest userData (runs after every render — cheap)
+    countryCodeRef.current = userData?.countryCode || userData?.country || 'TZ';
+
+    const handleDismissAdminMsg = () => {
+        setMsgDismissed(true); // session-only: resets on next page load
+    };
+
 
     useEffect(() => {
         dataStore.getGeneralSettings().then(s => {
@@ -117,13 +152,27 @@ export default function Dashboard() {
                         </div>
                     </div>
 
-                    <div className="daily-notification">
-                        <div className="icon"><svg viewBox="0 0 24 24"><path d="M12 22a10 10 0 100-20 10 10 0 000 20z" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg></div>
-                        <div className="content">
-                            <div className="label">📢 {translate('app.announcement')}</div>
-                            <div className="message">{dailyMessage}</div>
+                    {adminMsg && !msgDismissed ? (
+                        <div className={`admin-msg-card ${adminMsg.color || 'blue'}`}>
+                            <div className="icon"><i className="fas fa-bullhorn" /></div>
+                            <div className="content">
+                                <div className="label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span>📢 MESSAGE FROM ADMIN</span>
+                                    <span style={{ fontSize: 9, opacity: 0.6, fontWeight: 500 }}>Uploaded by Admin</span>
+                                </div>
+                                <div className="message">{adminMsg.message}</div>
+                            </div>
+                            <button className="close-btn" onClick={handleDismissAdminMsg}>×</button>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="daily-notification">
+                            <div className="icon"><svg viewBox="0 0 24 24"><path d="M12 22a10 10 0 100-20 10 10 0 000 20z" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg></div>
+                            <div className="content">
+                                <div className="label">📢 {translate('app.announcement')}</div>
+                                <div className="message">{dailyMessage}</div>
+                            </div>
+                        </div>
+                    )}
 
                     <AppDownload />
 

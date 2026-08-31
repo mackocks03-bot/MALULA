@@ -490,6 +490,22 @@ textarea.form-control { height: auto; min-height: 44px; padding: 10px 14px; resi
 .daily-notification .content { flex: 1; }
 .daily-notification .content .label { font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); color: var(--color-gold); text-transform: uppercase; letter-spacing: 0.3px; }
 .daily-notification .content .message { font-size: var(--font-size-sm); color: var(--text-secondary); }
+
+/* Admin Broadcast Message Card */
+.admin-msg-card { position: relative; display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: var(--radius-md); margin-bottom: 14px; border: 1px solid transparent; overflow: hidden; }
+.admin-msg-card::after { content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05); }
+.admin-msg-card.blue { background: rgba(59, 130, 246, 0.08); border-color: rgba(59, 130, 246, 0.2); }
+.admin-msg-card.green { background: rgba(34, 197, 94, 0.08); border-color: rgba(34, 197, 94, 0.2); }
+.admin-msg-card .icon { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.admin-msg-card.blue .icon { background: linear-gradient(135deg, #60A5FA, #2563EB); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25); }
+.admin-msg-card.green .icon { background: linear-gradient(135deg, #4ADE80, #16A34A); box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25); }
+.admin-msg-card .content { flex: 1; padding-right: 20px; }
+.admin-msg-card .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.admin-msg-card.blue .label { color: #3B82F6; }
+.admin-msg-card.green .label { color: #16A34A; }
+.admin-msg-card .message { font-size: 13px; font-weight: 500; font-family: var(--font-family); color: var(--text-primary); line-height: 1.4; opacity: 0.95; }
+.admin-msg-card .close-btn { position: absolute; top: 12px; right: 12px; width: 26px; height: 26px; border-radius: 50%; background: transparent; border: none; display: flex; align-items: center; justify-content: center; color: var(--text-muted); cursor: pointer; transition: all 0.2s; font-size: 16px; z-index: 2; padding: 0; }
+.admin-msg-card .close-btn:hover { background: rgba(0,0,0,0.05); color: var(--text-primary); }
 .profit-card { background: var(--color-gold-gradient); border-radius: var(--radius-lg); padding: 20px; text-align: center; margin-bottom: 14px; position: relative; overflow: hidden; }
 .profit-card .glow { position: absolute; width: 200px; height: 200px; border-radius: 50%; background: rgba(255, 255, 255, 0.05); top: -80px; right: -80px; }
 .profit-card .glow-2 { position: absolute; width: 150px; height: 150px; border-radius: 50%; background: rgba(255, 255, 255, 0.03); bottom: -60px; left: -60px; }

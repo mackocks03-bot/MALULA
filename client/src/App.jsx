@@ -23,7 +23,7 @@ import AdminLogin from './pages/admin/AdminLogin.jsx';
 import AdminLayout, {
     AdminDashboard, AdminUsers, AdminPayments, AdminWithdrawals,
     AdminReferrals, AdminTasks, AdminTasksMonitor, AdminShop, AdminSettings, AdminShopDeposits,
-    AdminPalmpesaLedger, AdminKycReview, AdminOrders, AdminUplinerEditor
+    AdminPalmpesaLedger, AdminKycReview, AdminOrders, AdminUplinerEditor, AdminMessages
 } from './pages/admin/AdminPages.jsx';
 import AdminFinancials from './pages/admin/AdminFinancials.jsx';
 
@@ -70,6 +70,7 @@ export default function App() {
                 <Route path="orders" element={<AdminOrders />} />
                 <Route path="financials" element={<AdminFinancials />} />
                 <Route path="settings" element={<AdminSettings />} />
+                <Route path="messages" element={<AdminMessages />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
