@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import { db, doc, collection, getDocs, updateDoc, deleteDoc, addDoc } from '../../services/firebase-config.js';
+import { db, doc, collection, getDocs, getDoc, setDoc, updateDoc, deleteDoc, addDoc, query, where, writeBatch, arrayUnion, arrayRemove } from '../../services/firebase-config.js';
 import { approveActivation, rejectActivation, deleteActivation } from '../../services/activation.js';
 import { approveWithdrawal, rejectWithdrawal, deleteWithdrawal } from '../../services/withdraw.js';
 import { approveShopDeposit, rejectShopDeposit, deleteShopDeposit } from '../../services/shopDeposits.js';
@@ -18,7 +18,7 @@ import './css/AdminFinancials.css';
 import './css/AdminKycReview.css';
 import { ConfirmModal as GlobalConfirmModal, PromptModal } from '../../components/Modals.jsx';
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Icon helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Icon helper Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
 const Icon = ({ d, size = 18 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
         stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -64,7 +64,7 @@ const adminLinks = [
     { to: '/admin/messages', label: 'Broadcast Messages', icon: 'messages' },
 ];
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Shared components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Shared components Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
 function StatusBadge({ status }) {
     const map = {
         approved: ['success', 'APPROVED'],
@@ -100,7 +100,7 @@ function ConfirmModal({ modal, onClose, onConfirm, processing }) {
                                 {modal.details.map(({ label, value }) => (
                                     <tr key={label} style={{ borderBottom: '1px solid #E0E0E0' }}>
                                         <td style={{ padding: '8px 4px', fontWeight: 700, color: '#666', textTransform: 'uppercase', fontSize: 11 }}>{label}</td>
-                                        <td style={{ padding: '8px 4px', textAlign: 'right', fontWeight: 500 }}>{value || '—'}</td>
+                                        <td style={{ padding: '8px 4px', textAlign: 'right', fontWeight: 500 }}>{value || 'â€”'}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -133,9 +133,9 @@ function ConfirmModal({ modal, onClose, onConfirm, processing }) {
     );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
    ADMIN LAYOUT
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
 export default function AdminLayout() {
     const { user, userData, loading } = useAuth();
     const navigate = useNavigate();
@@ -202,9 +202,9 @@ export default function AdminLayout() {
     );
 }
 
-/* ══════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    DASHBOARD
-═══════════════════════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 function DashDonut({ pct = 0, color = '#4318ff', size = 56, stroke = 5 }) {
     const r = (size - stroke * 2) / 2;
     const circ = 2 * Math.PI * r;
@@ -292,7 +292,7 @@ export function AdminDashboard() {
 
     return (
         <div className="pf-dash-root">
-            {/* ── HEADER ── */}
+            {/* â”€â”€ HEADER â”€â”€ */}
             <header className="pf-dash-header">
                 <div>
                     <h1 className="pf-dash-title">
@@ -306,7 +306,7 @@ export function AdminDashboard() {
                 </button>
             </header>
 
-            {/* ── STAT CARDS ── */}
+            {/* â”€â”€ STAT CARDS â”€â”€ */}
             <section className="pf-dash-grid">
                 {cards.map((c, i) => (
                     <div key={i} className="pf-dash-card">
@@ -323,14 +323,14 @@ export function AdminDashboard() {
                         </div>
                         <div className="pf-dash-card-info">
                             <p className="pf-dash-card-label">{c.label}</p>
-                            <h3 className="pf-dash-card-value">{busy ? '—' : c.value.toLocaleString()}</h3>
+                            <h3 className="pf-dash-card-value">{busy ? 'â€”' : c.value.toLocaleString()}</h3>
                             <span className="pf-dash-card-sub" style={{ color: c.color }}>{c.sub}</span>
                         </div>
                     </div>
                 ))}
             </section>
 
-            {/* ── COUNTRY USER CARDS ── */}
+            {/* â”€â”€ COUNTRY USER CARDS â”€â”€ */}
             {countryUsers.length > 0 && (
                 <section style={{ marginBottom: 24 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
@@ -394,7 +394,7 @@ export function AdminDashboard() {
                 </section>
             )}
 
-            {/* ── ACTIVITY LOG ── */}
+            {/* â”€â”€ ACTIVITY LOG â”€â”€ */}
             <div className="pf-dash-panel">
                 <div className="pf-dash-panel-header">
                     <i className="fas fa-wave-square" style={{ color: '#4318ff', marginRight: 8 }} />
@@ -426,171 +426,539 @@ export function AdminDashboard() {
         </div>
     );
 }
-
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    USER PROFILE MODAL
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 function UserProfileModal({ user, onClose, onUpdateStatus, onSave }) {
     const [isEditing, setIsEditing] = useState(false);
     const [editData, setEditData] = useState({});
+    const [modalTab, setModalTab] = useState('details'); // 'details' | 'downlines' | 'financials'
+    const [directDownlines, setDirectDownlines] = useState([]);
+    const [loadingDownlines, setLoadingDownlines] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
-    // reset when user changes
+    // reset when user changes — pre-fill ALL known fields so nothing is lost on save
     useEffect(() => {
         if (user) {
             setEditData({
+                // Identity
                 email: user.email || '',
                 phone: user.phone || '',
                 fullName: user.fullName || '',
-                countryCode: user.countryCode || '',
-                countryName: user.countryName || user.country || '',
-                currency: user.currency || 'TZS',
                 username: user.username || '',
-                referralLink: user.referralLink || '',
-                balance: user.balance || 0,
-                totalWithdrawn: user.totalWithdrawn || 0,
+                // Location / locale
+                countryCode: user.countryCode || user.country || 'TZ',
+                countryName: user.countryName || user.country || 'Tanzania',
+                currency: user.currency || 'TZS',
+                exchangeRate: user.exchangeRate ?? '',
+                // Referral / network
                 referrer: user.referrer || '',
-                miningRate: user.miningRate || 0,
-                downlinesLevel1: user.referrals?.level1?.length ?? user.downlines?.level1 ?? 0,
-                downlinesLevel2: user.referrals?.level2?.length ?? user.downlines?.level2 ?? 0,
-                downlinesLevel3: user.referrals?.level3?.length ?? user.downlines?.level3 ?? 0,
-                isActive: user.isActive || false,
-                activationStatus: user.activationStatus || 'pending'
+                referralLink: user.referralLink || `${window.location.origin}/register?ref=${user.username || ''}`,
+                referralCount: user.referralCount ?? 0,
+                referrals: user.referrals || {},
+                // Finances
+                balance: user.balance ?? 0,
+                shopBalance: user.shopBalance ?? 0,
+                totalProfit: user.totalProfit ?? user.balance ?? 0,
+                totalWithdrawn: user.totalWithdrawn ?? 0,
+                taskBalances: user.taskBalances || {},
+                earnings: user.earnings || {},
+                miningRate: user.miningRate ?? 0,
+                // Access control
+                isActive: user.isActive ?? false,
+                activationStatus: user.activationStatus || 'pending',
+                role: user.role || 'user',
+                // Metadata (read-only, preserved so they aren't wiped on save)
+                createdAt: user.createdAt || null,
+                downlines: user.downlines || [],
             });
             setIsEditing(false);
+            setModalTab('details');
+
+            // Load direct downlines for this user
+            if (user.username) {
+                setLoadingDownlines(true);
+                const qDownlines = query(collection(db, 'users'), where('referrer', '==', user.username));
+                getDocs(qDownlines).then(snap => {
+                    setDirectDownlines(snap.docs.map(d => ({ uid: d.id, ...d.data() })));
+                    setLoadingDownlines(false);
+                }).catch(() => setLoadingDownlines(false));
+            } else {
+                setDirectDownlines([]);
+            }
         }
     }, [user]);
 
     if (!user) return null;
     const cCode = (editData.countryCode || user.countryCode || 'TZ').toLowerCase();
     const curr = editData.currency || user.currency || 'TZS';
+    const hasUsernameChanged = isEditing && editData.username?.trim() && editData.username?.trim() !== (user.username || '').trim();
+    const hasReferrerChanged = isEditing && (editData.referrer || '').trim() !== (user.referrer || '').trim();
+
+    const handleSaveClick = async () => {
+        setIsSaving(true);
+        try {
+            const success = await onSave(user.uid, editData, user);
+            if (success) {
+                setIsEditing(false);
+            }
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     return (
         <div className="gov-modal-overlay open" onClick={e => e.target === e.currentTarget && onClose()}>
-            <div className="gov-modal" style={{ maxWidth: 650 }}>
-                <div className="gov-modal-header">
+            <div className="gov-modal" style={{ maxWidth: 750, width: '92%' }}>
+                <div className="gov-modal-header" style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0' }}>
                     <div>
-                        <h3 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <img src={`https://flagcdn.com/w40/${cCode}.png`} alt={cCode} style={{ width: 24, height: 16, borderRadius: 2 }} />
+                        <h3 style={{ display: 'flex', alignItems: 'center', gap: 10, margin: 0, fontSize: 18, color: '#1e293b' }}>
+                            <img src={`https://flagcdn.com/w40/${cCode}.png`} alt={cCode} style={{ width: 24, height: 16, borderRadius: 2, objectFit: 'cover' }} />
                             {isEditing ? (
-                                <input className="gov-input" value={editData.username} onChange={e => setEditData({ ...editData, username: e.target.value })} placeholder="Username" style={{ padding: '4px 8px' }} />
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <span style={{ fontSize: 13, color: '#64748b' }}>@</span>
+                                    <input 
+                                        className="gov-input" 
+                                        value={editData.username} 
+                                        onChange={e => {
+                                            const newU = e.target.value.replace(/\s+/g, '');
+                                            setEditData({ 
+                                                ...editData, 
+                                                username: newU,
+                                                referralLink: `${window.location.origin}/register?ref=${newU}`
+                                            });
+                                        }} 
+                                        placeholder="Username" 
+                                        style={{ padding: '4px 10px', fontWeight: 700, fontSize: 15 }} 
+                                    />
+                                </div>
                             ) : (
-                                `Personnel Profile: ${user.username || 'N/A'}`
+                                `Personnel Profile: ${user.username || user.fullName || 'User'}`
                             )}
                         </h3>
-                        <div style={{ fontSize: 12, color: '#666', marginTop: 4, fontFamily: 'monospace' }}>UID: {user.uid}</div>
+                        <div style={{ fontSize: 12, color: '#64748b', marginTop: 4, fontFamily: 'monospace' }}>UID: {user.uid}</div>
                     </div>
                     <button className="gov-modal-close" onClick={onClose}><i className="fas fa-times" /></button>
                 </div>
-                <div className="gov-modal-body" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, maxHeight: '70vh', overflowY: 'auto' }}>
-                    <div>
-                        <h4 style={{ fontSize: 13, textTransform: 'uppercase', color: '#999', marginBottom: 12, borderBottom: '1px solid #eee', paddingBottom: 4 }}>Identity & Contact</h4>
-                        {isEditing ? (
-                            <>
-                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Full Name:</b> <input className="gov-input" style={{ width: '100%', padding: 4 }} value={editData.fullName} onChange={e => setEditData({ ...editData, fullName: e.target.value })} /></div>
-                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Email:</b> <input className="gov-input" style={{ width: '100%', padding: 4 }} value={editData.email} onChange={e => setEditData({ ...editData, email: e.target.value })} /></div>
-                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Phone:</b> <input className="gov-input" style={{ width: '100%', padding: 4 }} value={editData.phone} onChange={e => setEditData({ ...editData, phone: e.target.value })} /></div>
-                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Country Code (Flag):</b> <input className="gov-input" style={{ width: '100%', padding: 4 }} value={editData.countryCode} onChange={e => setEditData({ ...editData, countryCode: e.target.value })} placeholder="e.g. TZ, KE, NG" /></div>
-                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Country Name:</b> <input className="gov-input" style={{ width: '100%', padding: 4 }} value={editData.countryName} onChange={e => setEditData({ ...editData, countryName: e.target.value })} /></div>
-                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Currency:</b> <input className="gov-input" style={{ width: '100%', padding: 4 }} value={editData.currency} onChange={e => setEditData({ ...editData, currency: e.target.value })} /></div>
-                            </>
-                        ) : (
-                            <>
-                                <div style={{ marginBottom: 8 }}><b>Name:</b> {user.fullName || '—'}</div>
-                                <div style={{ marginBottom: 8 }}><b>Email:</b> {user.email || '—'}</div>
-                                <div style={{ marginBottom: 8 }}><b>Phone:</b> {user.phone || '—'}</div>
-                                <div style={{ marginBottom: 8 }}><b>Country:</b> {user.countryName || user.country || '—'} ({cCode.toUpperCase()})</div>
-                                <div style={{ marginBottom: 8 }}><b>Currency:</b> {curr}</div>
-                            </>
-                        )}
-                        <div style={{ marginBottom: 8 }}><b>Joined:</b> {user.createdAt ? new Date(user.createdAt).toLocaleString() : '—'}</div>
-                        {isEditing ? (
-                            <>
-                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                    <b>Access Status (isActive):</b>
-                                    <select className="gov-input" style={{ padding: 4 }} value={editData.isActive} onChange={e => setEditData({ ...editData, isActive: e.target.value === 'true' })}>
-                                        <option value="true">Active</option>
-                                        <option value="false">Suspended</option>
-                                    </select>
-                                </div>
-                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                    <b>Activation Step:</b>
-                                    <select className="gov-input" style={{ padding: 4 }} value={editData.activationStatus} onChange={e => setEditData({ ...editData, activationStatus: e.target.value })}>
-                                        <option value="pending">Pending</option>
-                                        <option value="approved">Approved</option>
-                                        <option value="rejected">Rejected</option>
-                                    </select>
-                                </div>
-                            </>
-                        ) : (
-                            <div style={{ marginBottom: 8 }}><b>Status:</b> <StatusBadge status={user.isActive ? 'active' : 'pending'} /> <span>( {user.activationStatus || 'N/A'} )</span></div>
-                        )}
+
+                {/* Navigation Tabs inside modal */}
+                <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', padding: '0 20px' }}>
+                    <button 
+                        onClick={() => setModalTab('details')}
+                        style={{
+                            padding: '10px 16px',
+                            border: 'none',
+                            background: 'none',
+                            fontWeight: 600,
+                            fontSize: 13,
+                            color: modalTab === 'details' ? '#4318ff' : '#64748b',
+                            borderBottom: modalTab === 'details' ? '2px solid #4318ff' : '2px solid transparent',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        <i className="fas fa-id-card" style={{ marginRight: 6 }} /> Identity & Access
+                    </button>
+                    <button 
+                        onClick={() => setModalTab('financials')}
+                        style={{
+                            padding: '10px 16px',
+                            border: 'none',
+                            background: 'none',
+                            fontWeight: 600,
+                            fontSize: 13,
+                            color: modalTab === 'financials' ? '#4318ff' : '#64748b',
+                            borderBottom: modalTab === 'financials' ? '2px solid #4318ff' : '2px solid transparent',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        <i className="fas fa-wallet" style={{ marginRight: 6 }} /> Financials & Earnings
+                    </button>
+                    <button 
+                        onClick={() => setModalTab('downlines')}
+                        style={{
+                            padding: '10px 16px',
+                            border: 'none',
+                            background: 'none',
+                            fontWeight: 600,
+                            fontSize: 13,
+                            color: modalTab === 'downlines' ? '#4318ff' : '#64748b',
+                            borderBottom: modalTab === 'downlines' ? '2px solid #4318ff' : '2px solid transparent',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        <i className="fas fa-users" style={{ marginRight: 6 }} /> Direct Referrals ({directDownlines.length})
+                    </button>
+                </div>
+
+                {/* Warning notice if username is being edited */}
+                {hasUsernameChanged && (
+                    <div style={{ background: '#eff6ff', borderLeft: '4px solid #3b82f6', padding: '10px 16px', margin: '12px 20px 0', borderRadius: '0 6px 6px 0', fontSize: 12, color: '#1e40af' }}>
+                        <i className="fas fa-shield-alt" style={{ marginRight: 6 }} />
+                        <strong>Auto-Sync Active:</strong> Changing username from <code>{user.username}</code> to <code>{editData.username}</code> will automatically update <code>loginIndex</code>, re-link their referral URL, and update all existing downline referral pointers so their team and commissions never break.
                     </div>
-                    <div>
-                        <h4 style={{ fontSize: 13, textTransform: 'uppercase', color: '#999', marginBottom: 12, borderBottom: '1px solid #eee', paddingBottom: 4 }}>Financial & Network</h4>
-                        {isEditing ? (
-                            <>
-                                <div style={{ marginBottom: 8, color: '#2E7D32', fontWeight: 700, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Ledger Balance ({curr}):</b> <input className="gov-input" type="number" step="0.01" style={{ width: '100%', padding: 4 }} value={editData.balance} onChange={e => setEditData({ ...editData, balance: e.target.value })} /></div>
-                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Total Withdrawn ({curr}):</b> <input className="gov-input" type="number" step="0.01" style={{ width: '100%', padding: 4 }} value={editData.totalWithdrawn} onChange={e => setEditData({ ...editData, totalWithdrawn: e.target.value })} /></div>
-                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Referrer ID:</b> <input className="gov-input" style={{ width: '100%', padding: 4 }} value={editData.referrer} onChange={e => setEditData({ ...editData, referrer: e.target.value })} /></div>
-                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                    <b>Downlines (Lv1/Lv2/Lv3):</b>
-                                    <div style={{ display: 'flex', gap: 4 }}>
-                                        <input className="gov-input" type="number" style={{ width: 50, padding: 4 }} value={editData.downlinesLevel1} onChange={e => setEditData({ ...editData, downlinesLevel1: e.target.value })} />/
-                                        <input className="gov-input" type="number" style={{ width: 50, padding: 4 }} value={editData.downlinesLevel2} onChange={e => setEditData({ ...editData, downlinesLevel2: e.target.value })} />/
-                                        <input className="gov-input" type="number" style={{ width: 50, padding: 4 }} value={editData.downlinesLevel3} onChange={e => setEditData({ ...editData, downlinesLevel3: e.target.value })} />
+                )}
+
+                {/* Warning notice if upliner is being edited */}
+                {hasReferrerChanged && (
+                    <div style={{ background: '#fef3c7', borderLeft: '4px solid #f59e0b', padding: '10px 16px', margin: '12px 20px 0', borderRadius: '0 6px 6px 0', fontSize: 12, color: '#92400e' }}>
+                        <i className="fas fa-info-circle" style={{ marginRight: 6 }} />
+                        <strong>Upliner Reassignment:</strong> Changing upliner from <code>{user.referrer || 'None'}</code> to <code>{editData.referrer || 'None'}</code> will update referral tree arrays and audit logs.
+                    </div>
+                )}
+
+                <div className="gov-modal-body" style={{ padding: 20, maxHeight: '65vh', overflowY: 'auto' }}>
+                    {modalTab === 'details' && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                            <div>
+                                <h4 style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, color: '#64748b', marginBottom: 12, borderBottom: '1px solid #e2e8f0', paddingBottom: 6, fontWeight: 700 }}>
+                                    Personal Data
+                                </h4>
+                                {isEditing ? (
+                                    <>
+                                        <div style={{ marginBottom: 10 }}>
+                                            <label style={{ fontSize: 12, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 4 }}>Full Name</label>
+                                            <input className="gov-input" style={{ width: '100%', padding: '6px 10px' }} value={editData.fullName} onChange={e => setEditData({ ...editData, fullName: e.target.value })} />
+                                        </div>
+                                        <div style={{ marginBottom: 10 }}>
+                                            <label style={{ fontSize: 12, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 4 }}>Email Address</label>
+                                            <input className="gov-input" style={{ width: '100%', padding: '6px 10px' }} value={editData.email} onChange={e => setEditData({ ...editData, email: e.target.value })} />
+                                        </div>
+                                        <div style={{ marginBottom: 10 }}>
+                                            <label style={{ fontSize: 12, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 4 }}>Phone Number</label>
+                                            <input className="gov-input" style={{ width: '100%', padding: '6px 10px' }} value={editData.phone} onChange={e => setEditData({ ...editData, phone: e.target.value })} />
+                                        </div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                                            <div>
+                                                <label style={{ fontSize: 12, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 4 }}>Country Code</label>
+                                                <input className="gov-input" style={{ width: '100%', padding: '6px 10px' }} value={editData.countryCode} onChange={e => setEditData({ ...editData, countryCode: e.target.value.toUpperCase() })} placeholder="e.g. TZ" />
+                                            </div>
+                                            <div>
+                                                <label style={{ fontSize: 12, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 4 }}>Currency</label>
+                                                <input className="gov-input" style={{ width: '100%', padding: '6px 10px' }} value={editData.currency} onChange={e => setEditData({ ...editData, currency: e.target.value.toUpperCase() })} placeholder="e.g. TZS" />
+                                            </div>
+                                        </div>
+                                        <div style={{ marginBottom: 10 }}>
+                                            <label style={{ fontSize: 12, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 4 }}>Country Name</label>
+                                            <input className="gov-input" style={{ width: '100%', padding: '6px 10px' }} value={editData.countryName} onChange={e => setEditData({ ...editData, countryName: e.target.value })} />
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13 }}>
+                                        <div><span style={{ color: '#64748b', display: 'inline-block', width: 90 }}>Full Name:</span> <strong>{user.fullName || 'â€”'}</strong></div>
+                                        <div><span style={{ color: '#64748b', display: 'inline-block', width: 90 }}>Email:</span> <strong>{user.email || 'â€”'}</strong></div>
+                                        <div><span style={{ color: '#64748b', display: 'inline-block', width: 90 }}>Phone:</span> <code style={{ color: '#0f172a', fontWeight: 600 }}>{user.phone || 'â€”'}</code></div>
+                                        <div><span style={{ color: '#64748b', display: 'inline-block', width: 90 }}>Country:</span> <span>{user.countryName || user.country || 'â€”'} ({cCode.toUpperCase()})</span></div>
+                                        <div><span style={{ color: '#64748b', display: 'inline-block', width: 90 }}>Currency:</span> <span style={{ fontWeight: 700, color: '#2563eb' }}>{curr}</span></div>
+                                        <div><span style={{ color: '#64748b', display: 'inline-block', width: 90 }}>Joined:</span> <span>{user.createdAt ? new Date(user.createdAt).toLocaleString() : 'â€”'}</span></div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div>
+                                <h4 style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, color: '#64748b', marginBottom: 12, borderBottom: '1px solid #e2e8f0', paddingBottom: 6, fontWeight: 700 }}>
+                                    Account & Network Controls
+                                </h4>
+                                {isEditing ? (
+                                    <>
+                                        <div style={{ marginBottom: 10 }}>
+                                            <label style={{ fontSize: 12, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 4 }}>System Role</label>
+                                            <select className="gov-input" style={{ width: '100%', padding: '6px 10px' }} value={editData.role} onChange={e => setEditData({ ...editData, role: e.target.value })}>
+                                                <option value="user">User</option>
+                                                <option value="admin">Administrator</option>
+                                            </select>
+                                        </div>
+                                        <div style={{ marginBottom: 10 }}>
+                                            <label style={{ fontSize: 12, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 4 }}>Access Status (isActive)</label>
+                                            <select className="gov-input" style={{ width: '100%', padding: '6px 10px' }} value={editData.isActive} onChange={e => setEditData({ ...editData, isActive: e.target.value === 'true' })}>
+                                                <option value="true">Active (Access Allowed)</option>
+                                                <option value="false">Suspended (Access Blocked)</option>
+                                            </select>
+                                        </div>
+                                        <div style={{ marginBottom: 10 }}>
+                                            <label style={{ fontSize: 12, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 4 }}>Activation Step</label>
+                                            <select className="gov-input" style={{ width: '100%', padding: '6px 10px' }} value={editData.activationStatus} onChange={e => setEditData({ ...editData, activationStatus: e.target.value })}>
+                                                <option value="pending">Pending</option>
+                                                <option value="approved">Approved</option>
+                                                <option value="rejected">Rejected</option>
+                                            </select>
+                                        </div>
+                                        <div style={{ marginBottom: 10 }}>
+                                            <label style={{ fontSize: 12, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 4 }}>Upliner Username (Referrer)</label>
+                                            <input className="gov-input" style={{ width: '100%', padding: '6px 10px' }} value={editData.referrer} onChange={e => setEditData({ ...editData, referrer: e.target.value.trim() })} placeholder="e.g. sponsor_username" />
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13 }}>
+                                        <div><span style={{ color: '#64748b', display: 'inline-block', width: 110 }}>Role:</span> <span style={{ textTransform: 'capitalize', fontWeight: 600 }}>{user.role || 'user'}</span></div>
+                                        <div><span style={{ color: '#64748b', display: 'inline-block', width: 110 }}>Access Status:</span> <StatusBadge status={user.isActive ? 'active' : 'pending'} /></div>
+                                        <div><span style={{ color: '#64748b', display: 'inline-block', width: 110 }}>Activation State:</span> <code style={{ textTransform: 'uppercase', background: '#f1f5f9', padding: '2px 6px', borderRadius: 4 }}>{user.activationStatus || 'pending'}</code></div>
+                                        <div><span style={{ color: '#64748b', display: 'inline-block', width: 110 }}>Upliner (Referrer):</span> <strong style={{ color: '#4318ff' }}>{user.referrer ? `@${user.referrer}` : 'None (Direct Root)'}</strong></div>
+                                        <div style={{ marginTop: 8 }}>
+                                            <span style={{ color: '#64748b', display: 'block', marginBottom: 4, fontSize: 11, fontWeight: 600, textTransform: 'uppercase' }}>Active Referral Link:</span>
+                                            <a href={user.referralLink || `${window.location.origin}/register?ref=${user.username}`} target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontSize: 12, wordBreak: 'break-all', display: 'block', background: '#f8fafc', padding: 8, borderRadius: 6, border: '1px solid #e2e8f0' }}>
+                                                {user.referralLink || `${window.location.origin}/register?ref=${user.username}`}
+                                            </a>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {modalTab === 'financials' && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                            <div>
+                                <h4 style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, color: '#64748b', marginBottom: 12, borderBottom: '1px solid #e2e8f0', paddingBottom: 6, fontWeight: 700 }}>
+                                    Balances & Profits ({curr})
+                                </h4>
+                                {isEditing ? (
+                                    <>
+                                        <div style={{ marginBottom: 12 }}>
+                                            <label style={{ fontSize: 12, fontWeight: 600, color: '#15803d', display: 'block', marginBottom: 4 }}>Ledger Balance ({curr})</label>
+                                            <input className="gov-input" type="number" step="0.01" style={{ width: '100%', padding: '6px 10px', fontWeight: 700 }} value={editData.balance} onChange={e => setEditData({ ...editData, balance: e.target.value })} />
+                                        </div>
+                                        <div style={{ marginBottom: 12 }}>
+                                            <label style={{ fontSize: 12, fontWeight: 600, color: '#0369a1', display: 'block', marginBottom: 4 }}>Total Earnings / Profit ({curr})</label>
+                                            <input className="gov-input" type="number" step="0.01" style={{ width: '100%', padding: '6px 10px', fontWeight: 700 }} value={editData.totalProfit} onChange={e => setEditData({ ...editData, totalProfit: e.target.value })} />
+                                        </div>
+                                        <div style={{ marginBottom: 12 }}>
+                                            <label style={{ fontSize: 12, fontWeight: 600, color: '#b91c1c', display: 'block', marginBottom: 4 }}>Total Withdrawn ({curr})</label>
+                                            <input className="gov-input" type="number" step="0.01" style={{ width: '100%', padding: '6px 10px', fontWeight: 700 }} value={editData.totalWithdrawn} onChange={e => setEditData({ ...editData, totalWithdrawn: e.target.value })} />
+                                        </div>
+                                        <div style={{ marginBottom: 12 }}>
+                                            <label style={{ fontSize: 12, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 4 }}>Shop Balance ({curr})</label>
+                                            <input className="gov-input" type="number" step="0.01" style={{ width: '100%', padding: '6px 10px' }} value={editData.shopBalance} onChange={e => setEditData({ ...editData, shopBalance: e.target.value })} />
+                                        </div>
+                                        <div style={{ marginBottom: 12 }}>
+                                            <label style={{ fontSize: 12, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 4 }}>Mining Rate (/hr)</label>
+                                            <input className="gov-input" type="number" step="0.01" style={{ width: '100%', padding: '6px 10px' }} value={editData.miningRate} onChange={e => setEditData({ ...editData, miningRate: e.target.value })} />
+                                        </div>
+                                        <div style={{ marginBottom: 12 }}>
+                                            <label style={{ fontSize: 12, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 4 }}>Exchange Rate (1 {curr} = ?)</label>
+                                            <input className="gov-input" type="number" step="0.0001" style={{ width: '100%', padding: '6px 10px' }} value={editData.exchangeRate} placeholder="e.g. 0.00038" onChange={e => setEditData({ ...editData, exchangeRate: e.target.value })} />
+                                        </div>
+                                        {/* Read-only info strip */}
+                                        <div style={{ background: '#f1f5f9', borderRadius: 8, padding: '10px 12px', fontSize: 12, color: '#475569', marginTop: 4 }}>
+                                            <div style={{ fontWeight: 700, marginBottom: 6, color: '#334155' }}>ℹ️ Read-only info (not editable)</div>
+                                            <div>Referral Count: <strong>{editData.referralCount}</strong></div>
+                                            <div>Direct Downlines stored: <strong>{Array.isArray(editData.downlines) ? editData.downlines.length : 0}</strong></div>
+                                            <div>Joined: <strong>{editData.createdAt ? new Date(editData.createdAt).toLocaleDateString() : '—'}</strong></div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                        <div style={{ background: '#f0fdf4', padding: '12px 16px', borderRadius: 8, border: '1px solid #bbf7d0' }}>
+                                            <div style={{ fontSize: 11, color: '#166534', fontWeight: 600, textTransform: 'uppercase' }}>Ledger Balance</div>
+                                            <div style={{ fontSize: 20, fontWeight: 800, color: '#15803d', marginTop: 2 }}>
+                                                {curr} {Number(user.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </div>
+                                        </div>
+                                        <div style={{ background: '#f0f9ff', padding: '12px 16px', borderRadius: 8, border: '1px solid #bae6fd' }}>
+                                            <div style={{ fontSize: 11, color: '#075985', fontWeight: 600, textTransform: 'uppercase' }}>Total Profit / Lifetime Earned</div>
+                                            <div style={{ fontSize: 18, fontWeight: 700, color: '#0369a1', marginTop: 2 }}>
+                                                {curr} {Number(user.totalProfit || user.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </div>
+                                        </div>
+                                        <div style={{ background: '#fef2f2', padding: '12px 16px', borderRadius: 8, border: '1px solid #fecaca' }}>
+                                            <div style={{ fontSize: 11, color: '#991b1b', fontWeight: 600, textTransform: 'uppercase' }}>Total Withdrawn</div>
+                                            <div style={{ fontSize: 18, fontWeight: 700, color: '#b91c1c', marginTop: 2 }}>
+                                                {curr} {Number(user.totalWithdrawn || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div>
+                                <h4 style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, color: '#64748b', marginBottom: 12, borderBottom: '1px solid #e2e8f0', paddingBottom: 6, fontWeight: 700 }}>
+                                    Network Breakdown
+                                </h4>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                    <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>Level 1 (Direct Downlines)</span>
+                                            <span style={{ background: '#4318ff', color: 'white', padding: '2px 8px', borderRadius: 12, fontSize: 12, fontWeight: 700 }}>
+                                                {directDownlines.length}
+                                            </span>
+                                        </div>
+                                        <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>
+                                            {directDownlines.filter(d => d.isActive || d.activationStatus === 'approved').length} Active / {directDownlines.filter(d => !d.isActive && d.activationStatus !== 'approved').length} Pending
+                                        </div>
+                                    </div>
+
+                                    <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>Level 2 (Indirect)</span>
+                                            <span style={{ background: '#64748b', color: 'white', padding: '2px 8px', borderRadius: 12, fontSize: 12, fontWeight: 700 }}>
+                                                {user.referrals?.level2?.length || 0}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>Level 3 (Indirect)</span>
+                                            <span style={{ background: '#64748b', color: 'white', padding: '2px 8px', borderRadius: 12, fontSize: 12, fontWeight: 700 }}>
+                                                {user.referrals?.level3?.length || 0}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ background: '#f1f5f9', padding: '10px 14px', borderRadius: 8, fontSize: 12, color: '#475569' }}>
+                                        <i className="fas fa-hammer" style={{ marginRight: 6 }} /> Mining Rate: <strong>{user.miningRate || 0} / hr</strong>
                                     </div>
                                 </div>
-                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Mining Rate (/hr):</b> <input className="gov-input" type="number" step="0.01" style={{ width: '100%', padding: 4 }} value={editData.miningRate} onChange={e => setEditData({ ...editData, miningRate: e.target.value })} /></div>
-                                <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}><b>Referral Link:</b> <input className="gov-input" style={{ width: '100%', padding: 4 }} value={editData.referralLink} onChange={e => setEditData({ ...editData, referralLink: e.target.value })} /></div>
+                            </div>
+                        </div>
+                    )}
+
+                    {modalTab === 'downlines' && (
+                        <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                <h4 style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', margin: 0 }}>
+                                    Personnel directly recruited by @{user.username}
+                                </h4>
+                                <span style={{ fontSize: 12, color: '#64748b' }}>{directDownlines.length} Direct Accounts</span>
+                            </div>
+
+                            {loadingDownlines ? (
+                                <div style={{ padding: 24, textAlign: 'center', color: '#64748b' }}>
+                                    <i className="fas fa-spinner fa-spin" style={{ marginRight: 8 }} /> Loading referral tree downlines...
+                                </div>
+                            ) : directDownlines.length === 0 ? (
+                                <div style={{ padding: 32, textAlign: 'center', background: '#f8fafc', borderRadius: 8, border: '1px dashed #cbd5e1', color: '#64748b' }}>
+                                    <i className="fas fa-user-friends" style={{ fontSize: 24, color: '#94a3b8', display: 'block', marginBottom: 8 }} />
+                                    No direct downlines found under referrer username <strong>@{user.username}</strong>.
+                                </div>
+                            ) : (
+                                <div style={{ maxHeight: 300, overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: 6 }}>
+                                    <table className="gov-table" style={{ margin: 0, fontSize: 12 }}>
+                                        <thead>
+                                            <tr>
+                                                <th style={{ padding: '8px 12px' }}>Member</th>
+                                                <th style={{ padding: '8px 12px' }}>Phone / Email</th>
+                                                <th style={{ padding: '8px 12px' }}>Country</th>
+                                                <th style={{ padding: '8px 12px' }}>Status</th>
+                                                <th style={{ padding: '8px 12px' }}>Joined Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {directDownlines.map(d => {
+                                                const dCode = (d.countryCode || d.country || 'TZ').toLowerCase();
+                                                const isAct = d.isActive || d.activationStatus === 'approved';
+                                                return (
+                                                    <tr key={d.uid}>
+                                                        <td style={{ padding: '8px 12px', fontWeight: 600, color: '#1e293b' }}>
+                                                            {d.username ? `@${d.username}` : (d.fullName || 'User')}
+                                                        </td>
+                                                        <td style={{ padding: '8px 12px' }}>
+                                                            <div>{d.phone || 'â€”'}</div>
+                                                            <div style={{ fontSize: 11, color: '#64748b' }}>{d.email || ''}</div>
+                                                        </td>
+                                                        <td style={{ padding: '8px 12px' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                                <img src={`https://flagcdn.com/w40/${dCode}.png`} alt={dCode} style={{ width: 18, height: 12, borderRadius: 2 }} />
+                                                                <span>{d.countryName || d.country || 'N/A'}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td style={{ padding: '8px 12px' }}>
+                                                            <span style={{ 
+                                                                background: isAct ? '#dcfce7' : '#fef3c7', 
+                                                                color: isAct ? '#15803d' : '#92400e',
+                                                                padding: '2px 8px', borderRadius: 10, fontSize: 11, fontWeight: 700 
+                                                            }}>
+                                                                {isAct ? 'Active' : 'Pending'}
+                                                            </span>
+                                                        </td>
+                                                        <td style={{ padding: '8px 12px', color: '#64748b' }}>
+                                                            {d.createdAt ? new Date(d.createdAt).toLocaleDateString() : 'â€”'}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                <div className="gov-modal-footer" style={{ padding: '14px 20px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                        {!isEditing && (
+                            <button 
+                                className="gov-btn" 
+                                style={{ 
+                                    background: user.isActive ? '#fee2e2' : '#dcfce7', 
+                                    color: user.isActive ? '#b91c1c' : '#15803d',
+                                    border: `1px solid ${user.isActive ? '#fca5a5' : '#86efac'}`
+                                }} 
+                                onClick={() => onUpdateStatus(user.uid, !user.isActive)}
+                            >
+                                <i className={`fas fa-${user.isActive ? 'ban' : 'check-circle'}`} style={{ marginRight: 6 }} />
+                                {user.isActive ? 'Suspend Access' : 'Activate Access'}
+                            </button>
+                        )}
+                    </div>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                        {isEditing ? (
+                            <>
+                                <button className="gov-btn gov-btn-outline" onClick={() => setIsEditing(false)} disabled={isSaving}>
+                                    Cancel
+                                </button>
+                                <button className="gov-btn gov-btn-success" onClick={handleSaveClick} disabled={isSaving} style={{ minWidth: 120 }}>
+                                    {isSaving ? (
+                                        <>
+                                            <i className="fas fa-spinner fa-spin" style={{ marginRight: 6 }} /> Syncing...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="fas fa-save" style={{ marginRight: 6 }} /> Save Changes
+                                        </>
+                                    )}
+                                </button>
                             </>
                         ) : (
                             <>
-                                <div style={{ marginBottom: 8, color: '#2E7D32', fontWeight: 700 }}><b>Ledger Balance:</b> {curr} {(user.balance || 0).toFixed(2)}</div>
-                                <div style={{ marginBottom: 8 }}><b>Total Withdrawn:</b> {curr} {(user.totalWithdrawn || 0).toFixed(2)}</div>
-                                <div style={{ marginBottom: 8 }}><b>Referrer ID:</b> <span style={{ fontFamily: 'monospace' }}>{user.referrer || 'None'}</span></div>
-                                <div style={{ marginBottom: 8 }}>
-                                    <b>Downlines (Lv1/Lv2/Lv3):</b> {user.referrals?.level1?.length ?? user.downlines?.level1 ?? 0} / {user.referrals?.level2?.length ?? user.downlines?.level2 ?? 0} / {user.referrals?.level3?.length ?? user.downlines?.level3 ?? 0}
-                                </div>
-                                <div style={{ marginBottom: 8 }}><b>Mining Rate:</b> {user.miningRate || 0} / hr</div>
-                                <div style={{ marginBottom: 8, fontSize: 11, wordBreak: 'break-all', marginTop: 12 }}><b>Referral Link:</b> <br /><a href={user.referralLink} target="_blank" rel="noreferrer" style={{ color: 'var(--gov-blue)' }}>{user.referralLink || 'N/A'}</a></div>
+                                <button className="gov-btn gov-btn-primary" onClick={() => setIsEditing(true)}>
+                                    <i className="fas fa-user-edit" style={{ marginRight: 6 }} /> Edit Profile
+                                </button>
+                                <button className="gov-btn gov-btn-outline" onClick={onClose}>
+                                    Close Registry
+                                </button>
                             </>
                         )}
                     </div>
-                </div>
-                <div className="gov-modal-footer">
-                    {isEditing ? (
-                        <>
-                            <button className="gov-btn gov-btn-success" onClick={() => onSave(user.uid, editData)}>Save Changes</button>
-                            <button className="gov-btn gov-btn-outline" onClick={() => setIsEditing(false)}>Cancel</button>
-                        </>
-                    ) : (
-                        <>
-                            <button className="gov-btn gov-btn-primary" onClick={() => setIsEditing(true)}>Edit Details</button>
-                            <button className="gov-btn gov-btn-danger" onClick={() => onUpdateStatus(user.uid, !user.isActive)}>
-                                {user.isActive ? 'Suspend User' : 'Unsuspend User'}
-                            </button>
-                            <button className="gov-btn gov-btn-outline" onClick={onClose}>Close Registry</button>
-                        </>
-                    )}
                 </div>
             </div>
         </div>
     );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   USERS
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   USERS DIRECTORY
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 export function AdminUsers() {
     const { showToast } = useToast();
     const [users, setUsers] = useState([]);
     const [q, setQ] = useState('');
     const [filter, setFilter] = useState('all');
     const [selectedUser, setSelectedUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     const loadUsers = useCallback(() => {
+        setLoading(true);
         getDocs(collection(db, 'users')).then(snap => {
-            if (!snap.empty) setUsers(snap.docs.map(d => ({ uid: d.id, ...d.data() })));
+            if (!snap.empty) {
+                setUsers(snap.docs.map(d => ({ uid: d.id, ...d.data() })));
+            } else {
+                setUsers([]);
+            }
+            setLoading(false);
+        }).catch(err => {
+            console.error('Error loading users:', err);
+            setLoading(false);
         });
     }, []);
 
@@ -598,65 +966,303 @@ export function AdminUsers() {
 
     const handleUpdateStatus = async (uid, newStatus) => {
         try {
-            await updateDoc(doc(db, 'users', uid), { isActive: newStatus });
+            await updateDoc(doc(db, 'users', uid), { 
+                isActive: newStatus,
+                activationStatus: newStatus ? 'approved' : 'suspended',
+                updatedAt: Date.now()
+            });
             showToast(`User status updated to ${newStatus ? 'Active' : 'Suspended'}.`, 'success');
             setSelectedUser(null);
             loadUsers();
         } catch (e) {
-            showToast('Failed to update user', 'error');
+            showToast('Failed to update user status', 'error');
         }
     };
 
-    const handleSaveUser = async (uid, data) => {
+    /**
+     * Complete Referral and Account Synchronization on Save
+     */
+    const handleSaveUser = async (uid, editData, originalUser) => {
         try {
-            await updateDoc(doc(db, 'users', uid), {
-                email: data.email,
-                phone: data.phone,
-                fullName: data.fullName,
-                countryCode: data.countryCode,
-                countryName: data.countryName,
-                country: data.countryName, // Add fallback
-                currency: data.currency,
-                username: data.username,
-                referralLink: data.referralLink,
-                balance: Number(data.balance) || 0,
-                totalWithdrawn: Number(data.totalWithdrawn) || 0,
-                referrer: data.referrer,
-                miningRate: Number(data.miningRate) || 0,
-                isActive: data.isActive,
-                activationStatus: data.activationStatus,
-                'downlines.level1': Number(data.downlinesLevel1) || 0,
-                'downlines.level2': Number(data.downlinesLevel2) || 0,
-                'downlines.level3': Number(data.downlinesLevel3) || 0
-            });
-            showToast('User details updated successfully', 'success');
+            const oldUsername = (originalUser.username || '').trim();
+            const newUsername = (editData.username || '').trim();
+            const oldPhone = (originalUser.phone || '').trim();
+            const newPhone = (editData.phone || '').trim();
+            const oldEmail = (originalUser.email || '').trim().toLowerCase();
+            const newEmail = (editData.email || '').trim().toLowerCase();
+            const oldReferrer = (originalUser.referrer || '').trim();
+            const newReferrer = (editData.referrer || '').trim();
+
+            // 1. Validation: Username availability if username is changing
+            if (newUsername && newUsername.toLowerCase() !== oldUsername.toLowerCase()) {
+                const loginIndexSnap = await getDoc(doc(db, 'loginIndex', newUsername));
+                if (loginIndexSnap.exists() && loginIndexSnap.data().uid !== uid) {
+                    showToast(`Username "${newUsername}" is already in use by another account.`, 'error');
+                    return false;
+                }
+            }
+
+            // 2. Validation: Upliner existence if upliner is changing
+            if (newReferrer && newReferrer.toLowerCase() !== oldReferrer.toLowerCase()) {
+                if (newReferrer.toLowerCase() === newUsername.toLowerCase() || newReferrer.toLowerCase() === oldUsername.toLowerCase()) {
+                    showToast('A user cannot be set as their own referrer.', 'error');
+                    return false;
+                }
+                const refIndexSnap = await getDoc(doc(db, 'loginIndex', newReferrer));
+                if (!refIndexSnap.exists()) {
+                    showToast(`Upliner username "${newReferrer}" was not found in loginIndex.`, 'error');
+                    return false;
+                }
+            }
+
+            // 3. Migrate Username: loginIndex & Cascade Downlines
+            if (newUsername && newUsername !== oldUsername) {
+                // (a) Add new loginIndex record
+                await setDoc(doc(db, 'loginIndex', newUsername), {
+                    uid: uid,
+                    email: newEmail || oldEmail,
+                    username: newUsername
+                });
+
+                // Also add lower-case entry if casing differs to ensure case-insensitive lookup
+                if (newUsername.toLowerCase() !== newUsername) {
+                    await setDoc(doc(db, 'loginIndex', newUsername.toLowerCase()), {
+                        uid: uid,
+                        email: newEmail || oldEmail,
+                        username: newUsername
+                    });
+                }
+
+                // (b) Delete old loginIndex entry
+                if (oldUsername) {
+                    await deleteDoc(doc(db, 'loginIndex', oldUsername));
+                    if (oldUsername.toLowerCase() !== oldUsername) {
+                        await deleteDoc(doc(db, 'loginIndex', oldUsername.toLowerCase()));
+                    }
+                }
+
+                // (c) Cascade update all direct downlines whose `referrer` was oldUsername
+                if (oldUsername) {
+                    const downlinesQuery = query(collection(db, 'users'), where('referrer', '==', oldUsername));
+                    const downlinesSnap = await getDocs(downlinesQuery);
+                    if (!downlinesSnap.empty) {
+                        const batch = writeBatch(db);
+                        downlinesSnap.docs.forEach(d => {
+                            batch.update(doc(db, 'users', d.id), { referrer: newUsername });
+                        });
+                        await batch.commit();
+                        console.log(`âœ… Cascaded ${downlinesSnap.size} downlines from "${oldUsername}" to "${newUsername}"`);
+                    }
+                }
+            }
+
+            // 4. Migrate Phone: phoneIndex
+            if (newPhone !== oldPhone) {
+                if (newPhone) {
+                    await setDoc(doc(db, 'phoneIndex', newPhone), {
+                        uid: uid,
+                        phone: newPhone
+                    });
+                }
+                if (oldPhone) {
+                    await deleteDoc(doc(db, 'phoneIndex', oldPhone));
+                }
+            }
+
+            // 5. Update Upliner / Referrer Relationships
+            if (newReferrer !== oldReferrer) {
+                // Remove from old upliner's level 1 array
+                if (oldReferrer) {
+                    try {
+                        const oldRefIndex = await getDoc(doc(db, 'loginIndex', oldReferrer));
+                        if (oldRefIndex.exists()) {
+                            const oldRefUid = oldRefIndex.data().uid;
+                            const oldRefUserSnap = await getDoc(doc(db, 'users', oldRefUid));
+                            if (oldRefUserSnap.exists()) {
+                                const oldL1 = (oldRefUserSnap.data().referrals?.level1 || []).filter(u => u !== uid);
+                                const oldL1Count = Math.max(0, (oldRefUserSnap.data().referralCount || 1) - 1);
+                                await updateDoc(doc(db, 'users', oldRefUid), {
+                                    'referrals.level1': oldL1,
+                                    referralCount: oldL1Count
+                                });
+                            }
+                        }
+                    } catch (err) {
+                        console.warn('Could not clean old upliner array:', err);
+                    }
+                }
+
+                // Add to new upliner's level 1 array
+                if (newReferrer) {
+                    try {
+                        const newRefIndex = await getDoc(doc(db, 'loginIndex', newReferrer));
+                        if (newRefIndex.exists()) {
+                            const newRefUid = newRefIndex.data().uid;
+                            const newRefUserSnap = await getDoc(doc(db, 'users', newRefUid));
+                            if (newRefUserSnap.exists()) {
+                                const newRefData = newRefUserSnap.data();
+                                const newL1 = newRefData.referrals?.level1 || [];
+                                if (!newL1.includes(uid)) {
+                                    await updateDoc(doc(db, 'users', newRefUid), {
+                                        'referrals.level1': [...newL1, uid],
+                                        referralCount: (newRefData.referralCount || 0) + 1
+                                    });
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        console.warn('Could not add to new upliner array:', err);
+                    }
+                }
+
+                // Log audit trail
+                await addDoc(collection(db, 'uplinerChanges'), {
+                    targetUid: uid,
+                    targetUsername: newUsername || oldUsername,
+                    oldUpliner: oldReferrer || 'none',
+                    newUpliner: newReferrer || 'none',
+                    changedAt: Date.now()
+                });
+            }
+
+            // 6. Update target user's main profile in Firestore
+            const effectiveUsername = newUsername || oldUsername;
+            const updatedUserData = {
+                username: effectiveUsername,
+                email: newEmail,
+                phone: newPhone,
+                fullName: (editData.fullName || '').trim(),
+                countryCode: (editData.countryCode || 'TZ').toUpperCase().trim(),
+                countryName: (editData.countryName || editData.country || 'Tanzania').trim(),
+                country: (editData.countryName || editData.country || 'Tanzania').trim(),
+                currency: (editData.currency || 'TZS').toUpperCase().trim(),
+                referralLink: `${window.location.origin}/register?ref=${effectiveUsername}`,
+                balance: Number(editData.balance) || 0,
+                totalProfit: Number(editData.totalProfit ?? originalUser.totalProfit ?? editData.balance) || 0,
+                totalWithdrawn: Number(editData.totalWithdrawn) || 0,
+                referrer: newReferrer || null,
+                miningRate: Number(editData.miningRate) || 0,
+                isActive: Boolean(editData.isActive),
+                activationStatus: editData.activationStatus || (editData.isActive ? 'approved' : 'pending'),
+                role: editData.role || 'user',
+                updatedAt: Date.now()
+            };
+
+            await updateDoc(doc(db, 'users', uid), updatedUserData);
+
+            showToast('âœ… User profile and referral routes synced successfully!', 'success');
             setSelectedUser(null);
             loadUsers();
+            return true;
         } catch (e) {
-            showToast('Failed to save details', 'error');
+            console.error('Failed to save user details:', e);
+            showToast(`Failed to save details: ${e.message}`, 'error');
+            return false;
         }
     };
 
     const filtered = users
-        .filter(u => filter === 'all' ? true : filter === 'active' ? u.isActive : !u.isActive)
+        .filter(u => {
+            if (filter === 'all') return true;
+            if (filter === 'active') return u.isActive || u.activationStatus === 'approved';
+            if (filter === 'pending') return !u.isActive && u.activationStatus !== 'approved';
+            if (filter === 'suspended') return u.isActive === false && u.activationStatus === 'suspended';
+            return true;
+        })
         .filter(u => {
             if (!q) return true;
             const lq = q.toLowerCase();
-            return u.uid?.toLowerCase().includes(lq) || u.username?.toLowerCase().includes(lq) || u.email?.toLowerCase().includes(lq) || u.phone?.toLowerCase().includes(lq);
+            return (
+                u.uid?.toLowerCase().includes(lq) ||
+                u.username?.toLowerCase().includes(lq) ||
+                u.fullName?.toLowerCase().includes(lq) ||
+                u.email?.toLowerCase().includes(lq) ||
+                u.phone?.toLowerCase().includes(lq) ||
+                u.referrer?.toLowerCase().includes(lq) ||
+                u.countryName?.toLowerCase().includes(lq)
+            );
         });
+
+    const activeCount = users.filter(u => u.isActive || u.activationStatus === 'approved').length;
+    const pendingCount = users.filter(u => !u.isActive && u.activationStatus !== 'approved').length;
+    const totalBalanceTZS = users.reduce((acc, u) => acc + (Number(u.balance) || 0), 0);
 
     return (
         <div>
-            <UserProfileModal user={selectedUser} onClose={() => setSelectedUser(null)} onUpdateStatus={handleUpdateStatus} onSave={handleSaveUser} />
+            <UserProfileModal 
+                user={selectedUser} 
+                onClose={() => setSelectedUser(null)} 
+                onUpdateStatus={handleUpdateStatus} 
+                onSave={handleSaveUser} 
+            />
+
             <h1 className="gov-title">User Directory</h1>
-            <p className="gov-subtitle">Comprehensive registry of all platform personnel</p>
+            <p className="gov-subtitle">Comprehensive registry of all platform personnel with synchronized referral network routing</p>
+
+            {/* Quick Metrics Bar */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 16 }}>
+                <div style={{ background: 'white', border: '1px solid var(--gov-border)', borderRadius: 8, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#e0e7ff', color: '#4318ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>
+                        <i className="fas fa-users" />
+                    </div>
+                    <div>
+                        <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Total Users</div>
+                        <div style={{ fontSize: 20, fontWeight: 800, color: '#1e293b' }}>{users.length.toLocaleString()}</div>
+                    </div>
+                </div>
+
+                <div style={{ background: 'white', border: '1px solid var(--gov-border)', borderRadius: 8, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#dcfce7', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>
+                        <i className="fas fa-user-check" />
+                    </div>
+                    <div>
+                        <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Active / Approved</div>
+                        <div style={{ fontSize: 20, fontWeight: 800, color: '#16a34a' }}>{activeCount.toLocaleString()}</div>
+                    </div>
+                </div>
+
+                <div style={{ background: 'white', border: '1px solid var(--gov-border)', borderRadius: 8, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#fef3c7', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>
+                        <i className="fas fa-user-clock" />
+                    </div>
+                    <div>
+                        <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Pending / Inactive</div>
+                        <div style={{ fontSize: 20, fontWeight: 800, color: '#d97706' }}>{pendingCount.toLocaleString()}</div>
+                    </div>
+                </div>
+
+                <div style={{ background: 'white', border: '1px solid var(--gov-border)', borderRadius: 8, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#e0f2fe', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>
+                        <i className="fas fa-coins" />
+                    </div>
+                    <div>
+                        <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Total Balances (Raw)</div>
+                        <div style={{ fontSize: 18, fontWeight: 800, color: '#0284c7' }}>{totalBalanceTZS.toLocaleString()}</div>
+                    </div>
+                </div>
+            </div>
 
             <div className="gov-users-toolbar">
-                <input className="gov-input gov-users-search" placeholder="Query by ID, Name, Phone..." value={q} onChange={e => setQ(e.target.value)} />
+                <input 
+                    className="gov-input gov-users-search" 
+                    placeholder="Search by Username, Name, Phone, Email, Referrer, Country..." 
+                    value={q} 
+                    onChange={e => setQ(e.target.value)} 
+                />
                 <div className="gov-users-filters">
-                    {['all', 'active', 'pending'].map(f => (
-                        <button key={f} className={`gov-btn ${filter === f ? 'gov-btn-primary' : 'gov-btn-outline'}`} onClick={() => setFilter(f)}>
-                            {f.toUpperCase()}
+                    {[
+                        { id: 'all', label: 'All' },
+                        { id: 'active', label: 'Active' },
+                        { id: 'pending', label: 'Pending' },
+                        { id: 'suspended', label: 'Suspended' }
+                    ].map(f => (
+                        <button 
+                            key={f.id} 
+                            className={`gov-btn ${filter === f.id ? 'gov-btn-primary' : 'gov-btn-outline'}`} 
+                            onClick={() => setFilter(f.id)}
+                            style={{ textTransform: 'uppercase', fontSize: 12 }}
+                        >
+                            {f.label}
                         </button>
                     ))}
                 </div>
@@ -664,24 +1270,47 @@ export function AdminUsers() {
 
             <div className="gov-table-container">
                 <table className="gov-table">
-                    <thead><tr><th>Personnel</th><th>Contact Data</th><th>Region</th><th>Ledger Balance</th><th>System Status</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>Personnel</th>
+                            <th>Contact Data</th>
+                            <th>Region</th>
+                            <th>Upliner (Referrer)</th>
+                            <th>Ledger Balance</th>
+                            <th>Status</th>
+                            <th style={{ textAlign: 'right' }}>Actions</th>
+                        </tr>
+                    </thead>
                     <tbody>
-                        {filtered.map(u => {
-                            const cCode = (u.countryCode || 'TZ').toLowerCase();
+                        {loading ? (
+                            <tr>
+                                <td colSpan={7}>
+                                    <div style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>
+                                        <i className="fas fa-spinner fa-spin" style={{ marginRight: 8 }} /> Loading users directory...
+                                    </div>
+                                </td>
+                            </tr>
+                        ) : filtered.map(u => {
+                            const cCode = (u.countryCode || u.country || 'TZ').toLowerCase();
+                            const isAct = u.isActive || u.activationStatus === 'approved';
                             return (
-                                <tr key={u.uid} onClick={() => setSelectedUser(u)} style={{ cursor: 'pointer' }} title="Click to view full records">
+                                <tr key={u.uid} onClick={() => setSelectedUser(u)} style={{ cursor: 'pointer' }} title="Click to view & edit full profile">
                                     <td>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                            <div className="gov-user-avatar">{(u.username || '?').slice(0, 2).toUpperCase()}</div>
+                                            <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#4318ff', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14 }}>
+                                                {(u.username || u.fullName || 'U').charAt(0).toUpperCase()}
+                                            </div>
                                             <div>
-                                                <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--gov-blue)' }}>{u.username || 'Unregistered'}</div>
-                                                <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#666' }}>ID: {u.uid.slice(0, 12)}...</div>
+                                                <div style={{ fontWeight: 700, color: '#1e293b' }}>{u.fullName || 'No Name'}</div>
+                                                <div style={{ fontSize: 12, color: '#64748b' }}>@{u.username || 'unknown'}</div>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <div>{u.email}</div>
-                                        <div style={{ fontFamily: 'monospace', color: '#666' }}>{u.phone || 'N/A'}</div>
+                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                            <div>{u.email || 'N/A'}</div>
+                                            <div style={{ fontFamily: 'monospace', color: '#666', fontSize: 12 }}>{u.phone || 'N/A'}</div>
+                                        </div>
                                     </td>
                                     <td>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -689,8 +1318,18 @@ export function AdminUsers() {
                                             <span>{u.countryName || u.country || 'N/A'}</span>
                                         </div>
                                     </td>
+                                    <td>
+                                        <div style={{ fontWeight: 600, color: '#475569' }}>
+                                            {u.referrer ? `@${u.referrer}` : <span style={{ color: '#94a3b8' }}>None</span>}
+                                        </div>
+                                    </td>
                                     <td style={{ fontWeight: 700, color: '#2E7D32' }}>{u.currency || 'TZS'} {Number(u.balance || 0).toLocaleString()}</td>
-                                    <td><StatusBadge status={u.isActive ? 'active' : 'pending'} /></td>
+                                    <td><StatusBadge status={isAct ? 'active' : 'pending'} /></td>
+                                    <td style={{ textAlign: 'right' }}>
+                                        <button className="gov-btn gov-btn-outline" onClick={(e) => { e.stopPropagation(); setSelectedUser(u); }} style={{ padding: '4px 8px', fontSize: 12 }}>
+                                            View / Edit
+                                        </button>
+                                    </td>
                                 </tr>
                             );
                         })}
@@ -702,9 +1341,9 @@ export function AdminUsers() {
     );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
    PAYMENTS
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
 export function AdminPayments() {
     const { showToast } = useToast();
     const [payments, setPayments] = useState([]);
@@ -740,11 +1379,11 @@ export function AdminPayments() {
             subtitle: `Action required for invoice ${p.reference || p.transactionId || p.transactionHash || p.id}`,
             details: [
                 { label: 'Client ID', value: p.uid },
-                { label: 'Username', value: u.username || u.fullName || '—' },
+                { label: 'Username', value: u.username || u.fullName || 'â€”' },
                 { label: 'Amount', value: amountDisplay },
                 { label: 'Method', value: p.method || p.network || p.channel || 'PalmPesa' },
-                { label: 'Phone', value: p.phone || p.phoneNumber || '—' },
-                { label: 'Dated', value: p.createdAt ? new Date(p.createdAt).toLocaleString() : '—' },
+                { label: 'Phone', value: p.phone || p.phoneNumber || 'â€”' },
+                { label: 'Dated', value: p.createdAt ? new Date(p.createdAt).toLocaleString() : 'â€”' },
                 ...(p.transactionHash ? [{ label: 'Txn Hash', value: <span style={{fontFamily:'monospace', color:'var(--gov-blue)'}}>{p.transactionHash}</span> }] : [])
             ],
             reason: 'Verification failed', setReason: (r) => setModal(m => ({ ...m, reason: r }))
@@ -800,7 +1439,7 @@ export function AdminPayments() {
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     fontSize: 20, color: 'var(--text-muted, #6b7280)'
                                 }}
-                            >×</button>
+                            >Ã—</button>
                         </div>
                         <div style={{ flex: 1, overflowY: 'auto', borderRadius: 8, display: 'flex', justifyContent: 'center' }}>
                             <img
@@ -886,9 +1525,9 @@ export function AdminPayments() {
     );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
    WITHDRAWALS
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
 
 const CopyIcon = () => (
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -939,14 +1578,14 @@ export function AdminWithdrawals() {
         const details = [
             { label: 'Reference', value: w.referenceCode || w.id },
             { label: 'Client ID', value: w.uid },
-            { label: 'Username', value: u.username || u.fullName || '—' },
-            { label: 'Account Name', value: w.accountName || '—' },
+            { label: 'Username', value: u.username || u.fullName || 'â€”' },
+            { label: 'Account Name', value: w.accountName || 'â€”' },
             { label: 'Wallet', value: w.wallet || 'balance' },
             { label: 'Amount', value: `${currency} ${Number(nativeAmt).toLocaleString()}` },
             { label: 'Fee', value: w.fee ? `${currency} ${Number(w.fee).toLocaleString()}` : 'None' },
-            { label: 'Phone', value: w.phone || w.phoneNumber || w.address || '—' },
-            { label: 'Gateway', value: w.method || '—' },
-            { label: 'Date', value: w.createdAt ? new Date(w.createdAt).toLocaleString() : '—' },
+            { label: 'Phone', value: w.phone || w.phoneNumber || w.address || 'â€”' },
+            { label: 'Gateway', value: w.method || 'â€”' },
+            { label: 'Date', value: w.createdAt ? new Date(w.createdAt).toLocaleString() : 'â€”' },
         ];
         setModal({
             action, id: w.id, uid: w.uid,
@@ -998,14 +1637,14 @@ export function AdminWithdrawals() {
                             const cCode = (u.country || 'tz').toLowerCase();
                             const currency = w.currency || u.currency || 'TZS';
                             const phone = w.phone || w.phoneNumber || w.address || '';
-                            const name = w.accountName || u.fullName || '—';
+                            const name = w.accountName || u.fullName || 'â€”';
                             return (
                                 <tr key={w.id}>
                                     <td>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                             <img src={`https://flagcdn.com/w40/${cCode}.png`} alt={cCode} style={{ width: 24, height: 16, objectFit: 'cover', borderRadius: 2 }} />
                                             <div>
-                                                <div style={{ fontWeight: 700, fontSize: 13 }}>{u.username || u.fullName || '—'}</div>
+                                                <div style={{ fontWeight: 700, fontSize: 13 }}>{u.username || u.fullName || 'â€”'}</div>
                                                 <div style={{ fontFamily: 'monospace', fontSize: 10, color: '#999' }}>{w.uid?.slice(0, 12)}...</div>
                                             </div>
                                         </div>
@@ -1023,11 +1662,11 @@ export function AdminWithdrawals() {
                                     <td>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                <span style={{ fontSize: 12, fontWeight: 600 }}>ðŸ‘¤ {name}</span>
+                                                <span style={{ fontSize: 12, fontWeight: 600 }}>Ã°Å¸â€˜Â¤ {name}</span>
                                                 <button onClick={() => copyToClipboard(name)} title="Copy name" style={{ border: 'none', background: 'rgba(99,102,241,0.1)', color: '#6366f1', borderRadius: 4, padding: '2px 6px', display: 'flex', alignItems: 'center', cursor: 'pointer' }}><CopyIcon /></button>
                                             </div>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>ðŸ“ž {phone || 'N/A'}</span>
+                                                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Ã°Å¸â€œÅ¾ {phone || 'N/A'}</span>
                                                 {phone && <button onClick={() => copyToClipboard(phone)} title="Copy phone" style={{ border: 'none', background: 'rgba(99,102,241,0.1)', color: '#6366f1', borderRadius: 4, padding: '2px 6px', display: 'flex', alignItems: 'center', cursor: 'pointer' }}><CopyIcon /></button>}
                                             </div>
                                         </div>
@@ -1060,9 +1699,9 @@ export function AdminWithdrawals() {
     );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
    REFERRALS
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
 function ReferralDetailModal({ promoter, usersMap, onClose }) {
     if (!promoter) return null;
     const cCode = (promoter.countryCode || promoter.country || 'TZ').toLowerCase();
@@ -1093,9 +1732,9 @@ function ReferralDetailModal({ promoter, usersMap, onClose }) {
     }
 
     const levels = [
-        { label: 'Level 1 — Direct Recruits', uids: lv1Uids },
-        { label: 'Level 2 — Indirect Recruits', uids: lv2Uids },
-        { label: 'Level 3 — Extended Network', uids: lv3Uids },
+        { label: 'Level 1 â€” Direct Recruits', uids: lv1Uids },
+        { label: 'Level 2 â€” Indirect Recruits', uids: lv2Uids },
+        { label: 'Level 3 â€” Extended Network', uids: lv3Uids },
     ];
     return (
         <div className="gov-modal-overlay open" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -1104,7 +1743,7 @@ function ReferralDetailModal({ promoter, usersMap, onClose }) {
                     <div>
                         <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <img src={`https://flagcdn.com/w40/${cCode}.png`} alt={cCode} style={{ width: 22, height: 15, borderRadius: 2 }} />
-                            {promoter.username || 'N/A'} — Referral Tree
+                            {promoter.username || 'N/A'} â€” Referral Tree
                         </h3>
                         <div style={{ fontSize: 11, color: '#888', fontFamily: 'monospace', marginTop: 2 }}>{promoter.uid}</div>
                     </div>
@@ -1130,13 +1769,13 @@ function ReferralDetailModal({ promoter, usersMap, onClose }) {
                                         <tbody>
                                             {uids.map(uid => {
                                                 const ref = usersMap[uid];
-                                                if (!ref) return (<tr key={uid}><td colSpan={5} style={{ color: '#ccc', fontFamily: 'monospace', fontSize: 11 }}>{uid} — not found</td></tr>);
+                                                if (!ref) return (<tr key={uid}><td colSpan={5} style={{ color: '#ccc', fontFamily: 'monospace', fontSize: 11 }}>{uid} â€” not found</td></tr>);
                                                 const rc = (ref.countryCode || ref.country || 'TZ').toLowerCase();
                                                 return (
                                                     <tr key={uid}>
                                                         <td>
-                                                            <div style={{ fontWeight: 600 }}>{ref.username || '—'}</div>
-                                                            <div style={{ fontSize: 10, color: '#aaa' }}>{ref.email || '—'}</div>
+                                                            <div style={{ fontWeight: 600 }}>{ref.username || 'â€”'}</div>
+                                                            <div style={{ fontSize: 10, color: '#aaa' }}>{ref.email || 'â€”'}</div>
                                                         </td>
                                                         <td>
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -1144,8 +1783,8 @@ function ReferralDetailModal({ promoter, usersMap, onClose }) {
                                                                 <span>{ref.countryName || rc.toUpperCase()}</span>
                                                             </div>
                                                         </td>
-                                                        <td style={{ fontFamily: 'monospace' }}>{ref.phone || '—'}</td>
-                                                        <td style={{ color: '#888' }}>{ref.createdAt ? new Date(ref.createdAt).toLocaleDateString() : '—'}</td>
+                                                        <td style={{ fontFamily: 'monospace' }}>{ref.phone || 'â€”'}</td>
+                                                        <td style={{ color: '#888' }}>{ref.createdAt ? new Date(ref.createdAt).toLocaleDateString() : 'â€”'}</td>
                                                         <td><StatusBadge status={ref.isActive ? 'active' : 'pending'} /></td>
                                                     </tr>
                                                 );
@@ -1222,7 +1861,7 @@ export function AdminReferrals() {
             {loading && <p style={{ color: '#888', padding: 16 }}>Loading referral data...</p>}
             {error && (
                 <div style={{ background: '#fff3cd', border: '1px solid #ffc107', borderRadius: 8, padding: '12px 16px', marginBottom: 16, color: '#856404' }}>
-                    <b>âš  Access Error:</b> {error}
+                    <b>Ã¢Å¡Â  Access Error:</b> {error}
                 </div>
             )}
             <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'center' }}>
@@ -1336,9 +1975,9 @@ export function AdminReferrals() {
 }
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
    TASKS ADMIN
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
 const TASK_CATEGORY_OPTIONS = [
     { value: 'youtube', label: 'YouTube Watch & Earn' },
     { value: 'facebook', label: 'Facebook Watch & Earn' },
@@ -1446,11 +2085,11 @@ export function AdminTasks() {
                                     <div style={{ flex: 1 }}>
                                         <div style={{ fontWeight: 600 }}>{catOption?.label || cfg.category}</div>
                                         <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{cfg.description}</div>
-                                        {cfg.videoUrl && <div style={{ fontSize: 11, color: 'var(--gov-blue)', marginTop: 4 }}>ðŸŽ¬ Video: {cfg.videoUrl.slice(0, 50)}...</div>}
+                                        {cfg.videoUrl && <div style={{ fontSize: 11, color: 'var(--gov-blue)', marginTop: 4 }}>Ã°Å¸Å½Â¬ Video: {cfg.videoUrl.slice(0, 50)}...</div>}
                                     </div>
                                     <div style={{ textAlign: 'right', minWidth: 140 }}>
                                         <div style={{ fontWeight: 700, color: '#2E7D32', fontSize: 14 }}>TZS {tzReward.toLocaleString()}</div>
-                                        <div style={{ fontSize: 11, color: '#aaa' }}>{cfg.totalItems} items Â· {Object.keys(cfg.countryRewards || {}).length} countries</div>
+                                        <div style={{ fontSize: 11, color: '#aaa' }}>{cfg.totalItems} items Ã‚Â· {Object.keys(cfg.countryRewards || {}).length} countries</div>
                                     </div>
                                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                                         <span style={{ padding: '2px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, background: cfg.active !== false ? '#e8f5e9' : '#fafafa', color: cfg.active !== false ? '#2E7D32' : '#aaa', border: `1px solid ${cfg.active !== false ? '#c8e6c9' : '#eee'}` }}>
@@ -1661,7 +2300,7 @@ export function AdminSettings() {
                 const snap = await m.getDoc(m.doc(db, 'settings', 'activation'));
                 if (snap.exists()) {
                     const raw = snap.data()?.paymentNumbers || {};
-                    // Directly assign whatever is in Firestore — new nested schema
+                    // Directly assign whatever is in Firestore â€” new nested schema
                     // { cc: { networkId: { number, name } } }
                     setPaymentTargets(prev => {
                         const merged = { ...prev };
@@ -1762,7 +2401,7 @@ export function AdminSettings() {
                     </button>
                 </div>
 
-                {/* â”€â”€ Exchange Rates Panel â”€â”€ */}
+                {/* Ã¢â€â‚¬Ã¢â€â‚¬ Exchange Rates Panel Ã¢â€â‚¬Ã¢â€â‚¬ */}
                 <div className="gov-panel" style={{ padding: 24 }}>
                     <h3 style={{ marginTop: 0, marginBottom: 6 }}>Exchange Rates (per USD)</h3>
                     <p style={{ fontSize: 12, color: 'var(--gov-text-muted)', marginBottom: 20 }}>
@@ -1798,7 +2437,7 @@ export function AdminSettings() {
                     </button>
                 </div>
 
-                {/* â”€â”€ Referral Commissions Panel â”€â”€ */}
+                {/* Ã¢â€â‚¬Ã¢â€â‚¬ Referral Commissions Panel Ã¢â€â‚¬Ã¢â€â‚¬ */}
                 <div className="gov-panel" style={{ padding: 24 }}>
                     <h3 style={{ marginTop: 0, marginBottom: 6 }}>Referral Commissions (TZS)</h3>
                     <p style={{ fontSize: 12, color: 'var(--gov-text-muted)', marginBottom: 20 }}>
@@ -1843,7 +2482,7 @@ export function AdminSettings() {
 
                 {/* -- Manual Activation Payment Details -- */}
                 <div className="gov-panel" style={{ padding: 24, gridColumn: '1 / -1' }}>
-                    <h3 style={{ marginTop: 0, marginBottom: 6 }}>Manual Activation — Payment Numbers per Network</h3>
+                    <h3 style={{ marginTop: 0, marginBottom: 6 }}>Manual Activation â€” Payment Numbers per Network</h3>
                     <p style={{ fontSize: 12, color: 'var(--gov-text-muted)', marginBottom: 24 }}>
                         Set the payment number and account name for each network per country. Users see the correct number when they select a network during activation.
                     </p>
@@ -1859,7 +2498,7 @@ export function AdminSettings() {
                     ].map(({ cc, label, networks }) => (
                         <div key={cc} style={{ marginBottom: 28 }}>
                             <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--gov-blue)', marginBottom: 12, paddingBottom: 6, borderBottom: '2px solid var(--gov-border)' }}>
-                                🌍 {label}
+                                ðŸŒ {label}
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
                                 {networks.map(net => (
@@ -1900,7 +2539,7 @@ export function AdminSettings() {
                             setLoading(prev => ({ ...prev, paymentTargets: false }));
                         }}
                     >
-                        {loading.paymentTargets ? 'Saving...' : '💾 Save All Payment Numbers'}
+                        {loading.paymentTargets ? 'Saving...' : 'ðŸ’¾ Save All Payment Numbers'}
                     </button>
                 </div>
 
@@ -1909,9 +2548,9 @@ export function AdminSettings() {
     );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
    WALLET / SHOP DEPOSITS (Manual USSD + Auto PalmPesa)
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
 export function AdminShopDeposits() {
     const { showToast } = useToast();
     const [deposits, setDeposits] = useState([]);
@@ -1993,13 +2632,13 @@ export function AdminShopDeposits() {
             subtitle: `Reference: ${dep.transactionId || dep.reference || dep.id}`,
             details: [
                 { label: 'Client ID', value: dep.uid },
-                { label: 'Username', value: u.username || u.fullName || '—' },
-                { label: 'Phone', value: u.phone || dep.msisdn || '—' },
+                { label: 'Username', value: u.username || u.fullName || 'â€”' },
+                { label: 'Phone', value: u.phone || dep.msisdn || 'â€”' },
                 { label: 'Amount', value: `${currency} ${amount.toLocaleString()}` },
                 { label: 'Method', value: dep.method || dep.channel || 'Manual USSD' },
-                { label: 'Transaction ID', value: dep.transactionId || dep.reference || dep.orderId || '—' },
+                { label: 'Transaction ID', value: dep.transactionId || dep.reference || dep.orderId || 'â€”' },
                 { label: 'Current Shop Balance', value: `${currency} ${Number(u.shopBalance || 0).toLocaleString()}` },
-                { label: 'Submitted', value: dep.createdAt ? new Date(dep.createdAt).toLocaleString() : '—' },
+                { label: 'Submitted', value: dep.createdAt ? new Date(dep.createdAt).toLocaleString() : 'â€”' },
             ],
             reason: 'Payment could not be verified', setReason: (r) => setModal(m => ({ ...m, reason: r }))
         });
@@ -2110,7 +2749,7 @@ export function AdminShopDeposits() {
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                             <img src={`https://flagcdn.com/w40/${cCode}.png`} alt={cCode} style={{ width: 24, height: 16, objectFit: 'cover', borderRadius: 2 }} />
                                             <div>
-                                                <div style={{ fontWeight: 700, fontSize: 13 }}>{u.username || u.fullName || '—'}</div>
+                                                <div style={{ fontWeight: 700, fontSize: 13 }}>{u.username || u.fullName || 'â€”'}</div>
                                                 <div style={{ fontSize: 11, color: '#999', fontFamily: 'monospace' }}>{dep.uid?.slice(0, 10)}...</div>
                                             </div>
                                         </div>
@@ -2126,8 +2765,8 @@ export function AdminShopDeposits() {
                                             {isPalmpesa ? <><i className="fas fa-bolt" /> Auto PalmPesa</> : <><i className="fas fa-mobile-screen-button" /> Manual USSD</>}
                                         </span>
                                     </td>
-                                    <td className="gov-mono-text" style={{ fontSize: 12 }}>{dep.transactionId || dep.reference || dep.orderId || '—'}</td>
-                                    <td style={{ fontSize: 12 }}>{dep.createdAt ? new Date(dep.createdAt).toLocaleString() : '—'}</td>
+                                    <td className="gov-mono-text" style={{ fontSize: 12 }}>{dep.transactionId || dep.reference || dep.orderId || 'â€”'}</td>
+                                    <td style={{ fontSize: 12 }}>{dep.createdAt ? new Date(dep.createdAt).toLocaleString() : 'â€”'}</td>
                                     <td><StatusBadge status={dep.status} /></td>
                                     <td>
                                         <div className="gov-action-group">
@@ -2300,15 +2939,15 @@ export function AdminPalmpesaLedger() {
                                 return (
                                     <tr key={t.id || t.order_id || i}>
                                         <td style={{ color: '#888', fontSize: 12 }}>{t.id || i + 1}</td>
-                                        <td className="gov-mono-text" style={{ fontSize: 12 }}>{t.order_id || '—'}</td>
+                                        <td className="gov-mono-text" style={{ fontSize: 12 }}>{t.order_id || 'â€”'}</td>
                                         <td style={{ fontWeight: 700 }}>
                                             <span style={{ color: amt < 0 ? '#D32F2F' : '#2E7D32' }}>
                                                 TZS {Math.abs(amt).toLocaleString()}
                                                 {amt < 0 && <span style={{ fontSize: 10, marginLeft: 4 }}>(debit)</span>}
                                             </span>
                                         </td>
-                                        <td className="gov-mono-text" style={{ fontSize: 12 }}>{t.msisdn || t.phone || '—'}</td>
-                                        <td style={{ fontSize: 13 }}>{t.name || '—'}</td>
+                                        <td className="gov-mono-text" style={{ fontSize: 12 }}>{t.msisdn || t.phone || 'â€”'}</td>
+                                        <td style={{ fontSize: 13 }}>{t.name || 'â€”'}</td>
                                         <td>
                                             <span style={{ background: 'rgba(2,136,209,0.1)', color: '#0288D1', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 700 }}>
                                                 {t.channel || t.network || 'palmpesa'}
@@ -2316,10 +2955,10 @@ export function AdminPalmpesaLedger() {
                                         </td>
                                         <td className="gov-mono-text" style={{ fontSize: 11, maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                                             title={t.transid || t.reference || ''}>
-                                            {t.transid || t.reference || '—'}
+                                            {t.transid || t.reference || 'â€”'}
                                         </td>
                                         <td style={{ fontSize: 12 }}>
-                                            {date ? new Date(date).toLocaleString() : '—'}
+                                            {date ? new Date(date).toLocaleString() : 'â€”'}
                                         </td>
                                         <td>
                                             <span style={{ background: bg, color, borderRadius: 6, padding: '3px 10px', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>
@@ -2337,9 +2976,9 @@ export function AdminPalmpesaLedger() {
     );
 }
 
-/* ══════════════════════════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    DAILY TASKS DASHBOARD
-══════════════════════════════════════════════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 export function AdminTasksMonitor() {
     const { showToast } = useToast();
     const [tasks, setTasks] = useState([]);
@@ -2493,7 +3132,7 @@ export function AdminTasksMonitor() {
                     <input type="text" placeholder="Search by username, phone, email, UID..." value={q} onChange={e => setQ(e.target.value)} />
                 </div>
                 <select className="atm-select" value={filter} onChange={e => setFilter(e.target.value)}>
-                    <option value="all">â€” All Statuses â€”</option>
+                    <option value="all">Ã¢â‚¬â€ All Statuses Ã¢â‚¬â€</option>
                     <option value="pending_verification">Pending System</option>
                     <option value="in-progress">In Progress</option>
                     <option value="completed">Completed / Paid</option>
@@ -2532,7 +3171,7 @@ export function AdminTasksMonitor() {
                                             </div>
                                             <div>
                                                 <div style={{ fontWeight: 700, color: '#1e293b' }}>{u.username || 'Unknown'} {u.country ? `(${u.country})` : ''}</div>
-                                                <div style={{ fontSize: 12, color: '#64748b' }}>{u.phone || '—'} | {u.email || '—'}</div>
+                                                <div style={{ fontSize: 12, color: '#64748b' }}>{u.phone || 'â€”'} | {u.email || 'â€”'}</div>
                                                 <div style={{ fontSize: 10, color: '#aaa', fontFamily: 'monospace', marginTop: 4 }}>{t.uid}</div>
                                             </div>
                                         </div>
@@ -2555,12 +3194,12 @@ export function AdminTasksMonitor() {
                                         </div>
                                         {(t.processingError || t.rejectReason) && (
                                             <div style={{ fontSize: 11, color: '#dc2626', maxWidth: 220, lineHeight: 1.3 }}>
-                                                âš ï¸ {t.processingError || t.rejectReason}
+                                                Ã¢Å¡ Ã¯Â¸ {t.processingError || t.rejectReason}
                                             </div>
                                         )}
                                         {t.adminForcedCredit && (
                                             <div style={{ fontSize: 11, color: '#059669', fontWeight: 700, marginTop: 4 }}>
-                                                âœ“ MANUALLY CREDITED
+                                                Ã¢Å“â€œ MANUALLY CREDITED
                                             </div>
                                         )}
                                     </td>
@@ -2591,9 +3230,9 @@ export function AdminTasksMonitor() {
     );
 }
 
-/* ══════════════════════════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    ADMIN KYC REVIEW
-══════════════════════════════════════════════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 export function AdminKycReview() {
     const [applications, setApplications] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -2727,10 +3366,10 @@ export function AdminKycReview() {
                                     }
                                 });
                             }}>
-                                ✕ REJECT CLEARANCE
+                                âœ• REJECT CLEARANCE
                             </button>
                             <button className="kyc-action-btn kyc-btn-approve" onClick={handleApprove}>
-                                ✓ GRANT AUTHORIZATION
+                                âœ“ GRANT AUTHORIZATION
                             </button>
                         </div>
                     </div>
@@ -2812,9 +3451,9 @@ export function AdminKycReview() {
 }
 
 
-/* ════════════════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    ORDERS DISPATCH MANAGEMENT
-════════════════════════════════════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 export function AdminOrders() {
     const { showToast } = useToast();
 
@@ -3083,7 +3722,7 @@ export function AdminOrders() {
                 </div>
             ) : filtered.length === 0 ? (
                 <div className="aop-empty">
-                    <span style={{ fontSize: 40, display: 'block', margin: '0 auto 12px auto' }}>🚀</span>
+                    <span style={{ fontSize: 40, display: 'block', margin: '0 auto 12px auto' }}>ðŸš€</span>
                     No active product logistics paths established yet.
                 </div>
             ) : (
@@ -3099,7 +3738,7 @@ export function AdminOrders() {
                                 {img ? (
                                     <img src={img} alt="Product Thumbnail" className="aop-card-image" />
                                 ) : (
-                                    <div className="aop-card-no-image">📦</div>
+                                    <div className="aop-card-no-image">ðŸ“¦</div>
                                 )}
                                 
                                 <div className="aop-card-content">
@@ -3126,14 +3765,14 @@ export function AdminOrders() {
 
                                     <div className="aop-logistics-path">
                                         <div className="aop-party" style={{ marginBottom: 8 }}>
-                                            <span className="aop-party-icon">🛒</span>
+                                            <span className="aop-party-icon">ðŸ›’</span>
                                             <div>
                                                 <div className="aop-meta-label">PURCHASING ORIGIN</div>
                                                 <div className="aop-meta-val">{buyer.username || o.buyerName || o.buyerUid?.slice(0,8)}</div>
                                             </div>
                                         </div>
                                         <div className="aop-party">
-                                            <span className="aop-party-icon">🏪</span>
+                                            <span className="aop-party-icon">ðŸª</span>
                                             <div>
                                                 <div className="aop-meta-label">SELLER DISPATCH</div>
                                                 <div className="aop-meta-val">{seller.username || (seller.fullName) || o.sellerUid?.slice(0,8)}</div>
@@ -3147,11 +3786,11 @@ export function AdminOrders() {
                                             value={o.status || 'pending'}
                                             onChange={(e) => handleUpdateStatus(o.id, e.target.value)}
                                         >
-                                            <option value="pending" disabled>🚧 Pending</option>
-                                            <option value="confirmed">✅ Confirmed</option>
-                                            <option value="traveling">🚚 Assign Traveling</option>
-                                            <option value="completed">🎉 Mark Completed</option>
-                                            <option value="rejected">❌ Cancel Route</option>
+                                            <option value="pending" disabled>ðŸš§ Pending</option>
+                                            <option value="confirmed">âœ… Confirmed</option>
+                                            <option value="traveling">ðŸšš Assign Traveling</option>
+                                            <option value="completed">ðŸŽ‰ Mark Completed</option>
+                                            <option value="rejected">âŒ Cancel Route</option>
                                         </select>
                                     </div>
                                 </div>
@@ -3163,17 +3802,17 @@ export function AdminOrders() {
         </div>
     );
 }
-/* ═══════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    ADMIN UPLINER EDITOR
-═══════════════════════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 export function AdminUplinerEditor() {
     const { user: adminUser } = useAuth();
     const { showToast } = useToast();
 
-    // ── State ──────────────────────────────────────────────
+    // â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const [allUsers, setAllUsers] = useState([]);
-    const [usersMap, setUsersMap] = useState({});      // uid → userData
-    const [loginIndex, setLoginIndex] = useState({});  // username.lowercase → uid
+    const [usersMap, setUsersMap] = useState({});      // uid â†’ userData
+    const [loginIndex, setLoginIndex] = useState({});  // username.lowercase â†’ uid
     const [loadingUsers, setLoadingUsers] = useState(true);
 
     // Target user (the one to re-assign)
@@ -3193,7 +3832,7 @@ export function AdminUplinerEditor() {
     const [auditLog, setAuditLog] = useState([]);
     const [loadingAudit, setLoadingAudit] = useState(true);
 
-    // ── Load all users ─────────────────────────────────────
+    // â”€â”€ Load all users â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const loadUsers = useCallback(() => {
         setLoadingUsers(true);
         getDocs(collection(db, 'users')).then(snap => {
@@ -3211,7 +3850,7 @@ export function AdminUplinerEditor() {
         }).catch(() => setLoadingUsers(false));
     }, []);
 
-    // ── Load audit log ─────────────────────────────────────
+    // â”€â”€ Load audit log â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const loadAudit = useCallback(() => {
         setLoadingAudit(true);
         getDocs(collection(db, 'uplinerChanges')).then(snap => {
@@ -3226,7 +3865,7 @@ export function AdminUplinerEditor() {
 
     useEffect(() => { loadUsers(); loadAudit(); }, [loadUsers, loadAudit]);
 
-    // ── Filtered target user suggestions ──────────────────
+    // â”€â”€ Filtered target user suggestions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const targetSuggestions = targetQuery.length >= 2 && !targetUser
         ? allUsers.filter(u => {
               const q = targetQuery.toLowerCase();
@@ -3237,24 +3876,24 @@ export function AdminUplinerEditor() {
           }).slice(0, 8)
         : [];
 
-    // ── Circular reference guard ───────────────────────────
+    // â”€â”€ Circular reference guard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const checkCircular = (target, proposedUpliner, uMap, idx) => {
         if (!target || !proposedUpliner) return '';
-        if (proposedUpliner.uid === target.uid) return '⚠️ Cannot assign a user as their own upliner.';
+        if (proposedUpliner.uid === target.uid) return 'âš ï¸ Cannot assign a user as their own upliner.';
         let current = proposedUpliner;
         for (let i = 0; i < 12; i++) {
             if (!current.referrer) break;
             const upUid = idx[current.referrer.toLowerCase()] || Object.values(uMap).find(u => u.username === current.referrer)?.uid;
             if (!upUid) break;
             if (upUid === target.uid) {
-                return `⚠️ Circular reference! ${proposedUpliner.username} is a downline of ${target.username}. This would create an infinite commission loop.`;
+                return `âš ï¸ Circular reference! ${proposedUpliner.username} is a downline of ${target.username}. This would create an infinite commission loop.`;
             }
             current = uMap[upUid] || {};
         }
         return '';
     };
 
-    // ── Search new upliner ────────────────────────────────
+    // â”€â”€ Search new upliner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const searchNewUpliner = async () => {
         const q = newUplinerQuery.trim();
         if (!q) return;
@@ -3286,7 +3925,7 @@ export function AdminUplinerEditor() {
         }
     };
 
-    // ── Save upliner change ────────────────────────────────
+    // â”€â”€ Save upliner change â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const handleSave = async () => {
         if (!targetUser || !newUplinerUser) return;
         if (circularWarning) { showToast('Fix the circular reference issue first.', 'error'); return; }
@@ -3333,7 +3972,7 @@ export function AdminUplinerEditor() {
                 changedAt: now
             });
 
-            showToast(`✅ ${targetUser.username} is now under ${newUplinerUsername}. Affiliate page will reflect this immediately.`, 'success');
+            showToast(`âœ… ${targetUser.username} is now under ${newUplinerUsername}. Affiliate page will reflect this immediately.`, 'success');
 
             // Reset
             setTargetUser(null); setTargetQuery('');
@@ -3351,11 +3990,11 @@ export function AdminUplinerEditor() {
     return (
         <div>
             <h1 className="gov-title">Upliner Editor</h1>
-            <p className="gov-subtitle">Reassign a user's referral upliner. The Affiliate page reflects changes immediately. Past commissions are not reversed — only future activations flow to the new upliner.</p>
+            <p className="gov-subtitle">Reassign a user's referral upliner. The Affiliate page reflects changes immediately. Past commissions are not reversed â€” only future activations flow to the new upliner.</p>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20, marginBottom: 24 }}>
 
-                {/* ── Step 1: Select Target User ── */}
+                {/* â”€â”€ Step 1: Select Target User â”€â”€ */}
                 <div className="gov-panel">
                     <div className="gov-panel-header">
                         <div className="gov-panel-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -3402,7 +4041,7 @@ export function AdminUplinerEditor() {
                                 </div>
                                 <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
                                     <tbody>
-                                        <tr><td style={{ padding: '4px 0', color: '#64748B', fontWeight: 600 }}>Current Upliner</td><td style={{ textAlign: 'right', fontWeight: 700, color: targetUser.referrer ? '#0288D1' : '#999', fontFamily: 'monospace' }}>{targetUser.referrer || '— None'}</td></tr>
+                                        <tr><td style={{ padding: '4px 0', color: '#64748B', fontWeight: 600 }}>Current Upliner</td><td style={{ textAlign: 'right', fontWeight: 700, color: targetUser.referrer ? '#0288D1' : '#999', fontFamily: 'monospace' }}>{targetUser.referrer || 'â€” None'}</td></tr>
                                         <tr><td style={{ padding: '4px 0', color: '#64748B', fontWeight: 600 }}>Status</td><td style={{ textAlign: 'right' }}><StatusBadge status={targetUser.isActive ? 'active' : 'pending'} /></td></tr>
                                         <tr><td style={{ padding: '4px 0', color: '#64748B', fontWeight: 600 }}>Currency</td><td style={{ textAlign: 'right' }}>{targetUser.currency || 'TZS'}</td></tr>
                                     </tbody>
@@ -3413,7 +4052,7 @@ export function AdminUplinerEditor() {
                     </div>
                 </div>
 
-                {/* ── Step 2: New Upliner ── */}
+                {/* â”€â”€ Step 2: New Upliner â”€â”€ */}
                 <div className="gov-panel">
                     <div className="gov-panel-header">
                         <div className="gov-panel-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -3442,11 +4081,11 @@ export function AdminUplinerEditor() {
                             </button>
                         </div>
 
-                        {!targetUser && <div style={{ color: '#94A3B8', fontSize: 12, textAlign: 'center', padding: '12px 0' }}>← Select a target user first</div>}
+                        {!targetUser && <div style={{ color: '#94A3B8', fontSize: 12, textAlign: 'center', padding: '12px 0' }}>â† Select a target user first</div>}
 
                         {uplinerSearchStatus === 'not-found' && (
                             <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 8, padding: 10, color: '#DC2626', fontSize: 13 }}>
-                                ❌ Username not found. Check spelling (case-sensitive).
+                                âŒ Username not found. Check spelling (case-sensitive).
                             </div>
                         )}
 
@@ -3455,13 +4094,13 @@ export function AdminUplinerEditor() {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
                                     <img src={`https://flagcdn.com/w40/${codeOf(newUplinerUser)}.png`} alt="" style={{ width: 28, height: 18, borderRadius: 3, objectFit: 'cover' }} />
                                     <div>
-                                        <div style={{ fontWeight: 700, color: '#16A34A' }}>✓ {newUplinerUser.username}</div>
+                                        <div style={{ fontWeight: 700, color: '#16A34A' }}>âœ“ {newUplinerUser.username}</div>
                                         <div style={{ fontSize: 11, color: '#64748B', fontFamily: 'monospace' }}>{newUplinerUser.uid}</div>
                                     </div>
                                 </div>
                                 <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
                                     <tbody>
-                                        <tr><td style={{ padding: '4px 0', color: '#64748B', fontWeight: 600 }}>Their Upliner</td><td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{newUplinerUser.referrer || '— Top Level'}</td></tr>
+                                        <tr><td style={{ padding: '4px 0', color: '#64748B', fontWeight: 600 }}>Their Upliner</td><td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{newUplinerUser.referrer || 'â€” Top Level'}</td></tr>
                                         <tr><td style={{ padding: '4px 0', color: '#64748B', fontWeight: 600 }}>Status</td><td style={{ textAlign: 'right' }}><StatusBadge status={newUplinerUser.isActive ? 'active' : 'pending'} /></td></tr>
                                         <tr><td style={{ padding: '4px 0', color: '#64748B', fontWeight: 600 }}>Currency</td><td style={{ textAlign: 'right' }}>{newUplinerUser.currency || 'TZS'}</td></tr>
                                     </tbody>
@@ -3478,7 +4117,7 @@ export function AdminUplinerEditor() {
                 </div>
             </div>
 
-            {/* ── Step 3: Confirm ── */}
+            {/* â”€â”€ Step 3: Confirm â”€â”€ */}
             {targetUser && newUplinerUser && !circularWarning && (
                 <div className="gov-panel" style={{ marginBottom: 24 }}>
                     <div className="gov-panel-header">
@@ -3499,7 +4138,7 @@ export function AdminUplinerEditor() {
                                     <span style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 6, padding: '4px 10px', fontWeight: 700, color: '#DC2626', fontFamily: 'monospace', fontSize: 13 }}>
                                         {targetUser.referrer || 'none'}
                                     </span>
-                                    <span style={{ color: '#94A3B8' }}>→</span>
+                                    <span style={{ color: '#94A3B8' }}>â†’</span>
                                     <span style={{ background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: 6, padding: '4px 10px', fontWeight: 700, color: '#16A34A', fontFamily: 'monospace', fontSize: 13 }}>
                                         {newUplinerUser.username}
                                     </span>
@@ -3507,20 +4146,20 @@ export function AdminUplinerEditor() {
                             </div>
                         </div>
                         <div style={{ background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: 6, padding: '8px 12px', fontSize: 12, color: '#92400E', marginBottom: 12 }}>
-                            ⚠️ Past commissions already paid are NOT reversed. Affiliate page will update instantly for both old and new upliners.
+                            âš ï¸ Past commissions already paid are NOT reversed. Affiliate page will update instantly for both old and new upliners.
                         </div>
                         <button className="gov-btn gov-btn-success" onClick={handleSave} disabled={saving} style={{ minWidth: 200 }}>
-                            {saving ? 'Saving...' : '✅ Confirm & Save Upliner Change'}
+                            {saving ? 'Saving...' : 'âœ… Confirm & Save Upliner Change'}
                         </button>
                     </div>
                 </div>
             )}
 
-            {/* ── Audit Log ── */}
+            {/* â”€â”€ Audit Log â”€â”€ */}
             <div className="gov-panel">
                 <div className="gov-panel-header">
                     <div className="gov-panel-title">Upliner Change History</div>
-                    <button className="gov-btn gov-btn-outline" style={{ padding: '4px 10px', fontSize: 11 }} onClick={loadAudit}>↻ Refresh</button>
+                    <button className="gov-btn gov-btn-outline" style={{ padding: '4px 10px', fontSize: 11 }} onClick={loadAudit}>â†» Refresh</button>
                 </div>
                 <div className="gov-table-container">
                     <table className="gov-table">
@@ -3544,10 +4183,10 @@ export function AdminUplinerEditor() {
                                         <div style={{ fontWeight: 700 }}>{entry.targetUsername || entry.targetUid?.slice(0, 10)}</div>
                                         <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#94A3B8' }}>{entry.targetUid?.slice(0, 14)}...</div>
                                     </td>
-                                    <td><span style={{ fontFamily: 'monospace', color: '#DC2626', fontWeight: 600 }}>{entry.oldUpliner || '—'}</span></td>
+                                    <td><span style={{ fontFamily: 'monospace', color: '#DC2626', fontWeight: 600 }}>{entry.oldUpliner || 'â€”'}</span></td>
                                     <td><span style={{ fontFamily: 'monospace', color: '#16A34A', fontWeight: 600 }}>{entry.newUpliner}</span></td>
-                                    <td style={{ fontSize: 12 }}>{entry.changedAt ? new Date(entry.changedAt).toLocaleString() : '—'}</td>
-                                    <td style={{ fontSize: 11, fontFamily: 'monospace', color: '#94A3B8' }}>{entry.changedBy?.slice(0, 12) || '—'}</td>
+                                    <td style={{ fontSize: 12 }}>{entry.changedAt ? new Date(entry.changedAt).toLocaleString() : 'â€”'}</td>
+                                    <td style={{ fontSize: 11, fontFamily: 'monospace', color: '#94A3B8' }}>{entry.changedBy?.slice(0, 12) || 'â€”'}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -3558,9 +4197,9 @@ export function AdminUplinerEditor() {
     );
 }
 
-/* ══════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    BROADCAST MESSAGING
-═══════════════════════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 export function AdminMessages() {
     const { user } = useAuth();
     const { showToast } = useToast();
@@ -3671,7 +4310,7 @@ export function AdminMessages() {
             <div style={{ position: 'fixed', inset: 0, background: 'rgba(10,18,35,0.65)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: 20 }}>
                 <div style={{ background: '#fff', borderRadius: 20, padding: '32px 28px', maxWidth: 380, width: '100%', boxShadow: '0 25px 60px rgba(0,0,0,0.2)', textAlign: 'center' }}>
                     <div style={{ width: 64, height: 64, borderRadius: 16, background: 'rgba(255,86,48,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 28 }}>
-                        🗑️
+                        ðŸ—‘ï¸
                     </div>
                     <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 700, color: '#2b3674' }}>Delete Message?</h3>
                     <p style={{ margin: '0 0 24px', fontSize: 13, color: '#8f9bba', lineHeight: 1.5 }}>This will permanently remove the broadcast and it will disappear from all user dashboards immediately.</p>
@@ -3762,7 +4401,7 @@ export function AdminMessages() {
                                     </datalist>
                                     {formData.targetValue && usersList.find(u => u.username.toLowerCase() === formData.targetValue.trim().toLowerCase() || u.uid === formData.targetValue.trim()) && (
                                         <div style={{ position: 'absolute', top: '100%', left: 0, fontSize: 11, color: '#05cd99', marginTop: 4, fontWeight: 600 }}>
-                                          ✓ Valid User Selected
+                                          âœ“ Valid User Selected
                                         </div>
                                     )}
                                 </div>

@@ -1,0 +1,5 @@
+{
+  "appId": "com.newhope.chat",
+  "appName": "newhope-chat",
+  "webDir": "client/dist"
+}

@@ -36,3 +36,19 @@
     background: var(--gov-white);
     border: 1px solid var(--gov-border);
 }
+
+@media (max-width: 768px) {
+    .gov-users-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+    .gov-users-search {
+        max-width: 100%;
+        width: 100%;
+    }
+    .gov-users-filters {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+}

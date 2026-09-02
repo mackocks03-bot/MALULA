@@ -33,6 +33,7 @@ import {
     endBefore,
     writeBatch,
     arrayUnion,
+    arrayRemove,
     increment
 } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
@@ -78,6 +79,7 @@ export {
     endBefore,
     writeBatch,
     arrayUnion,
+    arrayRemove,
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
     sendPasswordResetEmail,
@@ -88,3 +90,4 @@ export {
     deleteUser,
     increment
 };
+
