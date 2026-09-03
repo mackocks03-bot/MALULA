@@ -164,6 +164,11 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // Weekly Challenge Winners — any authenticated user can read past winners
+    match /challengeWinners/{docId} {
+      allow read: if request.auth != null;
+    }
+
     // Default fallback (block writes unless admin)
     match /{document=**} {
       allow read: if request.auth != null && isAdmin();
