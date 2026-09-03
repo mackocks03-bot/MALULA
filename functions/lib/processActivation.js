@@ -1,5 +1,6 @@
 import { loadBonusSettings, processAllReferralCommissions } from './referralCommissions.js';
 import { sendPushNotification } from './sendPushNotification.js';
+import { generateTxHash, getFormattedDate } from './utils.js';
 
 /**
  * Full activation: welcome bonus + 3-level commissions + notifications
@@ -46,12 +47,16 @@ export async function runActivationProcessing(db, paymentId, payment) {
 
         const commissionResults = await processAllReferralCommissions(db, paymentId, user);
 
+        const txHash = generateTxHash();
+        const dateStr = getFormattedDate();
+        const message = `${txHash} confirmed your account activation has been processed and approved successfull, date ${dateStr}`;
+
         await db.collection('notifications').add({
             uid: userId, // Keep explicit uid tracking since it's at root level now
             type: 'activation',
             title: 'Account Activated! 🎉',
-            message: `Your account is now active and ready for use!`,
-            txId: paymentId,
+            message: message,
+            txId: txHash,
             read: false,
             createdAt: now
         });
@@ -66,13 +71,14 @@ export async function runActivationProcessing(db, paymentId, payment) {
             referralL3: bonuses.referralL3,
             commissionsProcessed: commissionResults.length,
             processedBy: 'cloud-function',
-            processingError: null
+            processingError: null,
+            txHash: txHash
         });
 
         console.log(`✅ Activation ${paymentId}: user ${user.username}, ${commissionResults.length} commissions`);
         
-        await sendPushNotification(db, userId, 'Account Activated! 🎉', `Your account is now active and ready for use!`, {
-            txId: paymentId,
+        await sendPushNotification(db, userId, 'Account Activated! 🎉', message, {
+            txId: txHash,
             type: 'activation'
         });
 

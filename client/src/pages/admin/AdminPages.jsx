@@ -464,10 +464,10 @@ function UserProfileModal({ user, onClose, onUpdateStatus, onSave }) {
                 taskBalances: user.taskBalances || {},
                 earnings: user.earnings || {},
                 miningRate: user.miningRate ?? 0,
-                // Access control
+                // Access control — ALWAYS read exact stored value, never assume a default
                 isActive: user.isActive ?? false,
                 activationStatus: user.activationStatus || 'pending',
-                role: user.role || 'user',
+                role: user.role ?? 'user',  // pre-fill from DB so dropdown shows current role
                 // Metadata (read-only, preserved so they aren't wiped on save)
                 createdAt: user.createdAt || null,
                 downlines: user.downlines || [],
@@ -662,9 +662,10 @@ function UserProfileModal({ user, onClose, onUpdateStatus, onSave }) {
                                     <>
                                         <div style={{ marginBottom: 10 }}>
                                             <label style={{ fontSize: 12, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 4 }}>System Role</label>
-                                            <select className="gov-input" style={{ width: '100%', padding: '6px 10px' }} value={editData.role} onChange={e => setEditData({ ...editData, role: e.target.value })}>
+                                            <select className="gov-input" style={{ width: '100%', padding: '6px 10px' }} value={editData.role ?? user.role ?? 'user'} onChange={e => setEditData({ ...editData, role: e.target.value })}>
                                                 <option value="user">User</option>
                                                 <option value="admin">Administrator</option>
+                                                <option value="moderator">Moderator</option>
                                             </select>
                                         </div>
                                         <div style={{ marginBottom: 10 }}>
@@ -1138,13 +1139,16 @@ export function AdminUsers() {
                 currency: (editData.currency || 'TZS').toUpperCase().trim(),
                 referralLink: `${window.location.origin}/register?ref=${effectiveUsername}`,
                 balance: Number(editData.balance) || 0,
+                shopBalance: Number(editData.shopBalance) || 0,
                 totalProfit: Number(editData.totalProfit ?? originalUser.totalProfit ?? editData.balance) || 0,
                 totalWithdrawn: Number(editData.totalWithdrawn) || 0,
                 referrer: newReferrer || null,
                 miningRate: Number(editData.miningRate) || 0,
+                exchangeRate: editData.exchangeRate !== '' && editData.exchangeRate !== undefined ? Number(editData.exchangeRate) : (originalUser.exchangeRate ?? null),
                 isActive: Boolean(editData.isActive),
                 activationStatus: editData.activationStatus || (editData.isActive ? 'approved' : 'pending'),
-                role: editData.role || 'user',
+                // IMPORTANT: Always preserve the stored role — never silently fall back to 'user'
+                role: editData.role || originalUser.role || 'user',
                 updatedAt: Date.now()
             };
 

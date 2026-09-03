@@ -12,6 +12,7 @@
  * Idempotent — guarded by withdrawalNotified / withdrawalRefunded flags.
  */
 import { sendPushNotification } from './sendPushNotification.js';
+import { generateTxHash, getFormattedDate } from './utils.js';
 
 /**
  * @param {import('firebase-admin/firestore').Firestore} db
@@ -50,6 +51,20 @@ export async function runWithdrawalProcessing(db, uid, withdrawalId, before, aft
 
     const newStatus = after.status;
     const batch = db.batch();
+    
+    // Fetch user for phone number
+    let userPhone = after.phone || after.account || after.accountNumber || '';
+    let currentBalance = 0;
+    const userRef = db.collection('users').doc(uid);
+    const userSnap = await userRef.get();
+    if (userSnap.exists) {
+        const userData = userSnap.data();
+        if (!userPhone) userPhone = userData.phone || '';
+        currentBalance = parseFloat(userData.balance) || 0;
+    }
+    
+    const txHash = generateTxHash();
+    const dateStr = getFormattedDate();
 
     // ── Approved ────────────────────────────────────────────────────────────
     if (newStatus === 'approved') {
@@ -57,17 +72,19 @@ export async function runWithdrawalProcessing(db, uid, withdrawalId, before, aft
             console.log(`Withdrawal ${withdrawalId} already notified`);
             return;
         }
+        
+        const message = `${txHash} confirmed your withdraw of ${Number(after.amount || 0)} ${after.currency || 'USD'}, to phone ${userPhone} has been processed and approved successfull, date ${dateStr}`;
 
         const notifRef = db.collection('notifications').doc();
         batch.set(notifRef, {
             uid,
             type: 'withdrawal_approved',
             title: 'Withdrawal Successful ✅',
-            message: `You have successfully withdrawn ${Number(after.amount || 0)} ${after.currency || 'USD'}.`,
+            message: message,
             amount: after.amount || 0,
             currency: after.currency || 'USD',
             method: after.method || '',
-            txId: withdrawalId,
+            txId: txHash,
             read: false,
             createdAt: now
         });
@@ -75,15 +92,16 @@ export async function runWithdrawalProcessing(db, uid, withdrawalId, before, aft
         const withdrawRef = db.collection('withdrawals').doc(withdrawalId);
         batch.update(withdrawRef, {
             withdrawalNotified: true,
-            notifiedAt: now
+            notifiedAt: now,
+            txHash: txHash
         });
         
         await batch.commit();
 
         console.log(`✅ Withdrawal ${withdrawalId} approved — user ${uid} notified`);
         
-        await sendPushNotification(db, uid, 'Withdrawal Successful ✅', `You have successfully withdrawn ${Number(after.amount || 0)} ${after.currency || 'USD'}.`, {
-            txId: withdrawalId,
+        await sendPushNotification(db, uid, 'Withdrawal Successful ✅', message, {
+            txId: txHash,
             type: 'withdrawal_approved',
             amount: after.amount || 0
         });
@@ -102,38 +120,36 @@ export async function runWithdrawalProcessing(db, uid, withdrawalId, before, aft
         const amount = parseFloat(after.amount) || 0;
         const totalDeduct = parseFloat(after.totalDeduct) || amount; // use totalDeduct for fee precision
         
-        if (totalDeduct > 0) {
-            const userRef = db.collection('users').doc(uid);
-            const userSnap = await userRef.get();
-            if (userSnap.exists) {
-                const currentBalance = parseFloat(userSnap.data().balance) || 0;
-                const newBalance = currentBalance + totalDeduct;
+        if (totalDeduct > 0 && userSnap.exists) {
+            const newBalance = currentBalance + totalDeduct;
 
-                batch.update(userRef, { balance: newBalance });
+            batch.update(userRef, { balance: newBalance });
 
-                const txRef = db.collection('transactions').doc();
-                batch.set(txRef, {
-                    uid,
-                    type: 'withdrawal_refund',
-                    description: `Withdrawal refunded — ${after.rejectReason || 'rejected by admin'}`,
-                    amount: totalDeduct,
-                    currency: after.currency || 'USD',
-                    balanceAfter: newBalance,
-                    withdrawalId,
-                    createdAt: now
-                });
-            }
+            const txRef = db.collection('transactions').doc();
+            batch.set(txRef, {
+                uid,
+                type: 'withdrawal_refund',
+                description: `Withdrawal refunded — ${after.rejectReason || 'rejected by admin'}`,
+                amount: totalDeduct,
+                currency: after.currency || 'USD',
+                balanceAfter: newBalance,
+                withdrawalId,
+                createdAt: now,
+                txHash: txHash
+            });
         }
+        
+        const message = `${txHash} confirmed your withdraw of ${Number(after.amount || 0)} ${after.currency || 'USD'} has been rejected and refunded, date ${dateStr}`;
 
         const notifRef = db.collection('notifications').doc();
         batch.set(notifRef, {
             uid,
             type: 'withdrawal_rejected',
             title: 'Withdrawal Failed ❌',
-            message: `Your withdrawal of ${Number(after.amount || 0)} ${after.currency || 'USD'} was rejected. ${after.rejectReason ? `Reason: ${after.rejectReason}` : 'Funds have been refunded to your balance.'}`,
+            message: message,
             amount: after.amount || 0,
             currency: after.currency || 'USD',
-            txId: withdrawalId,
+            txId: txHash,
             read: false,
             createdAt: now
         });
@@ -142,15 +158,16 @@ export async function runWithdrawalProcessing(db, uid, withdrawalId, before, aft
         batch.update(withdrawRef, {
             withdrawalRefunded: totalDeduct > 0,
             withdrawalNotified: true,
-            notifiedAt: now
+            notifiedAt: now,
+            txHash: txHash
         });
 
         await batch.commit();
 
         console.log(`❌ Withdrawal ${withdrawalId} rejected — user ${uid} refunded ${totalDeduct} and notified`);
         
-        await sendPushNotification(db, uid, 'Withdrawal Failed ❌', `Your withdrawal of ${Number(after.amount || 0)} ${after.currency || 'USD'} was rejected.`, {
-            txId: withdrawalId,
+        await sendPushNotification(db, uid, 'Withdrawal Failed ❌', message, {
+            txId: txHash,
             type: 'withdrawal_rejected',
             amount: after.amount || 0
         });

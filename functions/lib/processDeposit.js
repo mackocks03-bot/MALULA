@@ -1,5 +1,5 @@
 import { sendPushNotification } from './sendPushNotification.js';
-
+import { generateTxHash, getFormattedDate } from './utils.js';
 /**
  * Credit shop balance after verified PalmPesa deposit
  */
@@ -59,6 +59,12 @@ export async function runDepositProcessing(db, orderId, pending) {
         createdAt: now
     });
 
+    const txHash = generateTxHash();
+    const dateStr = getFormattedDate();
+    const userPhone = pending.msisdn || pending.phone || user.phone || 'your account';
+    
+    const message = `${txHash} confirmed your deposit of ${amountNative} ${currency}, to phone ${userPhone} has been processed and approved successfull, date ${dateStr}`;
+
     // Record Transaction
     const txRef = db.collection('transactions').doc();
     batch.set(txRef, {
@@ -68,7 +74,8 @@ export async function runDepositProcessing(db, orderId, pending) {
         amount: amountNative,
         currency,
         orderId,
-        createdAt: now
+        createdAt: now,
+        txHash: txHash
     });
 
     // Notify User
@@ -77,10 +84,10 @@ export async function runDepositProcessing(db, orderId, pending) {
         uid,
         type: 'deposit_approved',
         title: 'Deposit Successful ✅',
-        message: `You have successfully deposited ${amountNative} ${currency}.`,
+        message: message,
         amount: amountNative,
         currency: currency,
-        txId: pending.transid || orderId,
+        txId: txHash,
         read: false,
         createdAt: now
     });
@@ -90,15 +97,16 @@ export async function runDepositProcessing(db, orderId, pending) {
     batch.update(pendingRef, {
         depositProcessed: true,
         status: 'completed',
-        updatedAt: now
+        updatedAt: now,
+        txHash: txHash
     });
 
     await batch.commit();
 
     console.log(`✅ Deposit ${orderId}: ${amountNative} ${currency} shop credit for ${uid}`);
 
-    await sendPushNotification(db, uid, 'Deposit Successful ✅', `You have successfully deposited ${amountNative} ${currency}.`, {
-        txId: pending.transid || orderId,
+    await sendPushNotification(db, uid, 'Deposit Successful ✅', message, {
+        txId: txHash,
         type: 'deposit_approved',
         amount: amountNative
     });

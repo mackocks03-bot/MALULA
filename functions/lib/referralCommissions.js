@@ -1,5 +1,5 @@
-import { FieldValue } from 'firebase-admin/firestore';
 import { sendPushNotification } from './sendPushNotification.js';
+import { generateTxHash, getFormattedDate } from './utils.js';
 
 /**
  * Resolve referrer username → UID via loginIndex (exact then lowercase)
@@ -111,15 +111,21 @@ export async function processReferralBonus(db, {
 
     // (Legacy referrals collection update removed. Frontend Affiliate page now reads native referral sub-arrays directly from user objects and dynamically infers activity statuses)
 
+    const txHash = generateTxHash();
+    const dateStr = getFormattedDate();
+    const fromUser = newUsername || 'unknown';
+    const message = `${txHash} confirmed your commission of ${localBonusAmount} ${currency}, from ${fromUser} has been processed and approved successfull, date ${dateStr}`;
+
     await db.collection('notifications').add({
         uid: referrerUid,
         type: 'referral_bonus',
         title: `Level ${level} Referral Bonus! 🎉`,
-        message: `${newUsername || 'User'} activated! You earned ${localBonusAmount} ${currency} (Level ${level})`,
+        message: message,
         amount: localBonusAmount,
         currency,
         level,
-        fromUser: newUsername || 'user',
+        fromUser: fromUser,
+        txId: txHash,
         read: false,
         createdAt: now
     });
@@ -127,12 +133,13 @@ export async function processReferralBonus(db, {
     await db.collection('transactions').add({
         uid: referrerUid,
         type: 'referral_bonus',
-        description: `Level ${level} referral bonus from ${newUsername}`,
+        description: `Level ${level} referral bonus from ${fromUser}`,
         amount: localBonusAmount,
         currency,
         balanceAfter: newBalance,
-        fromUser: newUsername,
+        fromUser: fromUser,
         paymentId,
+        txHash: txHash,
         createdAt: now
     });
 
@@ -142,7 +149,8 @@ export async function processReferralBonus(db, {
         username: referrerUsername,
         amount: localBonusAmount,
         bonusUSD: bonusAmount,
-        referrerUsername: referrer.referrer || null
+        referrerUsername: referrer.referrer || null,
+        txHash: txHash
     };
 
     await commissionLogRef.set(result);
@@ -153,8 +161,8 @@ export async function processReferralBonus(db, {
         db, 
         referrerUid, 
         'New Commission Received! 💸', 
-        `You just earned ${localBonusAmount} ${currency} from ${newUsername} (Level ${level})!`,
-        { type: 'commission', amount: localBonusAmount, currency, level }
+        message,
+        { txId: txHash, type: 'commission', amount: localBonusAmount, currency, level }
     );
 
     return result;

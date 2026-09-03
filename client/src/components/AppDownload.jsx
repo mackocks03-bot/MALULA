@@ -5,8 +5,13 @@ export default function AppDownload() {
     const { translate } = useLanguage();
 
     const handleDownload = () => {
-        // Direct download link logic - can be an external APK URL or Google Play URL
-        window.open('https://play.google.com/store/apps', '_blank');
+        // Direct download link to the APK hosted in the public folder
+        const link = document.createElement('a');
+        link.href = '/NEWHOPE-CHAT.apk';
+        link.download = 'NEWHOPE-CHAT.apk';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     return (

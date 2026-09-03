@@ -1,0 +1,69 @@
+{
+  "project_info": {
+    "project_number": "728781241137",
+    "firebase_url": "https://xxxx-connection-default-rtdb.firebaseio.com",
+    "project_id": "xxxx-connection",
+    "storage_bucket": "xxxx-connection.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:728781241137:android:db08891d0422225e878e10",
+        "android_client_info": {
+          "package_name": "com.forex.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "728781241137-1u0d9flkjr4kf1fpbbfjc6473jrg97ek.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBmRHrXhRhkliA12_f2E_3tV4sOLruLNgU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "728781241137-1u0d9flkjr4kf1fpbbfjc6473jrg97ek.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:728781241137:android:3aa376c775d9eaca878e10",
+        "android_client_info": {
+          "package_name": "com.newhope.chat"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "728781241137-1u0d9flkjr4kf1fpbbfjc6473jrg97ek.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBmRHrXhRhkliA12_f2E_3tV4sOLruLNgU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "728781241137-1u0d9flkjr4kf1fpbbfjc6473jrg97ek.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
