@@ -112,7 +112,8 @@ export default function Dashboard() {
     const currency = userData?.currency || 'TZS';
     const spinEarnings = parseFloat(userData?.spinEarnings || 0);
     const totalAllEarnings = (userData?.totalProfit || 0) + spinEarnings;
-    const referralLink = `${window.location.origin}/register?ref=${userData?.username || 'user'}`;
+    const origin = window.location.origin.includes('localhost') ? 'https://newhope-chat.site' : window.location.origin;
+    const referralLink = `${origin}/register?ref=${userData?.username || 'user'}`;
     const taskBalances = userData?.taskBalances || {};
     const earnings = userData?.earnings || {};
 

@@ -206,7 +206,7 @@ export async function registerUser(email, password, userData) {
             role: 'user',
             profilePic: null,
             welcomeBonus: initialWelcomeBonus, // HARDCODED native amount
-            referralLink: `${window.location.origin}/register?ref=${username}`,
+            referralLink: `${window.location.origin.includes('localhost') ? 'https://newhope-chat.site' : window.location.origin}/register?ref=${username}`,
             earnings: {
                 chat: 0,
                 tiktok: 0,

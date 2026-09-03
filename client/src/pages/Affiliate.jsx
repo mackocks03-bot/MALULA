@@ -46,7 +46,8 @@ export default function Affiliate() {
     const [currentPage, setCurrentPage] = useState(1);
 
     const currency = userData?.currency || 'TZS';
-    const referralLink = `${window.location.origin}/register?ref=${userData?.username || 'user'}`;
+    const origin = window.location.origin.includes('localhost') ? 'https://newhope-chat.site' : window.location.origin;
+    const referralLink = `${origin}/register?ref=${userData?.username || 'user'}`;
 
     useEffect(() => {
         if (!user) return;

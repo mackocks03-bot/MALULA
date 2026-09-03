@@ -453,7 +453,7 @@ function UserProfileModal({ user, onClose, onUpdateStatus, onSave }) {
                 exchangeRate: user.exchangeRate ?? '',
                 // Referral / network
                 referrer: user.referrer || '',
-                referralLink: user.referralLink || `${window.location.origin}/register?ref=${user.username || ''}`,
+                referralLink: user.referralLink || `${window.location.origin.includes('localhost') ? 'https://newhope-chat.site' : window.location.origin}/register?ref=${user.username || ''}`,
                 referralCount: user.referralCount ?? 0,
                 referrals: user.referrals || {},
                 // Finances
@@ -525,7 +525,7 @@ function UserProfileModal({ user, onClose, onUpdateStatus, onSave }) {
                                             setEditData({ 
                                                 ...editData, 
                                                 username: newU,
-                                                referralLink: `${window.location.origin}/register?ref=${newU}`
+                                                referralLink: `${window.location.origin.includes('localhost') ? 'https://newhope-chat.site' : window.location.origin}/register?ref=${newU}`
                                             });
                                         }} 
                                         placeholder="Username" 
@@ -696,8 +696,8 @@ function UserProfileModal({ user, onClose, onUpdateStatus, onSave }) {
                                         <div><span style={{ color: '#64748b', display: 'inline-block', width: 110 }}>Upliner (Referrer):</span> <strong style={{ color: '#4318ff' }}>{user.referrer ? `@${user.referrer}` : 'None (Direct Root)'}</strong></div>
                                         <div style={{ marginTop: 8 }}>
                                             <span style={{ color: '#64748b', display: 'block', marginBottom: 4, fontSize: 11, fontWeight: 600, textTransform: 'uppercase' }}>Active Referral Link:</span>
-                                            <a href={user.referralLink || `${window.location.origin}/register?ref=${user.username}`} target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontSize: 12, wordBreak: 'break-all', display: 'block', background: '#f8fafc', padding: 8, borderRadius: 6, border: '1px solid #e2e8f0' }}>
-                                                {user.referralLink || `${window.location.origin}/register?ref=${user.username}`}
+                                            <a href={user.referralLink || `${window.location.origin.includes('localhost') ? 'https://newhope-chat.site' : window.location.origin}/register?ref=${user.username}`} target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontSize: 12, wordBreak: 'break-all', display: 'block', background: '#f8fafc', padding: 8, borderRadius: 6, border: '1px solid #e2e8f0' }}>
+                                                {user.referralLink || `${window.location.origin.includes('localhost') ? 'https://newhope-chat.site' : window.location.origin}/register?ref=${user.username}`}
                                             </a>
                                         </div>
                                     </div>
@@ -1143,7 +1143,7 @@ export function AdminUsers() {
                 countryName: (editData.countryName || editData.country || 'Tanzania').trim(),
                 country: (editData.countryName || editData.country || 'Tanzania').trim(),
                 currency: (editData.currency || 'TZS').toUpperCase().trim(),
-                referralLink: `${window.location.origin}/register?ref=${effectiveUsername}`,
+                referralLink: `${window.location.origin.includes('localhost') ? 'https://newhope-chat.site' : window.location.origin}/register?ref=${effectiveUsername}`,
                 balance: Number(editData.balance) || 0,
                 shopBalance: Number(editData.shopBalance) || 0,
                 totalProfit: Number(editData.totalProfit ?? originalUser.totalProfit ?? editData.balance) || 0,
