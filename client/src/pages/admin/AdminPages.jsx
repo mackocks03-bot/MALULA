@@ -994,8 +994,14 @@ export function AdminUsers() {
             const oldReferrer = (originalUser.referrer || '').trim();
             const newReferrer = (editData.referrer || '').trim();
 
-            // 1. Validation: Username availability if username is changing
+            // 1. Validation: Username availability and format if username is changing
             if (newUsername && newUsername.toLowerCase() !== oldUsername.toLowerCase()) {
+                const usernameRegex = /^(?=.*[a-zA-Z])(?=.*[0-9])[a-zA-Z0-9]+$/;
+                if (!usernameRegex.test(newUsername)) {
+                    showToast('Invalid username format. Usernames cannot be emails or contain special characters.', 'error');
+                    return false;
+                }
+
                 const loginIndexSnap = await getDoc(doc(db, 'loginIndex', newUsername));
                 if (loginIndexSnap.exists() && loginIndexSnap.data().uid !== uid) {
                     showToast(`Username "${newUsername}" is already in use by another account.`, 'error');
