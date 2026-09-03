@@ -9,6 +9,7 @@ import { runWithdrawalProcessing } from './lib/processWithdrawal.js';
 import { runMiningClaimProcessing } from './lib/processMining.js';
 import { runTaskProcessing } from './lib/processTask.js';
 import { sendBeemSMS } from './lib/sendBeemSMS.js';
+import { runWeeklyChallengeSweep } from './lib/processWeeklyChallenge.js';
 
 initializeApp();
 
@@ -289,6 +290,23 @@ export const onUserRegistered = onDocumentCreated(
             } catch (err) {
                 logger.error(`Failed to send SMS to ${user.phone}:`, err);
             }
+        }
+    }
+);
+
+/**
+ * Scheduled Cron Job: Evaluate and reward Weekly Challenge winners
+ * Runs every Sunday at 23:55 East Africa Time
+ */
+export const sweepWeeklyChallenge = onSchedule(
+    { schedule: '55 23 * * 0', timeZone: 'Africa/Nairobi', region: RTDB_REGION, timeoutSeconds: 300, memory: '512MiB' },
+    async (event) => {
+        const db = getFirestore();
+        logger.info('Starting weekly challenge sweeper...');
+        try {
+            await runWeeklyChallengeSweep(db);
+        } catch (error) {
+            logger.error('Weekly challenge sweeper failed', error);
         }
     }
 );

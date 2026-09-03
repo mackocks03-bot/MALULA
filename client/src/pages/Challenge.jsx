@@ -13,15 +13,17 @@ import './css/Challenge.css';
 const PEOPLE_4_11  = 8;
 const PEOPLE_12_20 = 9;
 
-const DEFAULT_REWARDS = {
-    first:                  6.00,
-    second:                 4.00,
-    third:                  2.00,
-    fourthToEleventhPool:   1.20,
-    twelfthToTwentiethPool: 0.81,
+const CHALLENGE_REWARDS = {
+    TZS: { rank1: 15000, rank2: 10000, rank3: 5000, rank4_11: 500, rank12_20: 300 },
+    KES: { rank1: 800,   rank2: 500,   rank3: 300,  rank4_11: 20,  rank12_20: 10 },
+    UGX: { rank1: 22000, rank2: 15000, rank3: 7500, rank4_11: 600, rank12_20: 400 },
+    MWK: { rank1: 10500, rank2: 7000,  rank3: 3500, rank4_11: 300, rank12_20: 200 },
+    ZMW: { rank1: 150,   rank2: 100,   rank3: 50,   rank4_11: 5,   rank12_20: 3 },
+    RWF: { rank1: 8000,  rank2: 5000,  rank3: 2500, rank4_11: 200, rank12_20: 150 },
+    BIF: { rank1: 17500, rank2: 12000, rank3: 6000, rank4_11: 500, rank12_20: 300 },
+    CDF: { rank1: 17000, rank2: 11500, rank3: 5500, rank4_11: 450, rank12_20: 300 },
+    MZN: { rank1: 400,   rank2: 250,   rank3: 150,  rank4_11: 15,  rank12_20: 10 }
 };
-
-const CURRENCY_RATES = { TZS: 2500, KES: 130, UGX: 3700, MWK: 1700, ZMW: 25, RWF: 1300, BIF: 2900, CDF: 2800 };
 
 /* Country code → emoji flag */
 const FLAG = {
@@ -34,11 +36,9 @@ const FLAG = {
 
 function getFlag(code) { return FLAG[code?.toUpperCase()] || FLAG.DEFAULT; }
 
-function toDisplay(usd, currency, rates) {
-    const rate   = rates[currency] || 2500;
-    const local  = usd * rate;
-    const syms   = { TZS:'TSh', KES:'KSh', UGX:'USh', MWK:'MK', ZMW:'ZK', RWF:'RF', BIF:'BIF', CDF:'FC' };
-    return `${syms[currency] || '$'} ${local.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+function formatLocal(amount, currency) {
+    const syms = { TZS:'TSh', KES:'KSh', UGX:'USh', MWK:'MK', ZMW:'ZK', RWF:'RF', BIF:'BIF', CDF:'FC', MZN:'MT' };
+    return `${syms[currency] || currency} ${amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 }
 
 /* ─── Get current week window: Mon 00:00 → Sun 23:59 ─── */
@@ -96,33 +96,23 @@ export default function Challenge() {
     const currMap  = { TZ:'TZS', KE:'KES', UG:'UGX', MW:'MWK', ZM:'ZMW', RW:'RWF', BI:'BIF', CD:'CDF' };
     const currency = currMap[country] || 'TZS';
 
-    const [rewards,   setRewards  ] = useState({ ...DEFAULT_REWARDS });
-    const [rates,     setRates    ] = useState({ ...CURRENCY_RATES  });
+    const [pastWinners, setPastWinners] = useState([]);
     const [rankedList,setRanked   ] = useState([]);  // [{uid, username, country, weeklyRefs, ...}]
     const [allUsers,  setAllUsers ] = useState([]);  // raw snapshot kept for "your card"
     const [search,    setSearch   ] = useState('');
     const [loading,   setLoading  ] = useState(true);
     const countdown = useCountdown();
 
-    /* ── Load settings ── */
+    /* ── Load Past Winners ── */
     useEffect(() => {
         (async () => {
             try {
-                const [cr, rts] = await Promise.all([
-                    dataStore.getChallengeRewards(),
-                    dataStore.getCurrencyRates(),
-                ]);
-                if (cr && Object.keys(cr).length) {
-                    setRewards({
-                        first:                  parseFloat(cr.first)              || DEFAULT_REWARDS.first,
-                        second:                 parseFloat(cr.second)             || DEFAULT_REWARDS.second,
-                        third:                  parseFloat(cr.third)              || DEFAULT_REWARDS.third,
-                        fourthToEleventhPool:   parseFloat(cr.fourthToEleven)     || DEFAULT_REWARDS.fourthToEleventhPool,
-                        twelfthToTwentiethPool: parseFloat(cr.twelfthToTwentieth) || DEFAULT_REWARDS.twelfthToTwentiethPool,
-                    });
-                }
-                if (rts && Object.keys(rts).length) setRates(rts);
-            } catch (_) { /* use defaults */ }
+                const snap = await getDocs(query(collection(db, 'challengeWinners'), orderBy('weekEnd', 'desc'), limit(1)));
+                const winnersList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                setPastWinners(winnersList);
+            } catch (err) {
+                console.error("Error fetching past winners:", err);
+            }
         })();
     }, []);
 
@@ -188,10 +178,8 @@ export default function Challenge() {
     }, []);
 
     /* ─── Derived ─── */
-    const perPerson4to11  = rewards.fourthToEleventhPool   / PEOPLE_4_11;
-    const perPerson12to20 = rewards.twelfthToTwentiethPool / PEOPLE_12_20;
-    const totalPool       = rewards.first + rewards.second + rewards.third +
-                            rewards.fourthToEleventhPool + rewards.twelfthToTwentiethPool;
+    const myRates = CHALLENGE_REWARDS[currency] || CHALLENGE_REWARDS.TZS;
+    const totalPool = myRates.rank1 + myRates.rank2 + myRates.rank3 + (myRates.rank4_11 * PEOPLE_4_11) + (myRates.rank12_20 * PEOPLE_12_20);
 
     const filtered = search
         ? rankedList.filter(u =>
@@ -220,11 +208,11 @@ export default function Challenge() {
         return 'ch-avatar default';
     }
     function rewardLabel(i) {
-        if (i === 0) return toDisplay(rewards.first,  currency, rates);
-        if (i === 1) return toDisplay(rewards.second, currency, rates);
-        if (i === 2) return toDisplay(rewards.third,  currency, rates);
-        if (i >= 3 && i <= 10) return toDisplay(perPerson4to11,  currency, rates);
-        if (i >= 11 && i <= 19) return toDisplay(perPerson12to20, currency, rates);
+        if (i === 0) return formatLocal(myRates.rank1, currency);
+        if (i === 1) return formatLocal(myRates.rank2, currency);
+        if (i === 2) return formatLocal(myRates.rank3, currency);
+        if (i >= 3 && i <= 10) return formatLocal(myRates.rank4_11, currency);
+        if (i >= 11 && i <= 19) return formatLocal(myRates.rank12_20, currency);
         return '';
     }
 
@@ -243,7 +231,7 @@ export default function Challenge() {
                             <span className="gold">{translate('challenge.title') || 'Weekly Challenge'}</span>
                         </h1>
                         <p className="ch-subtitle">{translate('challenge.subtitle') || 'Invite more friends and become Top 20 this week.'}</p>
-                        <div className="ch-pool-pill">{toDisplay(totalPool, currency, rates)} Prize Pool</div>
+                        <div className="ch-pool-pill">{formatLocal(totalPool, currency)} Prize Pool</div>
 
                         {/* Countdown */}
                         <div className="ch-countdown">
@@ -275,10 +263,10 @@ export default function Challenge() {
                         </div>
                         <div className="ch-rewards-grid">
                             {[
-                                ['🥇 1st Place', toDisplay(rewards.first,  currency, rates)],
-                                ['🥈 2nd Place', toDisplay(rewards.second, currency, rates)],
-                                ['🥉 3rd Place', toDisplay(rewards.third,  currency, rates)],
-                                ['4th – 11th', `${toDisplay(perPerson4to11, currency, rates)} each`],
+                                ['🥇 1st Place', formatLocal(myRates.rank1, currency)],
+                                ['🥈 2nd Place', formatLocal(myRates.rank2, currency)],
+                                ['🥉 3rd Place', formatLocal(myRates.rank3, currency)],
+                                ['4th – 11th', `${formatLocal(myRates.rank4_11, currency)} each`],
                             ].map(([place, prize]) => (
                                 <div key={place} className="ch-reward-item">
                                     <span className="ch-place">{place}</span>
@@ -287,7 +275,7 @@ export default function Challenge() {
                             ))}
                             <div className="ch-reward-item ch-reward-wide">
                                 <span className="ch-place">12th – 20th</span>
-                                <span className="ch-prize">{toDisplay(perPerson12to20, currency, rates)} each</span>
+                                <span className="ch-prize">{formatLocal(myRates.rank12_20, currency)} each</span>
                             </div>
                         </div>
                     </div>
@@ -390,6 +378,49 @@ export default function Challenge() {
                             </div>
                         </div>
                     </div>
+
+                    
+                    {/* ── Past Winners ── */}
+                    {pastWinners.length > 0 && (
+                        <div className="ch-section" style={{ marginTop: 24, marginBottom: 24 }}>
+                            <div className="ch-section-title">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--color-gold)" strokeWidth="2">
+                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                </svg>
+                                {translate('challenge.pastWinners') || "Last Week's Winners"}
+                            </div>
+                            <div className="ch-glass" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                {pastWinners.map(week => (
+                                    <div key={week.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '16px' }}>
+                                        <div style={{ fontSize: 13, color: '#8f9bba', marginBottom: 12, fontWeight: 600 }}>
+                                            Week ending {new Date(week.weekEnd).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                        </div>
+                                        <div style={{ display: 'grid', gap: '10px' }}>
+                                            {week.winners && week.winners.slice(0, 3).map((w, idx) => (
+                                                <div key={w.uid} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.1)', padding: '10px 14px', borderRadius: 10 }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                        <span style={{ fontSize: 16, width: 20 }}>{idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}</span>
+                                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                            <span style={{ fontWeight: 700, color: '#fff', fontSize: 14 }}>{w.username}</span>
+                                                            <span style={{ fontSize: 12, color: '#8f9bba' }}>{getFlag(w.country)} {w.weeklyRefs} referrals</span>
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ fontWeight: 700, color: '#05cd99', fontSize: 14 }}>
+                                                        +{formatLocal(w.prizeAmount, w.currency)}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {week.winners && week.winners.length > 3 && (
+                                                <div style={{ textAlign: 'center', fontSize: 12, color: '#8f9bba', marginTop: 4 }}>
+                                                    + {week.winners.length - 3} more winners
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* ── Rules ── */}
                     <div className="ch-section" style={{ marginBottom: 32 }}>
